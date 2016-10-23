@@ -1,0 +1,98 @@
+@font-face
+{
+  font-family: "Source Code Pro Black";
+  font-weight: 900;
+  font-style: normal;
+  src: url("/fonts/SourceCodePro-Black.otf");
+}
+@font-face
+{
+  font-family: "Source Code Pro Bold";
+  font-weight: 700;
+  font-style: normal;
+  src: url("/fonts/SourceCodePro-Bold.otf");
+}
+@font-face
+{
+  font-family: "Source Code Pro Semibold";
+  font-weight: 600;
+  font-style: normal;
+  src: url("/fonts/SourceCodePro-Semibold.otf");
+}
+@font-face
+{
+  font-family: "Source Code Pro Medium";
+  font-weight: 500;
+  font-style: normal;
+  src: url("/fonts/SourceCodePro-Medium.otf");
+}
+@font-face
+{
+  font-family: "Source Code Pro Regular";
+  font-weight: 400;
+  font-style: normal;
+  src: url("/fonts/SourceCodePro-Regular.otf");
+}
+@font-face
+{
+  font-family: "Source Code Pro Light";
+  font-weight: 300;
+  font-style: normal;
+  src: url("/fonts/SourceCodePro-Light.otf");
+}
+@font-face
+{
+  font-family: "Source Code Pro Extra Light";
+  font-weight: 200;
+  font-style: normal;
+  src: url("/fonts/SourceCodePro-ExtraLight.otf");
+}
+@font-face
+{
+  font-family: "Source Code Pro Black Italic";
+  font-weight: 900;
+  font-style: italic;
+  src: url("/fonts/SourceCodePro-BlackIt.otf");
+}
+@font-face
+{
+  font-family: "Source Code Pro Bold Italic";
+  font-weight: 700;
+  font-style: italic;
+  src: url("/fonts/SourceCodePro-BoldIt.otf");
+}
+@font-face
+{
+  font-family: "Source Code Pro Semibold Italic";
+  font-weight: 600;
+  font-style: italic;
+  src: url("/fonts/SourceCodePro-SemiboldIt.otf");
+}
+@font-face
+{
+  font-family: "Source Code Pro Medium Italic";
+  font-weight: 500;
+  font-style: italic;
+  src: url("/fonts/SourceCodePro-MediumIt.otf");
+}
+@font-face
+{
+  font-family: "Source Code Pro Italic";
+  font-weight: 400;
+  font-style: italic;
+  src: url("/fonts/SourceCodePro-It.otf");
+}
+@font-face
+{
+  font-family: "Source Code Pro Light Italic";
+  font-weight: 300;
+  font-style: italic;
+  src: url("/fonts/SourceCodePro-LightIt.otf");
+}
+@font-face
+{
+  font-family: "Source Code Pro Extra Light Italic";
+  font-weight: 200;
+  font-style: italic;
+  src: url("/fonts/SourceCodePro-ExtraLightIt.otf");
+}

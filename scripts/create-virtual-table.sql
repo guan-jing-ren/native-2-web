@@ -1,0 +1,4 @@
+R"(
+CREATE VIRTUAL TABLE IF NOT EXISTS FSHOME
+  USING fsmodule ('/run/media/kykwan/My Life in 4TB', RECURSIVE, DIRSIZE)
+)"
