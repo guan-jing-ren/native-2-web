@@ -15,4 +15,31 @@
 #include <unordered_set>
 #include <unordered_map>
 
+template <unsigned I, typename T> constexpr T mask() {
+  return static_cast<T>(static_cast<std::uint8_t>(-1)) << (I * 8);
+}
+
+template <unsigned I, typename T> constexpr T mask_byte(T t) {
+  return t & mask<I, T>();
+}
+
+template <unsigned I, typename T> constexpr T swap_byte(T t) {
+  constexpr auto J = sizeof(T) - I - 1;
+  return ((mask_byte<I>(t) >> (I * 8)) << (J * 8)) |
+         ((mask_byte<J>(t) >> (J * 8)) << (I * 8));
+}
+
+template <typename T, std::size_t... Is>
+constexpr T reverse_endian(T t, std::index_sequence<Is...>) {
+  const T swapped[] = {swap_byte<Is>(t)...};
+  t = 0;
+  for (auto s : swapped)
+    t |= s;
+  return t;
+}
+
+template <typename T> constexpr T reverse_endian(T t) {
+  return reverse_endian(t, std::make_index_sequence<sizeof(T) / 2>());
+}
+
 #endif
