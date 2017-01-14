@@ -7,11 +7,14 @@ namespace n2w {
 
 using namespace std;
 
+namespace {
 template <typename T> constexpr auto mangle = "";
-template <typename T, typename... Ts> struct csv {
-  const string value = csv<T>().value + ',' + csv<Ts...>().value;
-};
-template <typename T> struct csv<T> { const string value = mangle<T>; };
+template <typename T, typename... Ts>
+const auto csv = csv<T> + ',' + csv<Ts...>;
+template <typename T> const string csv<T> = mangle<T>;
+template <typename T, typename U>
+const auto kv = string{mangle<T>} + ':' + mangle<U>;
+}
 
 template <typename> constexpr auto mangle_prefix = "";
 template <typename T, size_t N> constexpr auto mangle_prefix<T[N]> = "c[";
@@ -72,11 +75,10 @@ template <typename T, size_t N>
 const auto mangle<array<T, N>> = mangle_prefix<array<T, N>> +
                                  string{mangle<T>} + ',' + to_string(N);
 template <typename T, typename U>
-const auto mangle<pair<T, U>> =
-    mangle_prefix<pair<T, U>> + string{mangle<T>} + ',' + string{mangle<U>};
+const auto mangle<pair<T, U>> = mangle_prefix<pair<T, U>> + csv<T, U>;
 template <typename T, typename... Ts>
-const auto mangle<tuple<T, Ts...>> = mangle_prefix<tuple<T, Ts...>> +
-                                     csv<T, Ts...>().value + ')';
+const auto mangle<tuple<T, Ts...>> =
+    mangle_prefix<tuple<T, Ts...>> + csv<T, Ts...> + ')';
 template <typename T, typename... Traits>
 const auto mangle<basic_string<T, Traits...>> =
     mangle_prefix<basic_string<T, Traits...>> + string{mangle<T>};
@@ -97,30 +99,26 @@ const auto mangle<set<T, Traits...>> =
     mangle_prefix<set<T, Traits...>> + string{mangle<T>};
 template <typename T, typename U, typename... Traits>
 const auto mangle<map<T, U, Traits...>> =
-    mangle_prefix<map<T, U, Traits...>> + string{mangle<T>} + ':' +
-    string{mangle<U>};
+    mangle_prefix<map<T, U, Traits...>> + kv<T, U>;
 template <typename T, typename... Traits>
 const auto mangle<unordered_set<T, Traits...>> =
     mangle_prefix<unordered_set<T, Traits...>> + string{mangle<T>};
 template <typename T, typename U, typename... Traits>
 const auto mangle<unordered_map<T, U, Traits...>> =
-    mangle_prefix<unordered_map<T, U, Traits...>> + string{mangle<T>} + ':' +
-    string{mangle<U>};
+    mangle_prefix<unordered_map<T, U, Traits...>> + kv<T, U>;
 template <typename T, typename... Traits>
 const auto mangle<multiset<T, Traits...>> =
     mangle_prefix<multiset<T, Traits...>> + string{mangle<T>};
 template <typename T, typename U, typename... Traits>
 const auto mangle<multimap<T, U, Traits...>> =
-    mangle_prefix<multimap<T, U, Traits...>> + string{mangle<T>} + ':' +
-    string{mangle<U>};
+    mangle_prefix<multimap<T, U, Traits...>> + kv<T, U>;
 template <typename T, typename... Traits>
 const auto mangle<unordered_multiset<T, Traits...>> =
     mangle_prefix<unordered_multiset<T, Traits...>> + string{mangle<T>};
 
 template <typename T, typename U, typename... Traits>
 const auto mangle<unordered_multimap<T, U, Traits...>> =
-    mangle_prefix<unordered_multimap<T, U, Traits...>> + string{mangle<T>} +
-    ':' + string{mangle<U>};
+    mangle_prefix<unordered_multimap<T, U, Traits...>> + kv<T, U>;
 }
 
 #endif
