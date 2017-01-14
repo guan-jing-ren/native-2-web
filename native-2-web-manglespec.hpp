@@ -7,10 +7,11 @@ namespace n2w {
 
 using namespace std;
 
-template <typename T, typename... Ts> struct csv { static const string value; };
-template <typename T, typename... Ts>
-const string csv<T, Ts...>::value = csv<T>::value + ',' + csv<Ts...>::value;
-template <typename T> struct csv<T> { static const string value; };
+template <typename T> constexpr auto mangle = "";
+template <typename T, typename... Ts> struct csv {
+  const string value = csv<T>().value + ',' + csv<Ts...>().value;
+};
+template <typename T> struct csv<T> { const string value = mangle<T>; };
 
 template <typename> constexpr auto mangle_prefix = "";
 template <typename T, size_t N> constexpr auto mangle_prefix<T[N]> = "c[";
@@ -47,8 +48,6 @@ constexpr auto mangle_prefix<unordered_multiset<T, Traits...>> = "H[";
 template <typename T, typename U, typename... Traits>
 constexpr auto mangle_prefix<unordered_multimap<T, U, Traits...>> = "H{";
 
-template <typename T> constexpr auto mangle = "";
-
 template <> constexpr auto mangle<void> = '0';
 template <> constexpr auto mangle<bool> = 'b';
 template <> constexpr auto mangle<wchar_t> = "'w";
@@ -76,8 +75,8 @@ template <typename T, typename U>
 const auto mangle<pair<T, U>> =
     mangle_prefix<pair<T, U>> + string{mangle<T>} + ',' + string{mangle<U>};
 template <typename T, typename... Ts>
-const auto mangle<tuple<T, Ts...>> =
-    mangle_prefix<tuple<T, Ts...>> + std::string{csv<T, Ts...>::value} + ')';
+const auto mangle<tuple<T, Ts...>> = mangle_prefix<tuple<T, Ts...>> +
+                                     csv<T, Ts...>().value + ')';
 template <typename T, typename... Traits>
 const auto mangle<basic_string<T, Traits...>> =
     mangle_prefix<basic_string<T, Traits...>> + string{mangle<T>};
@@ -122,8 +121,6 @@ template <typename T, typename U, typename... Traits>
 const auto mangle<unordered_multimap<T, U, Traits...>> =
     mangle_prefix<unordered_multimap<T, U, Traits...>> + string{mangle<T>} +
     ':' + string{mangle<U>};
-
-template <typename T> const std::string csv<T>::value = mangle<T>;
 }
 
 #endif
