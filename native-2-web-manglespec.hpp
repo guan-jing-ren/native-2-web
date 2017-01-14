@@ -119,6 +119,13 @@ const auto mangle<unordered_multiset<T, Traits...>> =
 template <typename T, typename U, typename... Traits>
 const auto mangle<unordered_multimap<T, U, Traits...>> =
     mangle_prefix<unordered_multimap<T, U, Traits...>> + kv<T, U>;
+
+template <typename... Ts> struct structure {};
+
+template <typename... Ts> const auto mangle_prefix<structure<Ts...>> = '{';
+template <typename... Ts>
+const auto mangle<structure<Ts...>> =
+    mangle_prefix<structure<Ts...>> + csv<Ts...> + '}';
 }
 
 #endif

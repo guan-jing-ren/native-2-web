@@ -42,4 +42,14 @@ template <typename T> constexpr T reverse_endian(T t) {
   return reverse_endian(t, std::make_index_sequence<sizeof(T) / 2>());
 }
 
+template <typename T> constexpr auto serial_size = sizeof(T);
+template <> constexpr auto serial_size<void> = sizeof("void");
+template <> constexpr auto serial_size<bool> = sizeof(std::uint8_t);
+template <> constexpr auto serial_size<wchar_t> = sizeof(char32_t);
+
+template <std::size_t P, typename T>
+constexpr auto calc_padding(std::size_t count = 1) {
+  return (P - ((count * sizeof(T)) % P)) % P;
+}
+
 #endif

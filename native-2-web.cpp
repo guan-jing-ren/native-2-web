@@ -1,4 +1,5 @@
 #include "native-2-web-manglespec.hpp"
+#include "native-2-web-deserialize.hpp"
 #include <iostream>
 #include <algorithm>
 
