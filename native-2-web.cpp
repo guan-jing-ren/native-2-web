@@ -15,6 +15,8 @@ void swap_test() noexcept {
 }
 
 int main() {
+  std::cout << n2w::endianness<> << '\n';
+
   std::cout << n2w::mangle<int[90]> << '\n';
   std::cout << n2w::mangle<std::array<std::vector<double>, 5>> << '\n';
   std::cout << n2w::csv<int[90], float, std::u16string> << '\n';
@@ -30,7 +32,7 @@ int main() {
 
   std::vector<char> ustr;
   ustr.reserve(5000);
-  int a[90];                                                // 90*4
+  std::tuple<int[90]> a;                                                // 90*4
   std::array<std::vector<double>, 5> b;                     // 5*4
   std::pair<int[90], std::array<std::vector<double>, 5>> c; // 90*4 + 5*4
   std::tuple<int[90], float, std::unordered_set<std::u16string>> d; // 90*4+4+4
@@ -67,6 +69,9 @@ int main() {
             << std::distance(begin(ustr), j) << '\n';
 
   swap_test();
+
+  std::cout << n2w::mangle<decltype(a)(*)(decltype(b), decltype(c), decltype(d),
+                                  decltype(e))> << '\n';
 
   return 0;
 }

@@ -129,6 +129,12 @@ const auto mangle<structure<Ts...>> =
 
 template <bool e = __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__>
 constexpr auto endianness = e ? "e" : "E";
+
+template <typename R, typename... Ts>
+const auto mangle<R(Ts...)> =
+    '^' + mangle<R> + '=' + csv<remove_cv_t<remove_reference_t<Ts>>...>;
+template <typename R, typename... Ts>
+const auto mangle<R (*)(Ts...)> = mangle<R(Ts...)>;
 }
 
 #endif
