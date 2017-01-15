@@ -27,6 +27,21 @@ int main() {
                                       std::array<std::tuple<char16_t, char32_t>,
                                                  15>>>> << '\n';
 
+  std::uint8_t *i = nullptr; // Compile test, expect segfault
+  int a[90];
+  std::array<std::vector<double>, 5> b;
+  std::pair<int[90], std::array<std::vector<double>, 5>> c;
+  std::tuple<int[90], float, std::unordered_set<std::u16string>> d;
+  std::multimap<std::wstring,
+                std::tuple<std::pair<int, long>, std::vector<double>,
+                           std::array<std::tuple<char16_t, char32_t>, 15>>>
+      e;
+  n2w::deserialize(i, a);
+  n2w::deserialize(i, b);
+  n2w::deserialize(i, c);
+  n2w::deserialize(i, d);
+  n2w::deserialize(i, e);
+
   swap_test();
 
   return 0;
