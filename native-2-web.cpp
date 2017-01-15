@@ -1,5 +1,6 @@
 #include "native-2-web-manglespec.hpp"
 #include "native-2-web-deserialize.hpp"
+#include "native-2-web-serialize.hpp"
 #include <iostream>
 #include <algorithm>
 
@@ -36,6 +37,13 @@ int main() {
                 std::tuple<std::pair<int, long>, std::vector<double>,
                            std::array<std::tuple<char16_t, char32_t>, 15>>>
       e;
+
+  n2w::serialize(a, i);
+  n2w::serialize(b, i);
+  n2w::serialize(c, i);
+  n2w::serialize(d, i);
+  n2w::serialize(e, i);
+
   n2w::deserialize(i, a);
   n2w::deserialize(i, b);
   n2w::deserialize(i, c);
