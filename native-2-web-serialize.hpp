@@ -91,11 +91,11 @@ auto serialize(const T &t, I &i) -> enable_if_t<is_arithmetic<T>::value> {
 
 template <typename I, typename T, size_t N>
 void serialize(const T (&t)[N], I &i) {
-  serialize_sequence<T>(N, t, i, is_arithmetic<T>{});
+  serialize_sequence<T, N>(t, i);
 }
 template <typename I, typename T, size_t N>
 void serialize(const array<T, N> &t, I &i) {
-  serialize_sequence<T>(N, cbegin(t), i, is_arithmetic<T>{});
+  serialize_sequence<T, N>(cbegin(t), i);
 }
 template <typename I, typename T, typename U>
 void serialize(const pair<T, U> &t, I &i) {
@@ -107,27 +107,27 @@ void serialize(const tuple<T, Ts...> &t, I &i) {
 }
 template <typename I, typename T, typename... Traits>
 void serialize(const basic_string<T, Traits...> &t, I &i) {
-  serialize_sequence<T>(cbegin(t), i);
+  serialize_sequence<T>(t.size(), cbegin(t), i);
 }
 template <typename I, typename T, typename... Traits>
 void serialize(const vector<T, Traits...> &t, I &i) {
-  serialize_sequence<T>(cbegin(t), i);
+  serialize_sequence<T>(t.size(), cbegin(t), i);
 }
 template <typename I, typename T, typename... Traits>
 void serialize(const list<T, Traits...> &t, I &i) {
-  serialize_sequence<T>(cbegin(t), i);
+  serialize_sequence<T>(t.size(), cbegin(t), i);
 }
 template <typename I, typename T, typename... Traits>
 void serialize(const forward_list<T, Traits...> &t, I &i) {
-  serialize_sequence<T>(cbegin(t), i);
+  serialize_sequence<T>(t.size(), cbegin(t), i);
 }
 template <typename I, typename T, typename... Traits>
 void serialize(const deque<T, Traits...> &t, I &i) {
-  serialize_sequence<T>(cbegin(t), i);
+  serialize_sequence<T>(t.size(), cbegin(t), i);
 }
 template <typename I, typename T, typename... Traitbegins>
 void serialize(const set<T, Traits...> &t, I &i) {
-  serialize_sequence<T>(cbegin(t), i));
+  serialize_sequence<T>(t.size(), cbegin(t), i);
 }
 template <typename I, typename T, typename U, typename... Traits>
 void serialize(const map<T, U, Traits...> &t, I &i) {
@@ -135,7 +135,7 @@ void serialize(const map<T, U, Traits...> &t, I &i) {
 }
 template <typename I, typename T, typename... Traits>
 void serialize(const unordered_set<T, Traits...> &t, I &i) {
-  serialize_sequence<T>(cbegin(t), i));
+  serialize_sequence<T>(t.size(), cbegin(t), i);
 }
 template <typename I, typename T, typename U, typename... Traits>
 void serialize(const unordered_map<T, U, Traits...> &t, I &i) {
@@ -143,7 +143,7 @@ void serialize(const unordered_map<T, U, Traits...> &t, I &i) {
 }
 template <typename I, typename T, typename... Traits>
 void serialize(const multiset<T, Traits...> &t, I &i) {
-  serialize_sequence<T>(cbegin(t), i));
+  serialize_sequence<T>(t.size(), cbegin(t), i);
 }
 template <typename I, typename T, typename U, typename... Traits>
 void serialize(const multimap<T, U, Traits...> &t, I &i) {
