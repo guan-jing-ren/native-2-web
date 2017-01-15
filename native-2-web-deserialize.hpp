@@ -10,7 +10,7 @@ using namespace std;
 template <typename T, size_t P = P, typename I> T deserialize_number(I &i) {
   static_assert(is_arithmetic<T>::value, "Not an arithmetic type");
   // static_assert(is_same<uint8_t, remove_reference_t<decltype(*i)>>::value,
-                // "Not dereferenceable or uint8_t iterator");
+  // "Not dereferenceable or uint8_t iterator");
 
   T t = 0;
   copy_n(i, serial_size<T>, reinterpret_cast<uint8_t *>(&t));
@@ -22,7 +22,7 @@ template <typename T, typename I, typename J>
 void deserialize_numbers(uint32_t count, I &i, J j) {
   static_assert(is_arithmetic<T>::value, "Not an arithmetic type");
   // static_assert(is_same<uint8_t, remove_reference_t<decltype(*i)>>::value,
-                // "Not dereferenceable or uint8_t iterator");
+  // "Not dereferenceable or uint8_t iterator");
   // static_assert(is_same<T, remove_reference_t<decltype(*j)>>::value,
   // "Output iterator does not dereference T");
 
