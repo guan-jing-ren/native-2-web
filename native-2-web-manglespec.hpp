@@ -6,9 +6,13 @@
 namespace n2w {
 
 using namespace std;
-template <typename T> constexpr auto mangle = "";
+constexpr auto terminate_processing = "z";
+
+template <typename T> constexpr auto mangle = terminate_processing;
+template <typename... Ts> struct structure {};
 
 namespace {
+template <typename... Ts> const auto csv = terminate_processing;
 template <typename T, typename... Ts>
 const auto csv = csv<T> + ',' + csv<Ts...>;
 template <typename T> const string csv<T> = mangle<T>;
@@ -16,7 +20,7 @@ template <typename T, typename U>
 const auto kv = string{mangle<T>} + ':' + mangle<U>;
 }
 
-template <typename> constexpr auto mangle_prefix = "";
+template <typename> constexpr auto mangle_prefix = terminate_processing;
 template <typename T, size_t N> constexpr auto mangle_prefix<T[N]> = "p[";
 template <typename T, size_t N>
 constexpr auto mangle_prefix<array<T, N>> = "a[";
@@ -50,6 +54,9 @@ template <typename T, typename... Traits>
 constexpr auto mangle_prefix<unordered_multiset<T, Traits...>> = "H[";
 template <typename T, typename U, typename... Traits>
 constexpr auto mangle_prefix<unordered_multimap<T, U, Traits...>> = "H{";
+template <typename... Ts> const auto mangle_prefix<structure<Ts...>> = '{';
+template <typename R, typename... Ts>
+constexpr auto mangle_prefix<R(Ts...)> = '^';
 
 template <> constexpr auto mangle<void> = '0';
 template <> constexpr auto mangle<bool> = 'b';
@@ -120,9 +127,6 @@ template <typename T, typename U, typename... Traits>
 const auto mangle<unordered_multimap<T, U, Traits...>> =
     mangle_prefix<unordered_multimap<T, U, Traits...>> + kv<T, U>;
 
-template <typename... Ts> struct structure {};
-
-template <typename... Ts> const auto mangle_prefix<structure<Ts...>> = '{';
 template <typename... Ts>
 const auto mangle<structure<Ts...>> =
     mangle_prefix<structure<Ts...>> + csv<Ts...> + '}';
@@ -131,8 +135,8 @@ template <bool e = __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__>
 constexpr auto endianness = e ? "e" : "E";
 
 template <typename R, typename... Ts>
-const auto mangle<R(Ts...)> =
-    '^' + mangle<R> + '=' + csv<remove_cv_t<remove_reference_t<Ts>>...>;
+const auto mangle<R(Ts...)> = mangle_prefix<R(Ts...)> + string{mangle<R>} +
+                              '=' + csv<remove_cv_t<remove_reference_t<Ts>>...>;
 template <typename R, typename... Ts>
 const auto mangle<R (*)(Ts...)> = mangle<R(Ts...)>;
 }

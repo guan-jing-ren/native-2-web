@@ -32,9 +32,9 @@ int main() {
 
   std::vector<char> ustr;
   ustr.reserve(5000);
-  std::tuple<int[90]> a;                                                // 90*4
+  std::tuple<int[90]> a;                                    // 90*4
   std::array<std::vector<double>, 5> b;                     // 5*4
-  std::pair<int[90], std::array<std::vector<double>, 5>> c; // 90*4 + 5*4
+  std::pair<int[90], std::array<std::vector<double>, 0>> c; // 90*4 + 5*4
   std::tuple<int[90], float, std::unordered_set<std::u16string>> d; // 90*4+4+4
   std::multimap<std::wstring,
                 std::tuple<std::pair<int, long>, std::vector<double>,
@@ -70,8 +70,8 @@ int main() {
 
   swap_test();
 
-  std::cout << n2w::mangle<decltype(a)(*)(decltype(b), decltype(c), decltype(d),
-                                  decltype(e))> << '\n';
+  std::cout << n2w::mangle<void (*)(decltype(a), decltype(b), decltype(c),
+                                    decltype(d), decltype(e))> << '\n';
 
   return 0;
 }
