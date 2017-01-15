@@ -42,7 +42,7 @@ void serialize_sequence_bounded(uint32_t count, J j, I &i, false_type) {
 
 template <typename T, typename I, typename J>
 void serialize_sequence_bounded(uint32_t count, J j, I &i) {
-  serialize_sequence<T>(count, j, i, is_arithmetic<T>{});
+  serialize_sequence_bounded<T>(count, j, i, is_arithmetic<T>{});
 }
 
 template <typename T, typename I, typename J>
@@ -120,7 +120,7 @@ template <typename I, typename T, typename... Traits>
 void serialize(const deque<T, Traits...> &t, I &i) {
   serialize_sequence<T>(t.size(), cbegin(t), i);
 }
-template <typename I, typename T, typename... Traitbegins>
+template <typename I, typename T, typename... Traits>
 void serialize(const set<T, Traits...> &t, I &i) {
   serialize_sequence<T>(t.size(), cbegin(t), i);
 }
@@ -158,7 +158,7 @@ void serialize(const structure<Ts...> &t, I &i) {
 }
 
 template <typename T, typename I, typename J>
-void serialize_objects(uint32_t count, J j, I &i) {
+void serialize_objects(ptrdiff_t count, J j, I &i) {
   for_each(j, j + count, [&i](const T &t) { serialize(t, i); });
 }
 
