@@ -54,16 +54,18 @@ void deserialize_sequence(I &i, J j) {
 template <typename T, typename U, typename I, typename A>
 void deserialize_associative(I &i, A &a) {
   auto count = deserialize_number<uint32_t>(i);
-  vector<T> v_t; v_t.reserve(count);
-  vector<U> v_u; v_u.reserve(count);
+  vector<T> v_t;
+  v_t.reserve(count);
+  vector<U> v_u;
+  v_u.reserve(count);
   deserialize_sequence<T>(count, i, back_inserter(v_t), is_arithmetic<T>{});
   deserialize_sequence<U>(count, i, back_inserter(v_u), is_arithmetic<U>{});
   a = inner_product(begin(v_t), end(v_t), begin(v_u), a,
-                [](A& a, pair<T, U> p) {
-                  a.emplace(p);
-                  return a;
-                },
-                [](T &t, U &u) { return make_pair(t, u); });
+                    [](A &a, pair<T, U> p) {
+                      a.emplace(p);
+                      return a;
+                    },
+                    [](T &t, U &u) { return make_pair(t, u); });
 }
 
 template <typename I, typename T, size_t... Is>
@@ -167,4 +169,5 @@ void deserialize_heterogenous(I &i, T &t, std::index_sequence<Is...>) {
     (void)rc;
 }
 }
+
 #endif
