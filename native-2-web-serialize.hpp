@@ -22,7 +22,7 @@ void serialize_numbers(uint32_t count, J j, I &i) {
   // static_assert(is_same<T, remove_reference_t<decltype(*j)>>::value,
   // "Output iterator does not dereference T");
 
-  for_each(j, j + count, [&i](const T &t) { serialize_number(t, i); });
+  for_each(j, j + count, [&i](const T &t) { serialize_number<T, 0>(t, i); });
   i = fill_n(i, calc_padding<P, T>(count), 0);
 }
 
