@@ -14,7 +14,7 @@ void swap_test() noexcept {
   std::cout << s << ' ' << s2 << ' ' << s1 << '\n';
 }
 
-int main() {
+int main(int, char **) {
   std::cout << n2w::endianness<> << '\n';
 
   std::cout << n2w::mangle<int[90]> << '\n';
@@ -72,6 +72,8 @@ int main() {
 
   std::cout << n2w::mangle<void (*)(decltype(a), decltype(b), decltype(c),
                                     decltype(d), decltype(e))> << '\n';
+  std::cout << n2w::function_address(swap_test) << '\n';
+  std::cout << n2w::function_address(main) << '\n';
 
   return 0;
 }

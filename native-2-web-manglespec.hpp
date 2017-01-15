@@ -14,7 +14,7 @@ template <typename... Ts> struct structure {};
 namespace {
 template <typename... Ts> const auto csv = terminate_processing;
 template <typename T, typename... Ts>
-const auto csv = csv<T> + ',' + csv<Ts...>;
+const auto csv<T, Ts...> = csv<T> + ',' + csv<Ts...>;
 template <typename T> const string csv<T> = mangle<T>;
 template <typename T, typename U>
 const auto kv = string{mangle<T>} + ':' + mangle<U>;
@@ -139,6 +139,14 @@ const auto mangle<R(Ts...)> = mangle_prefix<R(Ts...)> + string{mangle<R>} +
                               '=' + csv<remove_cv_t<remove_reference_t<Ts>>...>;
 template <typename R, typename... Ts>
 const auto mangle<R (*)(Ts...)> = mangle<R(Ts...)>;
+
+template <typename R, typename... Ts>
+const string function_address(R (*f)(Ts...),
+                              const uint8_t (&crypt)[sizeof(void (*)())] = {
+                                  0, 1, 2, 3, 4, 5, 6, 7}) {
+  uint8_t obf[sizeof(void (*)())];
+  return '@' + to_string(reinterpret_cast<uintptr_t>(f)) + mangle<R(Ts...)>;
+}
 }
 
 #endif
