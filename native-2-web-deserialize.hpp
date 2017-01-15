@@ -7,7 +7,7 @@
 namespace n2w {
 using namespace std;
 
-constexpr size_t P = sizeof(double);
+constexpr size_t P = serial_size<double>;
 
 template <typename T, typename I> T deserialize_number(I &i) {
   static_assert(is_arithmetic<T>::value, "Not an arithmetic type");
@@ -15,8 +15,8 @@ template <typename T, typename I> T deserialize_number(I &i) {
                 "Not dereferenceable or uint8_t iterator");
 
   T t = 0;
-  copy_n(i, sizeof(t), reinterpret_cast<uint8_t *>(&t));
-  i += sizeof(t) + calc_padding<P, T>();
+  copy_n(i, serial_size<T>, reinterpret_cast<uint8_t *>(&t));
+  i += serial_size<T> + calc_padding<P, T>();
   return t;
 }
 
