@@ -7,7 +7,7 @@
 namespace n2w {
 using namespace std;
 
-template <typename T, typename I> T deserialize_number(I &i) {
+template <typename T, size_t P = P, typename I> T deserialize_number(I &i) {
   static_assert(is_arithmetic<T>::value, "Not an arithmetic type");
   // static_assert(is_same<uint8_t, remove_reference_t<decltype(*i)>>::value,
                 // "Not dereferenceable or uint8_t iterator");
@@ -26,7 +26,7 @@ void deserialize_numbers(uint32_t count, I &i, J j) {
   // static_assert(is_same<T, remove_reference_t<decltype(*j)>>::value,
   // "Output iterator does not dereference T");
 
-  generate_n(j, count, [&i]() { return deserialize_number<T>(i); });
+  generate_n(j, count, [&i]() { return deserialize_number<T, 0>(i); });
   i += calc_padding<P, T>(count);
 }
 

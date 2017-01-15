@@ -4,7 +4,8 @@
 namespace n2w {
 using namespace std;
 
-template <typename T, typename I> void serialize_number(T t, I &i) {
+template <typename T, size_t P = P, typename I>
+void serialize_number(T t, I &i) {
   static_assert(is_arithmetic<T>::value, "Not an arithmetic type");
   // static_assert(is_same<uint8_t, remove_reference_t<decltype(*i)>>::value,
   // "Not dereferenceable or uint8_t iterator");
