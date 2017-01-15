@@ -127,7 +127,8 @@ template <typename... Ts>
 const auto mangle<structure<Ts...>> =
     mangle_prefix<structure<Ts...>> + csv<Ts...> + '}';
 
-template <bool e> constexpr auto endianness = e ? "e" : "E";
+template <bool e = __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__>
+constexpr auto endianness = e ? "e" : "E";
 }
 
 #endif
