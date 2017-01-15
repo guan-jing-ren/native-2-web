@@ -6,8 +6,8 @@ using namespace std;
 
 template <typename T, typename I> void serialize_number(T t, I &i) {
   static_assert(is_arithmetic<T>::value, "Not an arithmetic type");
-  static_assert(is_same<uint8_t, remove_reference_t<decltype(*i)>>::value,
-                "Not dereferenceable or uint8_t iterator");
+  // static_assert(is_same<uint8_t, remove_reference_t<decltype(*i)>>::value,
+  // "Not dereferenceable or uint8_t iterator");
 
   i = copy_n(reinterpret_cast<uint8_t *>(&t), serial_size<T>, i);
   i = fill_n(i, calc_padding<P, T>(), 0);
@@ -16,8 +16,8 @@ template <typename T, typename I> void serialize_number(T t, I &i) {
 template <typename T, typename I, typename J>
 void serialize_numbers(uint32_t count, J j, I &i) {
   static_assert(is_arithmetic<T>::value, "Not an arithmetic type");
-  static_assert(is_same<uint8_t, remove_reference_t<decltype(*i)>>::value,
-                "Not dereferenceable or uint8_t iterator");
+  // static_assert(is_same<uint8_t, remove_reference_t<decltype(*i)>>::value,
+  // "Not dereferenceable or uint8_t iterator");
   // static_assert(is_same<T, remove_reference_t<decltype(*j)>>::value,
   // "Output iterator does not dereference T");
 
@@ -62,7 +62,6 @@ void serialize_sequence(uint32_t count, J j, I &i) {
 
 template <typename T, typename U, typename I, typename A>
 void serialize_associative(const A &a, I &i) {
-  serialize_number(a.size(), i);
   std::vector<T> v_t;
   v_t.reserve(a.size());
   std::vector<U> v_u;
@@ -71,7 +70,7 @@ void serialize_associative(const A &a, I &i) {
             [](const pair<T, U> &p) { return p.first; });
   transform(cbegin(a), cend(a), back_inserter(v_u),
             [](const pair<T, U> &p) { return p.second; });
-  serialize_sequence_bounded<T>(a.size(), cbegin(v_t), i);
+  serialize_sequence<T>(a.size(), cbegin(v_t), i);
   serialize_sequence_bounded<U>(a.size(), cbegin(v_u), i);
 }
 
@@ -156,8 +155,9 @@ void serialize(const structure<Ts...> &t, I &i) {
 }
 
 template <typename T, typename I, typename J>
-void serialize_objects(ptrdiff_t count, J j, I &i) {
-  for_each(j, j + count, [&i](const T &t) { serialize(t, i); });
+void serialize_objects(uint32_t count, J j, I &i) {
+  for (auto end = count, c = 0u; c < end; ++c)
+    serialize(*j, i);
 }
 
 template <typename T, typename I> int serialize_index(const T &t, I &i) {

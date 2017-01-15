@@ -28,27 +28,43 @@ int main() {
                                       std::array<std::tuple<char16_t, char32_t>,
                                                  15>>>> << '\n';
 
-  std::uint8_t *i = nullptr; // Compile test, expect segfault
-  int a[90];
-  std::array<std::vector<double>, 5> b;
-  std::pair<int[90], std::array<std::vector<double>, 5>> c;
-  std::tuple<int[90], float, std::unordered_set<std::u16string>> d;
+  std::vector<char> ustr;
+  ustr.reserve(5000);
+  int a[90];                                                // 90*4
+  std::array<std::vector<double>, 5> b;                     // 5*4
+  std::pair<int[90], std::array<std::vector<double>, 5>> c; // 90*4 + 5*4
+  std::tuple<int[90], float, std::unordered_set<std::u16string>> d; // 90*4+4+4
   std::multimap<std::wstring,
                 std::tuple<std::pair<int, long>, std::vector<double>,
                            std::array<std::tuple<char16_t, char32_t>, 15>>>
-      e;
+      e; // 4
 
+  auto i = std::back_inserter(ustr);
+  auto j = begin(ustr);
   n2w::serialize(a, i);
-  n2w::serialize(b, i);
-  n2w::serialize(c, i);
-  n2w::serialize(d, i);
-  n2w::serialize(e, i);
+  n2w::deserialize(j, a);
+  std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
+            << std::distance(begin(ustr), j) << '\n';
 
-  n2w::deserialize(i, a);
-  n2w::deserialize(i, b);
-  n2w::deserialize(i, c);
-  n2w::deserialize(i, d);
-  n2w::deserialize(i, e);
+  n2w::serialize(b, i);
+  n2w::deserialize(j, b);
+  std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
+            << std::distance(begin(ustr), j) << '\n';
+
+  n2w::serialize(c, i);
+  n2w::deserialize(j, c);
+  std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
+            << std::distance(begin(ustr), j) << '\n';
+
+  n2w::serialize(d, i);
+  n2w::deserialize(j, d);
+  std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
+            << std::distance(begin(ustr), j) << '\n';
+
+  n2w::serialize(e, i);
+  n2w::deserialize(j, e);
+  std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
+            << std::distance(begin(ustr), j) << '\n';
 
   swap_test();
 

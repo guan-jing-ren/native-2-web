@@ -6,9 +6,9 @@
 namespace n2w {
 
 using namespace std;
+template <typename T> constexpr auto mangle = "";
 
 namespace {
-template <typename T> constexpr auto mangle = "";
 template <typename T, typename... Ts>
 const auto csv = csv<T> + ',' + csv<Ts...>;
 template <typename T> const string csv<T> = mangle<T>;
@@ -17,7 +17,7 @@ const auto kv = string{mangle<T>} + ':' + mangle<U>;
 }
 
 template <typename> constexpr auto mangle_prefix = "";
-template <typename T, size_t N> constexpr auto mangle_prefix<T[N]> = "c[";
+template <typename T, size_t N> constexpr auto mangle_prefix<T[N]> = "p[";
 template <typename T, size_t N>
 constexpr auto mangle_prefix<array<T, N>> = "a[";
 template <typename T, typename U>
@@ -126,6 +126,8 @@ template <typename... Ts> const auto mangle_prefix<structure<Ts...>> = '{';
 template <typename... Ts>
 const auto mangle<structure<Ts...>> =
     mangle_prefix<structure<Ts...>> + csv<Ts...> + '}';
+
+template <bool e> constexpr auto endianness = e ? "e" : "E";
 }
 
 #endif
