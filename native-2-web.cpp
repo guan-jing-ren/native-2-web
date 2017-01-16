@@ -72,8 +72,9 @@ int main(int, char **) {
 
   std::cout << n2w::mangle<void (*)(decltype(a), decltype(b), decltype(c),
                                     decltype(d), decltype(e))> << '\n';
-  std::cout << n2w::function_address(swap_test) << '\n';
-  std::cout << n2w::function_address(main) << '\n';
+  std::uint8_t scrambler[] = {7, 6, 5, 4, 3, 2, 1, 0};
+  std::cout << n2w::function_address(swap_test, scrambler) << '\n';
+  std::cout << n2w::function_address(main, scrambler) << '\n';
 
   return 0;
 }

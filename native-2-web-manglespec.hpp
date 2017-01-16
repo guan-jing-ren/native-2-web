@@ -143,10 +143,10 @@ const auto mangle<R (*)(Ts...)> = mangle<R(Ts...)>;
 template <typename R, typename... Ts>
 const string function_address(R (*f)(Ts...),
                               const uint8_t (&crypt)[sizeof(void (*)())]) {
-  volatile uint8_t obf[sizeof(f)];
+  uintptr_t obf = 0;
   for (auto i = 0; i < sizeof(f); ++i)
-    obf[i] = reinterpret_cast<uint8_t *>(f)[crypt[i]];
-  return '@' + to_string(reinterpret_cast<uintptr_t>(f)) + mangle<R(Ts...)>;
+    obf |= reinterpret_cast<uint8_t *>(&f)[crypt[i]] << (i * 8);
+  return '@' + to_string(obf) + mangle<R(Ts...)>;
 }
 
 template <typename R, typename... Ts>
