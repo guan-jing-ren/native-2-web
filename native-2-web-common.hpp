@@ -24,9 +24,10 @@ template <unsigned I, typename T> constexpr T mask_byte(T t) {
 }
 
 template <unsigned I, typename T> constexpr T swap_byte(T t) {
+  static_assert(I < sizeof(T) / 2, "Lower byte to swap is in upper half");
   constexpr auto J = sizeof(T) - I - 1;
-  return ((mask_byte<I>(t) >> (I * 8)) << (J * 8)) |
-         ((mask_byte<J>(t) >> (J * 8)) << (I * 8));
+  constexpr auto S = (J - I) * 8;
+  return (mask_byte<I>(t) << S) | (mask_byte<J>(t) >> S);
 }
 
 template <typename T, std::size_t... Is>
