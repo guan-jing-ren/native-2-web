@@ -40,7 +40,9 @@ constexpr T reverse_endian(T t, std::index_sequence<Is...>) {
 }
 
 template <typename T> constexpr T reverse_endian(T t) {
-  return reverse_endian(t, std::make_index_sequence<sizeof(T) / 2>());
+  return sizeof(T) == 1
+             ? t
+             : reverse_endian(t, std::make_index_sequence<sizeof(T) / 2>());
 }
 
 template <typename T> constexpr auto serial_size = sizeof(T);
