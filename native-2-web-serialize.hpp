@@ -86,6 +86,10 @@ template <typename I, typename T, size_t N>
 void serialize(const T (&t)[N], I &i) {
   serialize_sequence_bounded<T>(N, t, i);
 }
+template <typename I, typename T, size_t M, size_t N>
+void serialize(const T (&t)[M][N], I &i) {
+  serialize(reinterpret_cast<const T(&)[M * N]>(t), i);
+}
 template <typename I, typename T, size_t N>
 void serialize(const array<T, N> &t, I &i) {
   serialize_sequence_bounded<T>(N, cbegin(t), i);

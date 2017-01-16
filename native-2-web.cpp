@@ -31,8 +31,8 @@ int main(int, char **) {
                                                  15>>>> << '\n';
 
   std::vector<char> ustr;
-  ustr.reserve(5000);
-  std::tuple<int[90]> a;                                    // 90*4
+  ustr.reserve(5000000);
+  std::tuple<int[90][81][2]> a;                             // 90*4
   std::array<std::vector<double>, 5> b;                     // 5*4
   std::pair<int[90], std::array<std::vector<double>, 0>> c; // 90*4 + 5*4
   std::tuple<int[90], float, std::unordered_set<std::u16string>> d; // 90*4+4+4

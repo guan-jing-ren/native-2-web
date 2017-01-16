@@ -77,6 +77,10 @@ auto deserialize(I &i, T &t) -> enable_if_t<is_arithmetic<T>::value> {
 template <typename I, typename T, size_t N> void deserialize(I &i, T (&t)[N]) {
   deserialize_sequence<T>(N, i, t, is_arithmetic<T>{});
 }
+template <typename I, typename T, size_t M, size_t N>
+void deserialize(I &i, T (&t)[M][N]) {
+  deserialize(i, *reinterpret_cast<T(*)[M * N]>(&t));
+}
 template <typename I, typename T, size_t N>
 void deserialize(I &i, array<T, N> &t) {
   deserialize_sequence<T>(N, i, begin(t), is_arithmetic<T>{});
