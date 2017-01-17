@@ -56,4 +56,22 @@ constexpr auto calc_padding(std::size_t count = 0) {
   return P == 0 ? 0 : (P - ((count * serial_size<T>) % P)) % P;
 }
 
+namespace n2w {
+template <typename S, typename T, typename... Ts> struct structure {
+  S &s;
+  std::tuple<T S::*, Ts S::*...> members;
+  structure(S &s, T(S::*t), Ts(S::*... ts)) : s(s), members(t, ts...) {}
+};
+
+template <size_t N, typename S, typename T, typename... Ts>
+auto &get(const structure<S, T, Ts...> &s) {
+  return s.s.*get<N>(s.members);
+}
+
+template <size_t N, typename S, typename T, typename... Ts>
+auto &get(structure<S, T, Ts...> &s) {
+  return s.s.*get<N>(s.members);
+}
+}
+
 #endif

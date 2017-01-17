@@ -9,21 +9,6 @@ using namespace std;
 constexpr auto terminate_processing = "z";
 
 template <typename T> constexpr auto mangle = terminate_processing;
-template <typename S, typename T, typename... Ts> struct structure {
-  S &s;
-  tuple<T S::*, Ts S::*...> members;
-  structure(S &s, T(S::*t), Ts(S::*... ts)) : s(s), members(t, ts...) {}
-};
-
-template <size_t N, typename S, typename T, typename... Ts>
-auto &get(const structure<S, T, Ts...> &s) {
-  return s.s.*get<N>(s.members);
-}
-
-template <size_t N, typename S, typename T, typename... Ts>
-auto &get(structure<S, T, Ts...> &s) {
-  return s.s.*get<N>(s.members);
-}
 
 namespace {
 template <typename... Ts> const auto csv = "";

@@ -14,6 +14,46 @@ void swap_test() noexcept {
   std::cout << s << ' ' << s2 << ' ' << s1 << '\n';
 }
 
+struct test_structure {
+  std::tuple<int[90][81][2]> a;                             // 90*4
+  std::array<std::vector<double>, 5> b;                     // 5*4
+  std::pair<int[90], std::array<std::vector<double>, 0>> c; // 90*4 + 5*4
+  std::tuple<int[90], float, std::unordered_set<std::u16string>> d; // 90*4+4+4
+  std::multimap<std::wstring,
+                std::tuple<std::pair<int, long[42]>, std::vector<double>,
+                           std::array<std::tuple<char16_t, char32_t>, 15>>>
+      e; // 4
+};
+
+#define DECLTYPES(r, data, i, elem) BOOST_PP_COMMA_IF(i) decltype(data::elem)
+#define USING_STRUCTURE(s, m)                                                  \
+  n2w::structure<s, BOOST_PP_SEQ_FOR_EACH_I(DECLTYPES, s, m)>
+#define MANGLE_SPEC(s, m)                                                      \
+  template <> const auto mangle<s> = ""; // mangle<USING_STRUCTURE(s, m)>;
+
+#define POINTER_TO_MEMBER(r, data, i, elem) BOOST_PP_COMMA_IF(i) & data::elem
+#define SERIALIZE_SPEC(s, m)                                                   \
+  template <typename I> void serialize(s &_s, I &i) {                          \
+    USING_STRUCTURE(s, m)                                                      \
+    _s_v{_s, BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m)};                \
+    serialize(_s_v, i);                                                        \
+  }
+#define DESERIALIZE_SPEC(s, m)                                                 \
+  template <typename I> void deserialize(I &i, s &_s) {                        \
+    USING_STRUCTURE(s, m)                                                      \
+    _s_v{_s, BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m)};                \
+    deserialize(i, _s_v);                                                      \
+  }
+
+#define READ_WRITE_SPEC(s, m)                                                  \
+  SERIALIZE_SPEC(s, m);                                                        \
+  DESERIALIZE_SPEC(s, m);
+
+namespace n2w {
+MANGLE_SPEC(test_structure, (a)(b)(c)(d)(e));
+READ_WRITE_SPEC(test_structure, (a)(b)(c)(d)(e));
+}
+
 int main(int, char **) {
   std::cout << n2w::endianness<> << '\n';
 
@@ -78,34 +118,15 @@ int main(int, char **) {
   std::cout << n2w::function_address(swap_test, scrambler) << '\n';
   std::cout << n2w::function_address(main, scrambler) << '\n';
 
-  struct test_structure {
-    std::tuple<int[90][81][2]> a;                             // 90*4
-    std::array<std::vector<double>, 5> b;                     // 5*4
-    std::pair<int[90], std::array<std::vector<double>, 0>> c; // 90*4 + 5*4
-    std::tuple<int[90], float, std::unordered_set<std::u16string>>
-        d; // 90*4+4+4
-    std::multimap<std::wstring,
-                  std::tuple<std::pair<int, long[42]>, std::vector<double>,
-                             std::array<std::tuple<char16_t, char32_t>, 15>>>
-        e; // 4
-  } t;
+  test_structure t;
 
-  n2w::structure<test_structure, decltype(test_structure::a),
-                 decltype(test_structure::b), decltype(test_structure::c),
-                 decltype(test_structure::d), decltype(test_structure::e)>
-      test_struct{t,
-                  &test_structure::a,
-                  &test_structure::b,
-                  &test_structure::c,
-                  &test_structure::d,
-                  &test_structure::e};
+  std::cout << n2w::mangle<test_structure> << '\n';
 
-  std::cout << n2w::mangle<decltype(test_struct)> << '\n';
-
-  n2w::serialize(test_struct, i);
-  n2w::deserialize(j, test_struct);
+  n2w::serialize(t, i);
+  n2w::deserialize(j, t);
   std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
             << std::distance(begin(ustr), j) << '\n';
+  std::cout << sizeof(long double) << '\n';
 
   return 0;
 }
