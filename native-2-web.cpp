@@ -29,7 +29,7 @@ struct test_structure {
 #define USING_STRUCTURE(s, m)                                                  \
   n2w::structure<s, BOOST_PP_SEQ_FOR_EACH_I(DECLTYPES, s, m)>
 #define MANGLE_SPEC(s, m)                                                      \
-  template <> const auto mangle<s> = ""; // mangle<USING_STRUCTURE(s, m)>;
+  template <> const auto mangle<s> = mangle<USING_STRUCTURE(s, m)>;
 
 #define POINTER_TO_MEMBER(r, data, i, elem) BOOST_PP_COMMA_IF(i) & data::elem
 #define SERIALIZE_SPEC(s, m)                                                   \
@@ -46,11 +46,11 @@ struct test_structure {
   }
 
 #define READ_WRITE_SPEC(s, m)                                                  \
+  MANGLE_SPEC(s, m);                                                           \
   SERIALIZE_SPEC(s, m);                                                        \
   DESERIALIZE_SPEC(s, m);
 
 namespace n2w {
-MANGLE_SPEC(test_structure, (a)(b)(c)(d)(e));
 READ_WRITE_SPEC(test_structure, (a)(b)(c)(d)(e));
 }
 

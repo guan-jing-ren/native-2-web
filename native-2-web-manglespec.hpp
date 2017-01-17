@@ -13,8 +13,7 @@ template <typename T> constexpr auto mangle = terminate_processing;
 namespace {
 template <typename... Ts> const auto csv = "";
 template <typename T, typename... Ts>
-const auto csv<T, Ts...> = csv<T> + ',' + csv<Ts...>;
-template <typename T> const string csv<T> = mangle<T>;
+const auto csv<T, Ts...> = string{} + mangle<T> + ',' + csv<Ts...>;
 template <typename T, typename U>
 const auto kv = string{mangle<T>} + ':' + mangle<U>;
 }
