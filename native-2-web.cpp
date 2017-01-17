@@ -78,5 +78,25 @@ int main(int, char **) {
   std::cout << n2w::function_address(swap_test, scrambler) << '\n';
   std::cout << n2w::function_address(main, scrambler) << '\n';
 
+  struct test_structure {
+    std::tuple<int[90][81][2]> a;                             // 90*4
+    std::array<std::vector<double>, 5> b;                     // 5*4
+    std::pair<int[90], std::array<std::vector<double>, 0>> c; // 90*4 + 5*4
+    std::tuple<int[90], float, std::unordered_set<std::u16string>>
+        d; // 90*4+4+4
+    std::multimap<std::wstring,
+                  std::tuple<std::pair<int, long[42]>, std::vector<double>,
+                             std::array<std::tuple<char16_t, char32_t>, 15>>>
+        e; // 4
+  };
+
+  n2w::structure<test_structure, decltype(test_structure::a),
+                 decltype(test_structure::b), decltype(test_structure::c),
+                 decltype(test_structure::d), decltype(test_structure::e)>
+      test_struct{&test_structure::a, &test_structure::b, &test_structure::c,
+                  &test_structure::d, &test_structure::e};
+
+  std::cout << n2w::mangle<decltype(test_struct)> << '\n';
+
   return 0;
 }

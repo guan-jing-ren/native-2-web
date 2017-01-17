@@ -9,7 +9,10 @@ using namespace std;
 constexpr auto terminate_processing = "z";
 
 template <typename T> constexpr auto mangle = terminate_processing;
-template <typename... Ts> struct structure {};
+template <typename S, typename T, typename... Ts> struct structure {
+  tuple<T S::*, Ts S::*...> members;
+  structure(T(S::*t), Ts(S::*... ts)) : members(t, ts...) {}
+};
 
 namespace {
 template <typename... Ts> const auto csv = "";
@@ -54,7 +57,8 @@ template <typename T, typename... Traits>
 constexpr auto mangle_prefix<unordered_multiset<T, Traits...>> = "H[";
 template <typename T, typename U, typename... Traits>
 constexpr auto mangle_prefix<unordered_multimap<T, U, Traits...>> = "H{";
-template <typename... Ts> const auto mangle_prefix<structure<Ts...>> = '{';
+template <typename S, typename T, typename... Ts>
+const auto mangle_prefix<structure<S, TTs...>> = '{';
 template <typename R, typename... Ts>
 constexpr auto mangle_prefix<R(Ts...)> = '^';
 
@@ -127,9 +131,9 @@ template <typename T, typename U, typename... Traits>
 const auto mangle<unordered_multimap<T, U, Traits...>> =
     mangle_prefix<unordered_multimap<T, U, Traits...>> + kv<T, U>;
 
-template <typename... Ts>
-const auto mangle<structure<Ts...>> =
-    mangle_prefix<structure<Ts...>> + csv<Ts...> + '}';
+template <typename S, typename T, typename... Ts>
+const auto mangle<structure<S, T, Ts...>> =
+    mangle_prefix<structure<S, T, Ts...>> + csv<T, Ts...> + '}';
 
 template <bool e = __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__>
 constexpr auto endianness = e ? "e" : "E";
