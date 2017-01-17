@@ -37,7 +37,7 @@ int main(int, char **) {
   std::pair<int[90], std::array<std::vector<double>, 0>> c; // 90*4 + 5*4
   std::tuple<int[90], float, std::unordered_set<std::u16string>> d; // 90*4+4+4
   std::multimap<std::wstring,
-                std::tuple<std::pair<int, long>, std::vector<double>,
+                std::tuple<std::pair<int, long[42]>, std::vector<double>,
                            std::array<std::tuple<char16_t, char32_t>, 15>>>
       e; // 4
 
