@@ -14,6 +14,7 @@
 #include <map>
 #include <unordered_set>
 #include <unordered_map>
+#include <boost/preprocessor.hpp>
 
 template <unsigned I, typename T> constexpr T mask() {
   return static_cast<T>(static_cast<std::uint8_t>(-1)) << (I * 8);
@@ -72,6 +73,11 @@ template <size_t N, typename S, typename T, typename... Ts>
 auto &get(structure<S, T, Ts...> &s) {
   return s.s.*get<N>(s.members);
 }
+
+#define DECLTYPES(r, data, i, elem) BOOST_PP_COMMA_IF(i) decltype(data::elem)
+#define USING_STRUCTURE(s, m)                                                  \
+  n2w::structure<s, BOOST_PP_SEQ_FOR_EACH_I(DECLTYPES, s, m)>
+#define POINTER_TO_MEMBER(r, data, i, elem) BOOST_PP_COMMA_IF(i) & data::elem
 }
 
 #endif

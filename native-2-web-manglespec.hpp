@@ -2,6 +2,7 @@
 #define _NATIVE_2_WEB_MANGLESPEC_HPP_
 
 #include "native-2-web-common.hpp"
+#include <boost/preprocessor.hpp>
 #include <iostream>
 namespace n2w {
 
@@ -129,6 +130,9 @@ const auto mangle<unordered_multimap<T, U, Traits...>> =
 template <typename S, typename T, typename... Ts>
 const auto mangle<structure<S, T, Ts...>> =
     mangle_prefix<structure<S, T, Ts...>> + csv<T, Ts...> + '}';
+
+#define MANGLE_SPEC(s, m)                                                      \
+  template <> const auto mangle<s> = mangle<USING_STRUCTURE(s, m)>;
 
 template <bool e = __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__>
 constexpr auto endianness = e ? "e" : "E";

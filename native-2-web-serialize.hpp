@@ -177,6 +177,12 @@ void serialize_heterogenous(const T &t, std::index_sequence<Is...>, I &i) {
   for (auto rc : {serialize_index(get<Is>(t), i)...})
     (void)rc;
 }
-}
 
+#define SERIALIZE_SPEC(s, m)                                                   \
+  template <typename I> void serialize(s &_s, I &i) {                          \
+    USING_STRUCTURE(s, m)                                                      \
+    _s_v{_s, BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m)};                \
+    serialize(_s_v, i);                                                        \
+  }
+}
 #endif

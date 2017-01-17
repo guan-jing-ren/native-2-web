@@ -25,26 +25,6 @@ struct test_structure {
       e; // 4
 };
 
-#define DECLTYPES(r, data, i, elem) BOOST_PP_COMMA_IF(i) decltype(data::elem)
-#define USING_STRUCTURE(s, m)                                                  \
-  n2w::structure<s, BOOST_PP_SEQ_FOR_EACH_I(DECLTYPES, s, m)>
-#define MANGLE_SPEC(s, m)                                                      \
-  template <> const auto mangle<s> = mangle<USING_STRUCTURE(s, m)>;
-
-#define POINTER_TO_MEMBER(r, data, i, elem) BOOST_PP_COMMA_IF(i) & data::elem
-#define SERIALIZE_SPEC(s, m)                                                   \
-  template <typename I> void serialize(s &_s, I &i) {                          \
-    USING_STRUCTURE(s, m)                                                      \
-    _s_v{_s, BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m)};                \
-    serialize(_s_v, i);                                                        \
-  }
-#define DESERIALIZE_SPEC(s, m)                                                 \
-  template <typename I> void deserialize(I &i, s &_s) {                        \
-    USING_STRUCTURE(s, m)                                                      \
-    _s_v{_s, BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m)};                \
-    deserialize(i, _s_v);                                                      \
-  }
-
 #define READ_WRITE_SPEC(s, m)                                                  \
   MANGLE_SPEC(s, m);                                                           \
   SERIALIZE_SPEC(s, m);                                                        \
