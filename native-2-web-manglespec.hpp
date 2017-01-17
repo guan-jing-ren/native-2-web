@@ -2,7 +2,7 @@
 #define _NATIVE_2_WEB_MANGLESPEC_HPP_
 
 #include "native-2-web-common.hpp"
-
+#include <iostream>
 namespace n2w {
 
 using namespace std;
@@ -145,7 +145,7 @@ const string function_address(R (*f)(Ts...),
                               const uint8_t (&crypt)[sizeof(void (*)())]) {
   uintptr_t obf = 0;
   for (auto i = 0; i < sizeof(f); ++i)
-    obf |= reinterpret_cast<uint8_t *>(&f)[crypt[i]] << (i * 8);
+    obf |= static_cast<uintptr_t>(reinterpret_cast<uint8_t *>(&f)[crypt[i]]) << (i * 8);
   return '@' + to_string(obf) + mangle<R(Ts...)>;
 }
 
