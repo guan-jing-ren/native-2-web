@@ -14,6 +14,7 @@
 #include <map>
 #include <unordered_set>
 #include <unordered_map>
+#include <algorithm>
 #include <boost/preprocessor.hpp>
 
 template <unsigned I, typename T> constexpr T mask() {

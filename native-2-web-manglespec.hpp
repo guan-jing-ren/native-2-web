@@ -2,8 +2,6 @@
 #define _NATIVE_2_WEB_MANGLESPEC_HPP_
 
 #include "native-2-web-common.hpp"
-#include <boost/preprocessor.hpp>
-#include <iostream>
 namespace n2w {
 
 using namespace std;

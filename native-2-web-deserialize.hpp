@@ -2,7 +2,6 @@
 #define _NATIVE_2_WEB_DESERIALIZE_HPP_
 
 #include "native-2-web-common.hpp"
-#include <algorithm>
 
 namespace n2w {
 using namespace std;

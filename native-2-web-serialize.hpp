@@ -1,6 +1,8 @@
 #ifndef _NATIVE_2_WEB_SERIALIZE_HPP_
 #define _NATIVE_2_WEB_SERIALIZE_HPP_
 
+#include "native-2-web-common.hpp"
+
 namespace n2w {
 using namespace std;
 
