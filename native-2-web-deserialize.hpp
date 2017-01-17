@@ -173,10 +173,12 @@ void deserialize_heterogenous(I &i, T &t, std::index_sequence<Is...>) {
 }
 
 #define DESERIALIZE_SPEC(s, m)                                                 \
+  namespace n2w {                                                              \
   template <typename I> void deserialize(I &i, s &_s) {                        \
     USING_STRUCTURE(s, m)                                                      \
     _s_v{_s, BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m)};                \
     deserialize(i, _s_v);                                                      \
+  }                                                                            \
   }
 }
 #endif

@@ -30,9 +30,7 @@ struct test_structure {
   SERIALIZE_SPEC(s, m);                                                        \
   DESERIALIZE_SPEC(s, m);
 
-namespace n2w {
 READ_WRITE_SPEC(test_structure, (a)(b)(c)(d)(e));
-}
 
 int main(int, char **) {
   std::cout << n2w::endianness<> << '\n';

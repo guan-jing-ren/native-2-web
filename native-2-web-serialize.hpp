@@ -179,10 +179,12 @@ void serialize_heterogenous(const T &t, std::index_sequence<Is...>, I &i) {
 }
 
 #define SERIALIZE_SPEC(s, m)                                                   \
+  namespace n2w {                                                              \
   template <typename I> void serialize(s &_s, I &i) {                          \
     USING_STRUCTURE(s, m)                                                      \
     _s_v{_s, BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m)};                \
     serialize(_s_v, i);                                                        \
+  }                                                                            \
   }
 }
 #endif
