@@ -52,7 +52,7 @@ template <typename T> constexpr auto serial_size = sizeof(T);
 constexpr size_t P = serial_size<double>;
 
 template <std::size_t P, typename T>
-constexpr auto calc_padding(std::size_t count = 1) {
+constexpr auto calc_padding(std::size_t count = 0) {
   return P == 0 ? 0 : (P - ((count * serial_size<T>) % P)) % P;
 }
 
