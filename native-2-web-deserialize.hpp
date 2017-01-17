@@ -145,9 +145,9 @@ template <typename I, typename T, typename U, typename... Traits>
 void deserialize(I &i, unordered_multimap<T, U, Traits...> &t) {
   deserialize_associative<T, U>(i, t);
 }
-template <typename I, typename... Ts>
-void deserialize(I &i, structure<Ts...> &t) {
-  deserialize_heterogenous(i, t, std::make_index_sequence<sizeof...(Ts)>{});
+template <typename I, typename S, typename T, typename... Ts>
+void deserialize(I &i, structure<S, T, Ts...> &t) {
+  deserialize_heterogenous(i, t, std::make_index_sequence<sizeof...(Ts) + 1>{});
 }
 
 template <typename T, typename I, typename J>
@@ -167,6 +167,7 @@ template <typename T, typename I> int deserialize_index(I &i, T &t) {
 template <typename I, typename T, size_t... Is>
 void deserialize_heterogenous(I &i, T &t, std::index_sequence<Is...>) {
   using std::get;
+  using n2w::get;
   for (auto rc : {deserialize_index(i, get<Is>(t))...})
     (void)rc;
 }

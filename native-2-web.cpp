@@ -103,7 +103,7 @@ int main(int, char **) {
   std::cout << n2w::mangle<decltype(test_struct)> << '\n';
 
   n2w::serialize(test_struct, i);
-//   n2w::deserialize(i, test_struct);
+  n2w::deserialize(j, test_struct);
   std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
             << std::distance(begin(ustr), j) << '\n';
 
