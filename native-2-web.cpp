@@ -88,15 +88,24 @@ int main(int, char **) {
                   std::tuple<std::pair<int, long[42]>, std::vector<double>,
                              std::array<std::tuple<char16_t, char32_t>, 15>>>
         e; // 4
-  };
+  } t;
 
   n2w::structure<test_structure, decltype(test_structure::a),
                  decltype(test_structure::b), decltype(test_structure::c),
                  decltype(test_structure::d), decltype(test_structure::e)>
-      test_struct{&test_structure::a, &test_structure::b, &test_structure::c,
-                  &test_structure::d, &test_structure::e};
+      test_struct{t,
+                  &test_structure::a,
+                  &test_structure::b,
+                  &test_structure::c,
+                  &test_structure::d,
+                  &test_structure::e};
 
   std::cout << n2w::mangle<decltype(test_struct)> << '\n';
+
+  n2w::serialize(test_struct, i);
+//   n2w::deserialize(i, test_struct);
+  std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
+            << std::distance(begin(ustr), j) << '\n';
 
   return 0;
 }

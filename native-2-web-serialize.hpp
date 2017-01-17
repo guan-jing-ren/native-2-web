@@ -154,9 +154,9 @@ template <typename I, typename T, typename U, typename... Traits>
 void serialize(const unordered_multimap<T, U, Traits...> &t, I &i) {
   serialize_associative<T, U>(t, i);
 }
-template <typename I, typename... Ts>
-void serialize(const structure<Ts...> &t, I &i) {
-  serialize_heterogenous(t, std::make_index_sequence<sizeof...(Ts)>{}, i);
+template <typename I, typename S, typename T, typename... Ts>
+void serialize(const structure<S, T, Ts...> &t, I &i) {
+  serialize_heterogenous(t, std::make_index_sequence<sizeof...(Ts) + 1>{}, i);
 }
 
 template <typename T, typename I, typename J>
@@ -173,6 +173,7 @@ template <typename T, typename I> int serialize_index(const T &t, I &i) {
 template <typename I, typename T, size_t... Is>
 void serialize_heterogenous(const T &t, std::index_sequence<Is...>, I &i) {
   using std::get;
+  using n2w::get;
   for (auto rc : {serialize_index(get<Is>(t), i)...})
     (void)rc;
 }

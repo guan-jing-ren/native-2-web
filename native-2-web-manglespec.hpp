@@ -10,9 +10,20 @@ constexpr auto terminate_processing = "z";
 
 template <typename T> constexpr auto mangle = terminate_processing;
 template <typename S, typename T, typename... Ts> struct structure {
+  S &s;
   tuple<T S::*, Ts S::*...> members;
-  structure(T(S::*t), Ts(S::*... ts)) : members(t, ts...) {}
+  structure(S &s, T(S::*t), Ts(S::*... ts)) : s(s), members(t, ts...) {}
 };
+
+template <size_t N, typename S, typename T, typename... Ts>
+auto &get(const structure<S, T, Ts...> &s) {
+  return s.s.*get<N>(s.members);
+}
+
+template <size_t N, typename S, typename T, typename... Ts>
+auto &get(structure<S, T, Ts...> &s) {
+  return s.s.*get<N>(s.members);
+}
 
 namespace {
 template <typename... Ts> const auto csv = "";
@@ -58,7 +69,7 @@ constexpr auto mangle_prefix<unordered_multiset<T, Traits...>> = "H[";
 template <typename T, typename U, typename... Traits>
 constexpr auto mangle_prefix<unordered_multimap<T, U, Traits...>> = "H{";
 template <typename S, typename T, typename... Ts>
-const auto mangle_prefix<structure<S, TTs...>> = '{';
+const auto mangle_prefix<structure<S, T, Ts...>> = '{';
 template <typename R, typename... Ts>
 constexpr auto mangle_prefix<R(Ts...)> = '^';
 
@@ -149,7 +160,8 @@ const string function_address(R (*f)(Ts...),
                               const uint8_t (&crypt)[sizeof(void (*)())]) {
   uintptr_t obf = 0;
   for (auto i = 0; i < sizeof(f); ++i)
-    obf |= static_cast<uintptr_t>(reinterpret_cast<uint8_t *>(&f)[crypt[i]]) << (i * 8);
+    obf |= static_cast<uintptr_t>(reinterpret_cast<uint8_t *>(&f)[crypt[i]])
+           << (i * 8);
   return '@' + to_string(obf) + mangle<R(Ts...)>;
 }
 
