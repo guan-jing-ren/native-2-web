@@ -1,6 +1,4 @@
-#include "native-2-web-manglespec.hpp"
-#include "native-2-web-deserialize.hpp"
-#include "native-2-web-serialize.hpp"
+#include "native-2-web-readwrite.hpp"
 #include <iostream>
 #include <algorithm>
 
@@ -24,11 +22,6 @@ struct test_structure {
                            std::array<std::tuple<char16_t, char32_t>, 15>>>
       e; // 4
 };
-
-#define READ_WRITE_SPEC(s, m)                                                  \
-  MANGLE_SPEC(s, m);                                                           \
-  SERIALIZE_SPEC(s, m);                                                        \
-  DESERIALIZE_SPEC(s, m);
 
 READ_WRITE_SPEC(test_structure, (a)(b)(c)(d)(e));
 
