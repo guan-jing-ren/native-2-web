@@ -135,7 +135,7 @@ const auto mangle<structure<S, T, Ts...>> =
   }
 
 template <bool e = __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__>
-constexpr auto endianness = e ? "e" : "E";
+constexpr auto endianness = e ? 'e' : 'E';
 
 template <typename R, typename... Ts>
 const auto mangle<R(Ts...)> = mangle_prefix<R(Ts...)> + string{mangle<R>} +
