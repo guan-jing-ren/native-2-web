@@ -155,7 +155,7 @@ const string function_address(R (*f)(Ts...),
 
 template <typename R, typename... Ts>
 const string function_address(R (*f)(Ts...)) {
-  uint8_t scrambler[] = {0, 1, 2, 3, 4, 5, 6, 7};
+  constexpr uint8_t scrambler[] = {0, 1, 2, 3, 4, 5, 6, 7};
   return function_address(f, scrambler);
 }
 }
