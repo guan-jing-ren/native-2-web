@@ -7,6 +7,9 @@ namespace n2w {
 using namespace std;
 
 template <typename T> struct serializer;
+template <typename T, typename I> void serialize(T &t, I &i) {
+  serializer<T>::serialize(t, i);
+}
 
 template <typename T, size_t P = P, typename I>
 void serialize_number(T t, I &i) {
@@ -31,7 +34,10 @@ void serialize_numbers(uint32_t count, J j, I &i) {
 }
 
 template <typename T, typename I, typename J>
-void serialize_objects(uint32_t count, J j, I &i);
+void serialize_objects(uint32_t count, J j, I &i) {
+  for (auto end = count, c = 0u; c < end; ++c)
+    serializer<T>::serialize(*j, i);
+}
 
 template <typename T, typename I, typename J>
 void serialize_sequence_bounded(uint32_t count, J j, I &i, true_type) {
@@ -79,8 +85,18 @@ void serialize_associative(const A &a, I &i) {
   serialize_sequence_bounded<U>(a.size(), cbegin(v_u), i);
 }
 
+template <typename T, typename I> int serialize_index(const T &t, I &i) {
+  serializer<T>::serialize(t, i);
+  return 0;
+}
+
 template <typename I, typename T, size_t... Is>
-void serialize_heterogenous(const T &t, std::index_sequence<Is...>, I &i);
+void serialize_heterogenous(const T &t, std::index_sequence<Is...>, I &i) {
+  using std::get;
+  using n2w::get;
+  for (auto rc : {serialize_index(get<Is>(t), i)...})
+    (void)rc;
+}
 
 template <typename T> struct serializer {
   template <typename I>
@@ -212,25 +228,6 @@ struct serializer<structure<S, T, Ts...>> {
   }
 };
 
-template <typename T, typename I, typename J>
-void serialize_objects(uint32_t count, J j, I &i) {
-  for (auto end = count, c = 0u; c < end; ++c)
-    serializer<T>::serialize(*j, i);
-}
-
-template <typename T, typename I> int serialize_index(const T &t, I &i) {
-  serializer<T>::serialize(t, i);
-  return 0;
-}
-
-template <typename I, typename T, size_t... Is>
-void serialize_heterogenous(const T &t, std::index_sequence<Is...>, I &i) {
-  using std::get;
-  using n2w::get;
-  for (auto rc : {serialize_index(get<Is>(t), i)...})
-    (void)rc;
-}
-
 #define SERIALIZE_SPEC(s, m)                                                   \
   namespace n2w {                                                              \
   template <> struct serializer<s> {                                           \
@@ -241,9 +238,5 @@ void serialize_heterogenous(const T &t, std::index_sequence<Is...>, I &i) {
     }                                                                          \
   };                                                                           \
   }
-
-template <typename T, typename I> void serialize(T &t, I &i) {
-  serializer<T>::serialize(t, i);
-}
 }
 #endif

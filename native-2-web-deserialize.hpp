@@ -7,6 +7,9 @@ namespace n2w {
 using namespace std;
 
 template <typename T> struct deserializer;
+template <typename I, typename T> void deserialize(I &i, T &t) {
+  deserializer<T>::deserialize(i, t);
+}
 
 template <typename T, size_t P = P, typename I> T deserialize_number(I &i) {
   static_assert(is_arithmetic<T>::value, "Not an arithmetic type");
@@ -32,7 +35,13 @@ void deserialize_numbers(uint32_t count, I &i, J j) {
 }
 
 template <typename T, typename I, typename J>
-void deserialize_objects(uint32_t count, I &i, J j);
+void deserialize_objects(uint32_t count, I &i, J j) {
+  generate_n(j, count, [&i]() {
+    T t;
+    deserializer<T>::deserialize(i, t);
+    return t;
+  });
+}
 
 template <typename T, typename I, typename J>
 void deserialize_sequence(uint32_t count, I &i, J j, true_type) {
@@ -67,8 +76,18 @@ void deserialize_associative(I &i, A &a) {
                     [](T &t, U &u) { return make_pair(t, u); });
 }
 
+template <typename T, typename I> int deserialize_index(I &i, T &t) {
+  deserializer<T>::deserialize(i, t);
+  return 0;
+}
+
 template <typename I, typename T, size_t... Is>
-void deserialize_heterogenous(I &i, T &t, std::index_sequence<Is...>);
+void deserialize_heterogenous(I &i, T &t, std::index_sequence<Is...>) {
+  using std::get;
+  using n2w::get;
+  for (auto rc : {deserialize_index(i, get<Is>(t))...})
+    (void)rc;
+}
 
 template <typename T> struct deserializer {
   template <typename I>
@@ -197,28 +216,6 @@ struct deserializer<structure<S, T, Ts...>> {
   }
 };
 
-template <typename T, typename I, typename J>
-void deserialize_objects(uint32_t count, I &i, J j) {
-  generate_n(j, count, [&i]() {
-    T t;
-    deserializer<T>::deserialize(i, t);
-    return t;
-  });
-}
-
-template <typename T, typename I> int deserialize_index(I &i, T &t) {
-  deserializer<T>::deserialize(i, t);
-  return 0;
-}
-
-template <typename I, typename T, size_t... Is>
-void deserialize_heterogenous(I &i, T &t, std::index_sequence<Is...>) {
-  using std::get;
-  using n2w::get;
-  for (auto rc : {deserialize_index(i, get<Is>(t))...})
-    (void)rc;
-}
-
 #define DESERIALIZE_SPEC(s, m)                                                 \
   namespace n2w {                                                              \
   template <> struct deserializer<s> {                                         \
@@ -229,9 +226,5 @@ void deserialize_heterogenous(I &i, T &t, std::index_sequence<Is...>) {
     }                                                                          \
   };                                                                           \
   }
-
-template <typename I, typename T> void deserialize(I &i, T &t) {
-  deserializer<T>::deserialize(i, t);
-}
 }
 #endif
