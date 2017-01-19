@@ -7,8 +7,8 @@ namespace n2w {
 using namespace std;
 
 template <typename T> struct serializer;
-template <typename T, typename I> void serialize(T &t, I &i) {
-  serializer<T>::serialize(t, i);
+template <typename T, typename I> void serialize(T &&t, I &i) {
+  serializer<remove_cv_t<remove_reference_t<T>>>::serialize(t, i);
 }
 
 template <typename T, size_t P = P, typename I>
