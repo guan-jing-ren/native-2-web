@@ -32,7 +32,7 @@ R execute(I &i, J &j, R (*f)(Ts...), index_sequence<N...>) {
 template <typename I, typename J, typename R, typename... Ts>
 void execute(I &i, J &j, R (*f)(Ts...)) {
   auto rv = execute(i, j, f, make_index_sequence<sizeof...(Ts)>{});
-  serializer<R>::serialize(rv, i);
+  serialize(rv, i);
 }
 template <typename I, typename J, typename... Ts>
 void execute(I &i, J &j, void (*f)(Ts...)) {
