@@ -38,6 +38,81 @@ template <typename I, typename J, typename... Ts>
 void execute(I &i, J &j, void (*f)(Ts...)) {
   execute(i, j, f, make_index_sequence<sizeof...(Ts)>{});
 }
+
+template <typename T> struct traverser;
+
+template <typename T> struct traverser {
+  static auto traverse(const T &t) -> enable_if_t<is_arithmetic<T>::value> {}
+};
+template <typename T, size_t N> struct traverser<T[N]> {
+  static void traverse(const T (&t)[N]) {}
+};
+template <typename T, size_t M, size_t N> struct traverser<T[M][N]> {
+  static void traverse(const T (&t)[M][N]) {}
+};
+template <typename T, size_t N> struct traverser<array<T, N>> {
+  static void traverse(const array<T, N> &t) {}
+};
+template <typename T, typename U> struct traverser<pair<T, U>> {
+  static void traverse(const pair<T, U> &t) {}
+};
+template <typename T, typename... Ts> struct traverser<tuple<T, Ts...>> {
+  static void traverse(const tuple<T, Ts...> &t) {}
+};
+template <typename T, typename... Traits>
+struct traverser<basic_string<T, Traits...>> {
+  static void traverse(const basic_string<T, Traits...> &t) {}
+};
+template <typename T, typename... Traits>
+struct traverser<vector<T, Traits...>> {
+  static void traverse(const vector<T, Traits...> &t) {}
+};
+template <typename T, typename... Traits> struct traverser<list<T, Traits...>> {
+  static void traverse(const list<T, Traits...> &t) {}
+};
+template <typename T, typename... Traits>
+struct traverser<forward_list<T, Traits...>> {
+  static void traverse(const forward_list<T, Traits...> &t) {}
+};
+template <typename T, typename... Traits>
+struct traverser<deque<T, Traits...>> {
+  static void traverse(const deque<T, Traits...> &t) {}
+};
+template <typename T, typename... Traits> struct traverser<set<T, Traits...>> {
+  static void traverse(const set<T, Traits...> &t) {}
+};
+template <typename T, typename U, typename... Traits>
+struct traverser<map<T, U, Traits...>> {
+  static void traverse(const map<T, U, Traits...> &t) {}
+};
+template <typename T, typename... Traits>
+struct traverser<unordered_set<T, Traits...>> {
+  static void traverse(const unordered_set<T, Traits...> &t) {}
+};
+template <typename T, typename U, typename... Traits>
+struct traverser<unordered_map<T, U, Traits...>> {
+  static void traverse(const unordered_map<T, U, Traits...> &t) {}
+};
+template <typename T, typename... Traits>
+struct traverser<multiset<T, Traits...>> {
+  static void traverse(const multiset<T, Traits...> &t) {}
+};
+template <typename T, typename U, typename... Traits>
+struct traverser<multimap<T, U, Traits...>> {
+  static void traverse(const multimap<T, U, Traits...> &t) {}
+};
+template <typename T, typename... Traits>
+struct traverser<unordered_multiset<T, Traits...>> {
+  static void traverse(const unordered_multiset<T, Traits...> &t) {}
+};
+template <typename T, typename U, typename... Traits>
+struct traverser<unordered_multimap<T, U, Traits...>> {
+  static void traverse(const unordered_multimap<T, U, Traits...> &t) {}
+};
+template <typename S, typename T, typename... Ts>
+struct traverser<structure<S, T, Ts...>> {
+  static void traverse(const structure<S, T, Ts...> &t) {}
+};
 }
 
 #endif
