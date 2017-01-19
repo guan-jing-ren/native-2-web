@@ -13,17 +13,21 @@ void swap_test() noexcept {
 }
 
 struct test_structure {
-  std::tuple<int[90][81][2]> a;                             // 90*4
+  std::tuple<int> a;                             // 90*4
   std::array<std::vector<double>, 5> b;                     // 5*4
-  std::pair<int[90], std::array<std::vector<double>, 0>> c; // 90*4 + 5*4
-  std::tuple<int[90], float, std::unordered_set<std::u16string>> d; // 90*4+4+4
+  std::pair<int, std::array<std::vector<double>, 0>> c; // 90*4 + 5*4
+  std::tuple<int, float, std::unordered_set<std::u16string>> d; // 90*4+4+4
   std::multimap<std::wstring,
-                std::tuple<std::pair<int, long[42]>, std::vector<double>,
+                std::tuple<std::pair<int, long>, std::vector<double>,
                            std::array<std::tuple<char16_t, char32_t>, 15>>>
       e; // 4
 };
 
 READ_WRITE_SPEC(test_structure, (a)(b)(c)(d)(e));
+
+test_structure test_function(const test_structure& t) {
+    return t;
+}
 
 int main(int, char **) {
   std::cout << n2w::endianness<> << '\n';
@@ -98,6 +102,16 @@ int main(int, char **) {
   std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
             << std::distance(begin(ustr), j) << '\n';
   std::cout << sizeof(long double) << '\n';
+
+  ustr.clear();
+  i = back_inserter(ustr);
+  j = begin(ustr);
+  n2w::execute(i, j, swap_test);
+  std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
+            << std::distance(begin(ustr), j) << '\n';
+  n2w::execute(i, j, test_function);
+  std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
+            << std::distance(begin(ustr), j) << '\n';
 
   return 0;
 }

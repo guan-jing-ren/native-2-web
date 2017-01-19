@@ -6,6 +6,8 @@
 namespace n2w {
 using namespace std;
 
+template <typename T> struct deserializer;
+
 template <typename T, size_t P = P, typename I> T deserialize_number(I &i) {
   static_assert(is_arithmetic<T>::value, "Not an arithmetic type");
   // static_assert(is_same<uint8_t, remove_reference_t<decltype(*i)>>::value,
@@ -68,98 +70,144 @@ void deserialize_associative(I &i, A &a) {
 template <typename I, typename T, size_t... Is>
 void deserialize_heterogenous(I &i, T &t, std::index_sequence<Is...>);
 
-template <typename I, typename T>
-auto deserialize(I &i, T &t) -> enable_if_t<is_arithmetic<T>::value> {
-  t = deserialize_number<T>(i);
-}
-
-template <typename I, typename T, size_t N> void deserialize(I &i, T (&t)[N]) {
-  deserialize_sequence<T>(N, i, t, is_arithmetic<T>{});
-}
-template <typename I, typename T, size_t M, size_t N>
-void deserialize(I &i, T (&t)[M][N]) {
-  deserialize(i, reinterpret_cast<T(&)[M * N]>(t));
-}
-template <typename I, typename T, size_t N>
-void deserialize(I &i, array<T, N> &t) {
-  deserialize_sequence<T>(N, i, begin(t), is_arithmetic<T>{});
-}
-template <typename I, typename T, typename U>
-void deserialize(I &i, pair<T, U> &t) {
-  deserialize_heterogenous(i, t, std::make_index_sequence<2>{});
-}
-template <typename I, typename T, typename... Ts>
-void deserialize(I &i, tuple<T, Ts...> &t) {
-  deserialize_heterogenous(i, t, std::make_index_sequence<sizeof...(Ts) + 1>{});
-}
-template <typename I, typename T, typename... Traits>
-void deserialize(I &i, basic_string<T, Traits...> &t) {
-  deserialize_sequence<T>(i, back_inserter(t));
-}
-template <typename I, typename T, typename... Traits>
-void deserialize(I &i, vector<T, Traits...> &t) {
-  deserialize_sequence<T>(i, back_inserter(t));
-}
-template <typename I, typename T, typename... Traits>
-void deserialize(I &i, list<T, Traits...> &t) {
-  deserialize_sequence<T>(i, back_inserter(t));
-}
-template <typename I, typename T, typename... Traits>
-void deserialize(I &i, forward_list<T, Traits...> &t) {
-  deserialize_sequence<T>(i, back_inserter(t));
-}
-template <typename I, typename T, typename... Traits>
-void deserialize(I &i, deque<T, Traits...> &t) {
-  deserialize_sequence<T>(i, back_inserter(t));
-}
-template <typename I, typename T, typename... Traits>
-void deserialize(I &i, set<T, Traits...> &t) {
-  deserialize_sequence<T>(i, inserter(t, begin(t)));
-}
-template <typename I, typename T, typename U, typename... Traits>
-void deserialize(I &i, map<T, U, Traits...> &t) {
-  deserialize_associative<T, U>(i, t);
-}
-template <typename I, typename T, typename... Traits>
-void deserialize(I &i, unordered_set<T, Traits...> &t) {
-  deserialize_sequence<T>(i, inserter(t, begin(t)));
-}
-template <typename I, typename T, typename U, typename... Traits>
-void deserialize(I &i, unordered_map<T, U, Traits...> &t) {
-  deserialize_associative<T, U>(i, t);
-}
-template <typename I, typename T, typename... Traits>
-void deserialize(I &i, multiset<T, Traits...> &t) {
-  deserialize_sequence<T>(i, inserter(t, begin(t)));
-}
-template <typename I, typename T, typename U, typename... Traits>
-void deserialize(I &i, multimap<T, U, Traits...> &t) {
-  deserialize_associative<T, U>(i, t);
-}
-template <typename I, typename T, typename... Traits>
-void deserialize(I &i, unordered_multiset<T, Traits...> &t) {
-  deserialize_sequence<T>(i, inserter(t, begin(t)));
-}
-template <typename I, typename T, typename U, typename... Traits>
-void deserialize(I &i, unordered_multimap<T, U, Traits...> &t) {
-  deserialize_associative<T, U>(i, t);
-}
-template <typename I, typename S, typename T, typename... Ts>
-void deserialize(I &i, structure<S, T, Ts...> &t) {
-  deserialize_heterogenous(i, t, std::make_index_sequence<sizeof...(Ts) + 1>{});
-}
+template <typename T> struct deserializer {
+  template <typename I>
+  static auto deserialize(I &i, T &t) -> enable_if_t<is_arithmetic<T>::value> {
+    t = deserialize_number<T>(i);
+  }
+};
+template <typename T, size_t N> struct deserializer<T[N]> {
+  template <typename I> static void deserialize(I &i, T (&t)[N]) {
+    deserialize_sequence<T>(N, i, t, is_arithmetic<T>{});
+  }
+};
+template <typename T, size_t M, size_t N> struct deserializer<T[M][N]> {
+  template <typename I> static void deserialize(I &i, T (&t)[M][N]) {
+    deserializer<T[M * N]>::deserialize(i, reinterpret_cast<T(&)[M * N]>(t));
+  }
+};
+template <typename T, size_t N> struct deserializer<array<T, N>> {
+  template <typename I> static void deserialize(I &i, array<T, N> &t) {
+    deserialize_sequence<T>(N, i, begin(t), is_arithmetic<T>{});
+  }
+};
+template <typename T, typename U> struct deserializer<pair<T, U>> {
+  template <typename I> static void deserialize(I &i, pair<T, U> &t) {
+    deserialize_heterogenous(i, t, std::make_index_sequence<2>{});
+  }
+};
+template <typename T, typename... Ts> struct deserializer<tuple<T, Ts...>> {
+  template <typename I> static void deserialize(I &i, tuple<T, Ts...> &t) {
+    deserialize_heterogenous(i, t,
+                             std::make_index_sequence<sizeof...(Ts) + 1>{});
+  }
+};
+template <typename T, typename... Traits>
+struct deserializer<basic_string<T, Traits...>> {
+  template <typename I>
+  static void deserialize(I &i, basic_string<T, Traits...> &t) {
+    deserialize_sequence<T>(i, back_inserter(t));
+  }
+};
+template <typename T, typename... Traits>
+struct deserializer<vector<T, Traits...>> {
+  template <typename I> static void deserialize(I &i, vector<T, Traits...> &t) {
+    deserialize_sequence<T>(i, back_inserter(t));
+  }
+};
+template <typename T, typename... Traits>
+struct deserializer<list<T, Traits...>> {
+  template <typename I> static void deserialize(I &i, list<T, Traits...> &t) {
+    deserialize_sequence<T>(i, back_inserter(t));
+  }
+};
+template <typename T, typename... Traits>
+struct deserializer<forward_list<T, Traits...>> {
+  template <typename I>
+  static void deserialize(I &i, forward_list<T, Traits...> &t) {
+    deserialize_sequence<T>(i, back_inserter(t));
+  }
+};
+template <typename T, typename... Traits>
+struct deserializer<deque<T, Traits...>> {
+  template <typename I> static void deserialize(I &i, deque<T, Traits...> &t) {
+    deserialize_sequence<T>(i, back_inserter(t));
+  }
+};
+template <typename T, typename... Traits>
+struct deserializer<set<T, Traits...>> {
+  template <typename I> static void deserialize(I &i, set<T, Traits...> &t) {
+    deserialize_sequence<T>(i, inserter(t, begin(t)));
+  }
+};
+template <typename T, typename U, typename... Traits>
+struct deserializer<map<T, U, Traits...>> {
+  template <typename I> static void deserialize(I &i, map<T, U, Traits...> &t) {
+    deserialize_associative<T, U>(i, t);
+  }
+};
+template <typename T, typename... Traits>
+struct deserializer<unordered_set<T, Traits...>> {
+  template <typename I>
+  static void deserialize(I &i, unordered_set<T, Traits...> &t) {
+    deserialize_sequence<T>(i, inserter(t, begin(t)));
+  }
+};
+template <typename T, typename U, typename... Traits>
+struct deserializer<unordered_map<T, U, Traits...>> {
+  template <typename I>
+  static void deserialize(I &i, unordered_map<T, U, Traits...> &t) {
+    deserialize_associative<T, U>(i, t);
+  }
+};
+template <typename T, typename... Traits>
+struct deserializer<multiset<T, Traits...>> {
+  template <typename I>
+  static void deserialize(I &i, multiset<T, Traits...> &t) {
+    deserialize_sequence<T>(i, inserter(t, begin(t)));
+  }
+};
+template <typename T, typename U, typename... Traits>
+struct deserializer<multimap<T, U, Traits...>> {
+  template <typename I>
+  static void deserialize(I &i, multimap<T, U, Traits...> &t) {
+    deserialize_associative<T, U>(i, t);
+  }
+};
+template <typename T, typename... Traits>
+struct deserializer<unordered_multiset<T, Traits...>> {
+  template <typename I>
+  static void deserialize(I &i, unordered_multiset<T, Traits...> &t) {
+    deserialize_sequence<T>(i, inserter(t, begin(t)));
+  }
+};
+template <typename T, typename U, typename... Traits>
+struct deserializer<unordered_multimap<T, U, Traits...>> {
+  template <typename I>
+  static void deserialize(I &i, unordered_multimap<T, U, Traits...> &t) {
+    deserialize_associative<T, U>(i, t);
+  }
+};
+template <typename S, typename T, typename... Ts>
+struct deserializer<structure<S, T, Ts...>> {
+  template <typename I>
+  static void deserialize(I &i, structure<S, T, Ts...> &t) {
+    deserialize_heterogenous(i, t,
+                             std::make_index_sequence<sizeof...(Ts) + 1>{});
+  }
+};
 
 template <typename T, typename I, typename J>
 void deserialize_objects(uint32_t count, I &i, J j) {
   generate_n(j, count, [&i]() {
     T t;
-    deserialize(i, t);
+    deserializer<T>::deserialize(i, t);
     return t;
   });
 }
 
 template <typename T, typename I> int deserialize_index(I &i, T &t) {
-  deserialize(i, t);
+  deserializer<T>::deserialize(i, t);
   return 0;
 }
 
@@ -173,11 +221,17 @@ void deserialize_heterogenous(I &i, T &t, std::index_sequence<Is...>) {
 
 #define DESERIALIZE_SPEC(s, m)                                                 \
   namespace n2w {                                                              \
-  template <typename I> void deserialize(I &i, s &_s) {                        \
-    USING_STRUCTURE(s, m)                                                      \
-    _s_v{_s, BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m)};                \
-    deserialize(i, _s_v);                                                      \
-  }                                                                            \
+  template <> struct deserializer<s> {                                         \
+    template <typename I> static void deserialize(I &i, s &_s) {               \
+      USING_STRUCTURE(s, m)                                                    \
+      _s_v{_s, BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m)};              \
+      deserializer<decltype(_s_v)>::deserialize(i, _s_v);                      \
+    }                                                                          \
+  };                                                                           \
   }
+
+template <typename I, typename T> void deserialize(I &i, T &t) {
+  deserializer<T>::deserialize(i, t);
+}
 }
 #endif
