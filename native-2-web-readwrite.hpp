@@ -62,10 +62,7 @@ O &debug_print(O &o, T (&t)[N]) {
     << (is_arithmetic<T>::value ? "" : "\n");
   size_t i = 0;
   for (const auto &_t : t) {
-    debug_print<I + 1>(o << (is_arithmetic<T>::value
-                                 ? ""
-                                 : indent<typename O::char_type, I + 1>),
-                       _t);
+    debug_print<I + 1>(o, _t);
     if (++i < N)
       o << ", " << (is_arithmetic<T>::value ? "" : "\n");
   }

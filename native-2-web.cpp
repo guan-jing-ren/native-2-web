@@ -110,8 +110,8 @@ int main(int, char **) {
   n2w::execute(i, j, test_function);
   std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
             << std::distance(begin(ustr), j) << '\n';
-
-  int m[3][4][5];
+          
+  int m[3][4][5][2];
   n2w::debug_print(std::cout, m) << '\n';
 
   return 0;
