@@ -39,44 +39,108 @@ void execute(I &i, J &j, void (*f)(Ts...)) {
   execute(i, j, f, make_index_sequence<sizeof...(Ts)>{});
 }
 
-template <typename T> struct traverser;
+template <typename C> constexpr char indent_char = 0;
+template <> constexpr char indent_char<char> = ' ';
+template <> constexpr wchar_t indent_char<wchar_t> = L' ';
+template <> constexpr char16_t indent_char<char16_t> = u' ';
+template <> constexpr char32_t indent_char<char32_t> = U' ';
 
-void debug_print(bool t) {}
-template <typename T> 
-   auto debug_print(T t)
-      -> enable_if_t<is_arithmetic<T>::value){}
-template <typename T, size_t N> void debug_print(T (&)[N]) {}
-template <typename T, size_t N> void debug_print(array<T, N> &) {}
-template <typename T, typename U> void debug_print(pair<T, U> &) {}
-template <typename T, typename... Ts> void debug_print(tuple<T, Ts...> &) {}
-template <typename T, typename... Traits>
-void debug_print(basic_string<T, Traits...> &) {}
-template <typename T, typename... Traits>
-void debug_print(vector<T, Traits...> &) {}
-template <typename T, typename... Traits>
-void debug_print(list<T, Traits...> &) {}
-template <typename T, typename... Traits>
-void debug_print(forward_list<T, Traits...> &) {}
-template <typename T, typename... Traits>
-void debug_print(deque<T, Traits...> &) {}
-template <typename T, typename... Traits>
-void debug_print(set<T, Traits...> &) {}
-template <typename T, typename U, typename... Traits>
-void debug_print(map<T, U, Traits...> &) {}
-template <typename T, typename... Traits>
-void debug_print(unordered_set<T, Traits...> &) {}
-template <typename T, typename U, typename... Traits>
-void debug_print(unordered_map<T, U, Traits...> &) {}
-template <typename T, typename... Traits>
-void debug_print(multiset<T, Traits...> &) {}
-template <typename T, typename U, typename... Traits>
-void debug_print(multimap<T, U, Traits...> &) {}
-template <typename T, typename... Traits>
-void debug_print(unordered_multiset<T, Traits...> &) {}
-template <typename T, typename U, typename... Traits>
-void debug_print(unordered_multimap<T, U, Traits...> &) {}
-template <typename S, typename T, typename... Ts>
-void debug_print(structure<S, T, Ts...> &) {}
+constexpr size_t tab_size = 2;
+template <typename C, size_t I = 0>
+const basic_string<C> indent = basic_string<C>(I *tab_size, indent_char<C>);
+
+template <size_t I = 0, typename O> O &debug_print(O &o, bool t) {
+  return o << mangle_prefix<bool> << ":='" << t << "'";
+}
+template <size_t I = 0, typename O, typename T>
+auto debug_print(O &o, T t) -> enable_if_t<is_arithmetic<T>::value, O &> {
+  return o << mangle_prefix<T> << ":='" << t << "'";
+}
+template <size_t I = 0, typename O, typename T, size_t N>
+O &debug_print(O &o, T (&t)[N]) {
+  o << indent<typename O::char_type, I> << mangle_prefix<T[N]> << ":=["
+    << (is_arithmetic<T>::value ? "" : "\n");
+  size_t i = 0;
+  for (const auto &_t : t) {
+    debug_print<I + 1>(o << (is_arithmetic<T>::value
+                                 ? ""
+                                 : indent<typename O::char_type, I + 1>),
+                       _t);
+    if (++i < N)
+      o << ", " << (is_arithmetic<T>::value ? "" : "\n");
+  }
+  o << (is_arithmetic<T>::value ? "" : "\n" + indent<typename O::char_type, I>)
+    << ']';
+  return o;
+}
+template <size_t I = 0, typename O, typename T, size_t N>
+O &debug_print(O &o, array<T, N> &t) {
+  return o;
+}
+template <size_t I = 0, typename O, typename T, typename U>
+O &debug_print(O &o, pair<T, U> &t) {
+  return o;
+}
+template <size_t I = 0, typename O, typename T, typename... Ts>
+O &debug_print(O &o, tuple<T, Ts...> &t) {
+  return o;
+}
+template <size_t I = 0, typename O, typename T, typename... Traits>
+O &debug_print(O &o, basic_string<T, Traits...> &t) {
+  return o;
+}
+template <size_t I = 0, typename O, typename T, typename... Traits>
+O &debug_print(O &o, vector<T, Traits...> &t) {
+  return o;
+}
+template <size_t I = 0, typename O, typename T, typename... Traits>
+O &debug_print(O &o, list<T, Traits...> &t) {
+  return o;
+}
+template <size_t I = 0, typename O, typename T, typename... Traits>
+O &debug_print(O &o, forward_list<T, Traits...> &t) {
+  return o;
+}
+template <size_t I = 0, typename O, typename T, typename... Traits>
+O &debug_print(O &o, deque<T, Traits...> &t) {
+  return o;
+}
+template <size_t I = 0, typename O, typename T, typename... Traits>
+O &debug_print(O &o, set<T, Traits...> &t) {
+  return o;
+}
+template <size_t I = 0, typename O, typename T, typename U, typename... Traits>
+O &debug_print(O &o, map<T, U, Traits...> &t) {
+  return o;
+}
+template <size_t I = 0, typename O, typename T, typename... Traits>
+O &debug_print(O &o, unordered_set<T, Traits...> &t) {
+  return o;
+}
+template <size_t I = 0, typename O, typename T, typename U, typename... Traits>
+O &debug_print(O &o, unordered_map<T, U, Traits...> &t) {
+  return o;
+}
+template <size_t I = 0, typename O, typename T, typename... Traits>
+O &debug_print(O &o, multiset<T, Traits...> &t) {
+  return o;
+}
+template <size_t I = 0, typename O, typename T, typename U, typename... Traits>
+O &debug_print(O &o, multimap<T, U, Traits...> &t) {
+  return o;
+}
+template <size_t I = 0, typename O, typename T, typename... Traits>
+O &debug_print(O &o, unordered_multiset<T, Traits...> &t) {
+  return o;
+}
+template <size_t I = 0, typename O, typename T, typename U, typename... Traits>
+O &debug_print(O &o, unordered_multimap<T, U, Traits...> &t) {
+  return o;
+}
+template <size_t I = 0, typename O, typename S, typename T, typename... Ts>
+O &debug_print(O &o, structure<S, T, Ts...> &t) {
+  return o;
+}
 }
 
 #endif

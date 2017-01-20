@@ -13,9 +13,9 @@ void swap_test() noexcept {
 }
 
 struct test_structure {
-  std::tuple<int> a;                             // 90*4
-  std::array<std::vector<double>, 5> b;                     // 5*4
-  std::pair<int, std::array<std::vector<double>, 0>> c; // 90*4 + 5*4
+  std::tuple<int> a;                                            // 90*4
+  std::array<std::vector<double>, 5> b;                         // 5*4
+  std::pair<int, std::array<std::vector<double>, 0>> c;         // 90*4 + 5*4
   std::tuple<int, float, std::unordered_set<std::u16string>> d; // 90*4+4+4
   std::multimap<std::wstring,
                 std::tuple<std::pair<int, long>, std::vector<double>,
@@ -25,9 +25,7 @@ struct test_structure {
 
 READ_WRITE_SPEC(test_structure, (a)(b)(c)(d)(e));
 
-test_structure test_function(const test_structure& t) {
-    return t;
-}
+test_structure test_function(const test_structure &t) { return t; }
 
 int main(int, char **) {
   std::cout << n2w::endianness<> << '\n';
@@ -112,6 +110,9 @@ int main(int, char **) {
   n2w::execute(i, j, test_function);
   std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
             << std::distance(begin(ustr), j) << '\n';
+
+  int m[3][4][5];
+  n2w::debug_print(std::cout, m) << '\n';
 
   return 0;
 }
