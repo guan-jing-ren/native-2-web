@@ -117,6 +117,7 @@ int main(int, char **) {
   n2w::debug_print(std::cout, c) << '\n';
   n2w::debug_print(std::cout, d) << '\n';
   n2w::debug_print(std::cout, e) << '\n';
+  n2w::debug_print(std::cout, t) << '\n';
   n2w::debug_print(std::cout, "Hello world!") << '\n';
   char s[] = "goodbye world";
   n2w::debug_print(std::cout, s) << '\n';

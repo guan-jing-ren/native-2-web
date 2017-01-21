@@ -75,6 +75,10 @@ auto &get(structure<S, T, Ts...> &s) {
   return s.s.*get<N>(s.members);
 }
 
+template <size_t I, typename T>
+using tuple_element_t =
+    std::remove_cv_t<std::remove_reference_t<decltype(get<I>(std::declval<T>()))>>;
+
 #define DECLTYPES(r, data, i, elem) BOOST_PP_COMMA_IF(i) decltype(data::elem)
 #define USING_STRUCTURE(s, m)                                                  \
   n2w::structure<s, BOOST_PP_SEQ_FOR_EACH_I(DECLTYPES, s, m)>

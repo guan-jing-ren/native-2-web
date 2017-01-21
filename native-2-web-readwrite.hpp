@@ -9,7 +9,8 @@
 #define READ_WRITE_SPEC(s, m)                                                  \
   MANGLE_SPEC(s, m);                                                           \
   SERIALIZE_SPEC(s, m);                                                        \
-  DESERIALIZE_SPEC(s, m);
+  DESERIALIZE_SPEC(s, m);                                                      \
+  DEBUG_SPEC(s, m);
 
 namespace n2w {
 using namespace std;
@@ -53,6 +54,8 @@ const basic_string<C> indent = basic_string<C>(I *tab_size, indent_char<C>);
 template <typename T> struct printer;
 template <typename O, typename T> O &debug_print(O &o, const T &t) {
   return printer<T>::debug_print(o, t);
+template <typename O, size_t N> O &debug_print(O &o, const char (&t)[N]) {
+  return o << mangle<basic_string<char>> << ":=\"" << t << '"';
 }
 
 template <> struct printer<bool> {
@@ -233,6 +236,17 @@ struct printer<structure<S, T, Ts...>> {
     return o;
   }
 };
+
+#define DEBUG_SPEC(s, m)                                                       \
+  namespace n2w {                                                              \
+  template <> struct printer<s> {                                              \
+    template <size_t I = 0, typename O> static O &debug_print(O &o, s &_s) {   \
+      USING_STRUCTURE(s, m)                                                    \
+      _s_v{_s, BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m)};              \
+      return printer<decltype(_s_v)>::template debug_print<I>(o, _s_v);        \
+    }                                                                          \
+  };                                                                           \
+  }
 }
 
 #endif
