@@ -56,14 +56,14 @@ template <typename O, typename T> O &debug_print(O &o, T &t) {
 
 template <> struct printer<bool> {
   template <size_t I = 0, typename O> static O &debug_print(O &o, bool t) {
-    return o << mangle_prefix<bool> << ":='" << t << "'";
+    return o << mangle<bool> << ":='" << t << "'";
   }
 };
 
 template <size_t I = 0, typename O, typename T>
 O &print_range(O &o, T &t, size_t count) {
   using T2 = remove_cv_t<remove_reference_t<decltype(*begin(t))>>;
-  o << indent<typename O::char_type, I> << mangle_prefix<T> << ":=["
+  o << indent<typename O::char_type, I> << mangle<T> << ":=["
     << (is_arithmetic<T2>::value ? "" : "\n");
   size_t i = 0;
   for (auto &_t : t) {
@@ -80,7 +80,7 @@ template <typename T> struct printer {
   template <size_t I = 0, typename O>
   static auto debug_print(O &o, T t)
       -> enable_if_t<is_arithmetic<T>::value, O &> {
-    return o << mangle_prefix<T> << ":='" << t << "'";
+    return o << mangle<T> << ":='" << t << "'";
   }
 };
 template <typename T, size_t N> struct printer<T[N]> {
