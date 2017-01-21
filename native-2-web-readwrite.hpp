@@ -60,8 +60,9 @@ template <> struct printer<bool> {
   }
 };
 
-template <typename T2, size_t I = 0, typename O, typename T>
+template <size_t I = 0, typename O, typename T>
 O &print_range(O &o, T &t, size_t count) {
+  using T2 = remove_cv_t<remove_reference_t<decltype(*begin(t))>>;
   o << indent<typename O::char_type, I> << mangle_prefix<T> << ":=["
     << (is_arithmetic<T2>::value ? "" : "\n");
   size_t i = 0;
@@ -84,7 +85,7 @@ template <typename T> struct printer {
 };
 template <typename T, size_t N> struct printer<T[N]> {
   template <size_t I = 0, typename O> static O &debug_print(O &o, T (&t)[N]) {
-    return print_range<T, I>(o, t, N);
+    return print_range<I>(o, t, N);
   }
 };
 template <typename T, size_t N> struct printer<array<T, N>> {
