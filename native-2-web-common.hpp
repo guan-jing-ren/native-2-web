@@ -83,6 +83,22 @@ auto &get(structure<S, T, Ts...> &s) {
 }
 
 template <size_t N, typename T, typename U>
+const char *at(const std::pair<T, U> &) {
+  return "";
+}
+
+template <size_t N, typename T, typename... Ts>
+const char *at(const std::tuple<T, Ts...> &) {
+  return "";
+}
+
+template <size_t N, typename S, typename T, typename... Ts>
+std::string at(const structure<S, T, Ts...> &s) {
+  auto m_p = std::get<N>(s.members);
+  return "@" + std::to_string(*reinterpret_cast<std::uintptr_t *>(&m_p));
+}
+
+template <size_t N, typename T, typename U>
 const char *name(const std::pair<T, U> &) {
   constexpr const char *pair[] = {"first", "second"};
   return pair[N];
