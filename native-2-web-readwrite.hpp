@@ -106,6 +106,12 @@ template <typename T, typename... Ts> struct printer<tuple<T, Ts...>> {
     return o;
   }
 };
+template <size_t N> struct printer<const char[N]> {
+  template <size_t I = 0, typename O>
+  static O &debug_print(O &o, const char (&t)[N]) {
+    return o << mangle<basic_string<char>> << ":=\"" << t << '"';
+  }
+};
 template <typename T, typename... Traits>
 struct printer<basic_string<T, Traits...>> {
   template <size_t I = 0, typename O>

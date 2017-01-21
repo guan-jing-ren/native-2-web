@@ -110,9 +110,13 @@ int main(int, char **) {
   n2w::execute(i, j, test_function);
   std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
             << std::distance(begin(ustr), j) << '\n';
-          
+
   int m[3][4][5][2];
   n2w::debug_print(std::cout, m) << '\n';
+  n2w::debug_print(std::cout, b) << '\n';
+  n2w::debug_print(std::cout, "Hello world!") << '\n';
+  char s[] = "goodbye world";
+  n2w::debug_print(std::cout, s);
 
   return 0;
 }
