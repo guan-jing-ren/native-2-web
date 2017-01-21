@@ -78,6 +78,27 @@ auto &get(structure<S, T, Ts...> &s) {
   return s.s.*get<N>(s.members);
 }
 
+template <size_t N, typename T, typename U>
+const char *name(const std::pair<T, U> &) {
+  constexpr const char *pair[] = {"first", "second"};
+  return pair[N];
+}
+
+template <size_t N, typename T, typename... Ts>
+std::string name(const std::tuple<T, Ts...> &) {
+  return std::to_string(N);
+}
+
+template <size_t N, typename S, typename T, typename... Ts>
+const char *name(const structure<S, T, Ts...> &s) {
+  return *(begin(s.names) + N + 1);
+}
+
+template <size_t N, typename S, typename T, typename... Ts>
+const char *name(structure<S, T, Ts...> &s) {
+  return *(begin(s.names) + N + 1);
+}
+
 template <size_t I, typename T>
 using tuple_element_t = std::remove_cv_t<
     std::remove_reference_t<decltype(get<I>(std::declval<T>()))>>;
@@ -88,11 +109,11 @@ using tuple_element_t = std::remove_cv_t<
 #define POINTER_TO_MEMBER(r, data, i, elem) BOOST_PP_COMMA_IF(i) & data::elem
 #define MAKE_MEMBER_TUPLE(s, m)                                                \
   std::make_tuple(BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m))
-#define MEM_NAME(r, data, i, elem) BOOST_PP_COMMA_IF(i) #elem
+#define MEM_NAME(r, data, i, elem) BOOST_PP_COMMA_IF(i) BOOST_PP_STRINGIZE(elem)
 #define MEMBER_NAMES(m) BOOST_PP_SEQ_FOR_EACH_I(MEM_NAME, _, m)
 #define CONSTRUCTOR(s, m, o)                                                   \
   USING_STRUCTURE(s, m) o##_v {                                                \
-    o, MAKE_MEMBER_TUPLE(s, m), { BOOST_PP_STRINGIZE(s), MEMBER_NAMES(m) }     \
+    o, MAKE_MEMBER_TUPLE(s, m), { #s, MEMBER_NAMES(m) }                        \
   }
 }
 
