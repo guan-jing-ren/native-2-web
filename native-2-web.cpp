@@ -112,11 +112,14 @@ int main(int, char **) {
             << std::distance(begin(ustr), j) << '\n';
 
   int m[3][4][5][2];
-  n2w::debug_print(std::cout, m) << '\n';
+  n2w::debug_print(std::cout, a) << '\n';
   n2w::debug_print(std::cout, b) << '\n';
+  n2w::debug_print(std::cout, c) << '\n';
+  n2w::debug_print(std::cout, d) << '\n';
+  n2w::debug_print(std::cout, e) << '\n';
   n2w::debug_print(std::cout, "Hello world!") << '\n';
   char s[] = "goodbye world";
-  n2w::debug_print(std::cout, s);
+  n2w::debug_print(std::cout, s) << '\n';
 
   return 0;
 }

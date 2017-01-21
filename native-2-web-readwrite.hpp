@@ -4,6 +4,7 @@
 #include "native-2-web-manglespec.hpp"
 #include "native-2-web-deserialize.hpp"
 #include "native-2-web-serialize.hpp"
+#include <locale>
 
 #define READ_WRITE_SPEC(s, m)                                                  \
   MANGLE_SPEC(s, m);                                                           \
@@ -77,6 +78,26 @@ O &print_sequence(O &o, const T &t, size_t count) {
   return o;
 }
 
+template <size_t I = 0, typename O, typename T, size_t... Is>
+O &print_heterogenous(O &o, const T &t, index_sequence<Is...>) {
+  bool is_num = true;
+  for (auto b : {is_arithmetic<
+           remove_cv_t<remove_reference_t<tuple_element_t<Is, T>>>>::value...})
+    is_num &= b;
+
+  o << indent<typename O::char_type,
+              I> << mangle<remove_cv_t<remove_reference_t<T>>> << ":={"
+    << (is_num ? "" : "\n");
+  for (auto &_o :
+       {&(printer<remove_cv_t<remove_reference_t<tuple_element_t<Is, T>>>>::
+              template debug_print<Is + 1>(o, get<Is>(t))
+          << (Is < sizeof...(Is) ? string{", "} + (is_num ? "" : "\n")
+                                 : ""))...})
+    (void)_o;
+  o << (is_num ? "" : "\n" + indent<typename O::char_type, I>) << '}';
+  return o;
+}
+
 template <typename T> struct printer {
   template <size_t I = 0, typename O>
   static auto debug_print(O &o, T t)
@@ -99,13 +120,14 @@ template <typename T, size_t N> struct printer<array<T, N>> {
 template <typename T, typename U> struct printer<pair<T, U>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, const pair<T, U> &t) {
-    return o;
+    return print_heterogenous<I>(o, t, make_index_sequence<2>{});
   }
 };
 template <typename T, typename... Ts> struct printer<tuple<T, Ts...>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, const tuple<T, Ts...> &t) {
-    return o;
+    return print_heterogenous<I>(o, t,
+                                 make_index_sequence<sizeof...(Ts) + 1>{});
   }
 };
 template <size_t N> struct printer<const char[N]> {
@@ -118,7 +140,10 @@ template <typename T, typename... Traits>
 struct printer<basic_string<T, Traits...>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, const basic_string<T, Traits...> &t) {
-    return o << mangle<basic_string<T, Traits...>> << ":=\"" << t << '"';
+    struct cvt : codecvt<T, typename O::char_type, mbstate_t> {};
+    wstring_convert<cvt, T> cvter;
+    return o << mangle<basic_string<T, Traits...>> << ":=\""
+             << cvter.to_bytes(t) << '"';
   }
 };
 template <typename T, typename... Traits> struct printer<vector<T, Traits...>> {
