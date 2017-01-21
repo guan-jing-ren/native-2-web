@@ -91,7 +91,7 @@ template <typename T, size_t N> struct printer<T[N]> {
 template <typename T, size_t N> struct printer<array<T, N>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, array<T, N> &t) {
-    return o;
+    return print_range<I>(o, t, N);
   }
 };
 template <typename T, typename U> struct printer<pair<T, U>> {
@@ -110,87 +110,87 @@ template <typename T, typename... Traits>
 struct printer<basic_string<T, Traits...>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, basic_string<T, Traits...> &t) {
-    return o;
+    return o << mangle<basic_string<T, Traits...>> << ":=\"" << t << '"';
   }
 };
 template <typename T, typename... Traits> struct printer<vector<T, Traits...>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, vector<T, Traits...> &t) {
-    return o;
+    return print_range<I>(o, t, t.size());
   }
 };
 template <typename T, typename... Traits> struct printer<list<T, Traits...>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, list<T, Traits...> &t) {
-    return o;
+    return print_range<I>(o, t, t.size());
   }
 };
 template <typename T, typename... Traits>
 struct printer<forward_list<T, Traits...>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, forward_list<T, Traits...> &t) {
-    return o;
+    return print_range<I>(o, t, t.size());
   }
 };
 template <typename T, typename... Traits> struct printer<deque<T, Traits...>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, deque<T, Traits...> &t) {
-    return o;
+    return print_range<I>(o, t, t.size());
   }
 };
 template <typename T, typename... Traits> struct printer<set<T, Traits...>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, set<T, Traits...> &t) {
-    return o;
+    return print_range<I>(o, t, t.size());
   }
 };
 template <typename T, typename U, typename... Traits>
 struct printer<map<T, U, Traits...>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, map<T, U, Traits...> &t) {
-    return o;
+    return print_range<I>(o, t, t.size());
   }
 };
 template <typename T, typename... Traits>
 struct printer<unordered_set<T, Traits...>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, unordered_set<T, Traits...> &t) {
-    return o;
+    return print_range<I>(o, t, t.size());
   }
 };
 template <typename T, typename U, typename... Traits>
 struct printer<unordered_map<T, U, Traits...>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, unordered_map<T, U, Traits...> &t) {
-    return o;
+    return print_range<I>(o, t, t.size());
   }
 };
 template <typename T, typename... Traits>
 struct printer<multiset<T, Traits...>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, multiset<T, Traits...> &t) {
-    return o;
+    return print_range<I>(o, t, t.size());
   }
 };
 template <typename T, typename U, typename... Traits>
 struct printer<multimap<T, U, Traits...>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, multimap<T, U, Traits...> &t) {
-    return o;
+    return print_range<I>(o, t, t.size());
   }
 };
 template <typename T, typename... Traits>
 struct printer<unordered_multiset<T, Traits...>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, unordered_multiset<T, Traits...> &t) {
-    return o;
+    return print_range<I>(o, t, t.size());
   }
 };
 template <typename T, typename U, typename... Traits>
 struct printer<unordered_multimap<T, U, Traits...>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, unordered_multimap<T, U, Traits...> &t) {
-    return o;
+    return print_range<I>(o, t, t.size());
   }
 };
 template <typename S, typename T, typename... Ts>
