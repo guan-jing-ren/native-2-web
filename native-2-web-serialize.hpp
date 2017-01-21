@@ -232,8 +232,7 @@ struct serializer<structure<S, T, Ts...>> {
   namespace n2w {                                                              \
   template <> struct serializer<s> {                                           \
     template <typename I> static void serialize(s &_s, I &i) {                 \
-      USING_STRUCTURE(s, m)                                                    \
-      _s_v{_s, BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m)};              \
+      CONSTRUCTOR(s, m, _s);                                                   \
       serializer<decltype(_s_v)>::serialize(_s_v, i);                          \
     }                                                                          \
   };                                                                           \

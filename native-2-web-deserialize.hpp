@@ -220,8 +220,7 @@ struct deserializer<structure<S, T, Ts...>> {
   namespace n2w {                                                              \
   template <> struct deserializer<s> {                                         \
     template <typename I> static void deserialize(I &i, s &_s) {               \
-      USING_STRUCTURE(s, m)                                                    \
-      _s_v{_s, BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m)};              \
+      CONSTRUCTOR(s, m, _s);                                                   \
       deserializer<decltype(_s_v)>::deserialize(i, _s_v);                      \
     }                                                                          \
   };                                                                           \

@@ -62,7 +62,10 @@ namespace n2w {
 template <typename S, typename T, typename... Ts> struct structure {
   S &s;
   std::tuple<T S::*, Ts S::*...> members;
-  structure(S &s, T(S::*t), Ts(S::*... ts)) : s(s), members(t, ts...) {}
+  std::initializer_list<const char *> names;
+  structure(S &s, const std::tuple<T S::*, Ts S::*...> &t,
+            std::initializer_list<const char *> n)
+      : s(s), members(t), names(n) {}
 };
 
 template <size_t N, typename S, typename T, typename... Ts>
@@ -76,13 +79,21 @@ auto &get(structure<S, T, Ts...> &s) {
 }
 
 template <size_t I, typename T>
-using tuple_element_t =
-    std::remove_cv_t<std::remove_reference_t<decltype(get<I>(std::declval<T>()))>>;
+using tuple_element_t = std::remove_cv_t<
+    std::remove_reference_t<decltype(get<I>(std::declval<T>()))>>;
 
 #define DECLTYPES(r, data, i, elem) BOOST_PP_COMMA_IF(i) decltype(data::elem)
 #define USING_STRUCTURE(s, m)                                                  \
   n2w::structure<s, BOOST_PP_SEQ_FOR_EACH_I(DECLTYPES, s, m)>
 #define POINTER_TO_MEMBER(r, data, i, elem) BOOST_PP_COMMA_IF(i) & data::elem
+#define MAKE_MEMBER_TUPLE(s, m)                                                \
+  std::make_tuple(BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m))
+#define MEM_NAME(r, data, i, elem) BOOST_PP_COMMA_IF(i) #elem
+#define MEMBER_NAMES(m) BOOST_PP_SEQ_FOR_EACH_I(MEM_NAME, _, m)
+#define CONSTRUCTOR(s, m, o)                                                   \
+  USING_STRUCTURE(s, m) o##_v {                                                \
+    o, MAKE_MEMBER_TUPLE(s, m), { BOOST_PP_STRINGIZE(s), MEMBER_NAMES(m) }     \
+  }
 }
 
 #endif
