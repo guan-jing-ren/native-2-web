@@ -94,9 +94,9 @@ O &print_heterogenous(O &o, T &t, index_sequence<Is...>) {
     << (is_num ? "" : "\n");
   for (auto &_o :
        {&(printer<remove_cv_t<remove_reference_t<tuple_element_t<Is, T>>>>::
-              template debug_print<Is + 1>(o, get<Is>(t))
-          << (Is < sizeof...(Is) ? string{", "} + (is_num ? "" : "\n")
-                                 : ""))...})
+              template debug_print<I + 1>(o, get<Is>(t))
+          << ((Is + 1) < sizeof...(Is) ? string{", "} + (is_num ? "" : "\n")
+                                       : ""))...})
     (void)_o;
   o << (is_num ? "" : "\n" + indent<typename O::char_type, I>) << '}';
   return o;
