@@ -70,31 +70,39 @@ O &print_sequence(O &o, T &t, size_t count) {
   using T2 = remove_cv_t<remove_reference_t<decltype(*begin(t))>>;
   o << indent<typename O::char_type,
               I> << mangle<remove_cv_t<remove_reference_t<T>>> << ":=["
-    << (is_arithmetic<T2>::value ? "" : "\n");
+    << (is_arithmetic<T2>::value || !count ? "" : "\n");
   size_t i = 0;
-  for (auto &_t : t) {
-    printer<T2>::template debug_print<I + 1>(o, _t);
-    if (++i < count)
-      o << ", " << (is_arithmetic<T2>::value ? "" : "\n");
-  }
-  o << (is_arithmetic<T2>::value ? "" : "\n" + indent<typename O::char_type, I>)
+  if (count)
+    for (auto &_t : t) {
+      printer<T2>::template debug_print<I + 1>(o, _t);
+      if (++i < count)
+        o << ", " << (is_arithmetic<T2>::value ? "" : "\n");
+    }
+  o << (is_arithmetic<T2>::value || !count
+            ? ""
+            : "\n" + indent<typename O::char_type, I>)
     << ']';
   return o;
 }
 
-template <size_t I = 0, typename O, typename T, size_t... Is>
-O &print_heterogenous(O &o, T &t, index_sequence<Is...>) {
+template <typename T, size_t... Is>
+constexpr bool is_all_num(index_sequence<Is...>) {
   bool is_num = true;
   for (auto b : {is_arithmetic<
            remove_cv_t<remove_reference_t<tuple_element_t<Is, T>>>>::value...})
     is_num &= b;
+  return is_num;
+}
 
+template <size_t I = 0, typename O, typename T, size_t... Is>
+O &print_heterogenous(O &o, T &t, index_sequence<Is...>) {
+  constexpr bool is_num = is_all_num<T>(index_sequence<Is...>{});
   o << indent<typename O::char_type,
               I> << mangle<remove_cv_t<remove_reference_t<T>>> << ":={"
     << (is_num ? "" : "\n");
   for (auto &_o :
        {&(printer<remove_cv_t<remove_reference_t<tuple_element_t<Is, T>>>>::
-              template debug_print<I + 1>(o, get<Is>(t))
+              template debug_print<(is_num ? 0u : (I + 1))>(o, get<Is>(t))
           << ((Is + 1) < sizeof...(Is) ? string{", "} + (is_num ? "" : "\n")
                                        : ""))...})
     (void)_o;
@@ -106,7 +114,9 @@ template <typename T> struct printer {
   template <size_t I = 0, typename O>
   static auto debug_print(O &o, T t)
       -> enable_if_t<is_arithmetic<T>::value, O &> {
-    return o << mangle<remove_cv_t<remove_reference_t<T>>> << ":='" << t << "'";
+    return o << indent<typename O::char_type,
+                       I> << mangle<remove_cv_t<remove_reference_t<T>>> << ":='"
+             << t << "'";
   }
 };
 template <typename T, size_t N> struct printer<T[N]> {
