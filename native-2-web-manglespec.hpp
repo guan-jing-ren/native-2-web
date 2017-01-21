@@ -59,6 +59,7 @@ constexpr auto mangle_prefix<R(Ts...)> = '^';
 
 template <> constexpr auto mangle<void> = '0';
 template <> constexpr auto mangle<bool> = 'b';
+template <> constexpr auto mangle<char> = "'3";
 template <> constexpr auto mangle<wchar_t> = "'w";
 template <> constexpr auto mangle<char16_t> = "'4";
 template <> constexpr auto mangle<char32_t> = "'5";
