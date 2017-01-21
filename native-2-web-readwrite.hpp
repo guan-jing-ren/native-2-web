@@ -52,7 +52,7 @@ template <typename C, size_t I = 0>
 const basic_string<C> indent = basic_string<C>(I *tab_size, indent_char<C>);
 
 template <typename T> struct printer;
-template <typename O, typename T> O &debug_print(O &o, T &t) {
+template <typename O, typename T> O &debug_print(O &o, const T &t) {
   return printer<T>::template debug_print(o, t);
 }
 template <typename O, size_t N> O &debug_print(O &o, const char (&t)[N]) {
@@ -66,7 +66,7 @@ template <> struct printer<bool> {
 };
 
 template <size_t I = 0, typename O, typename T>
-O &print_sequence(O &o, T &t, size_t count) {
+O &print_sequence(O &o, const T &t, size_t count) {
   using T2 = remove_cv_t<remove_reference_t<decltype(*begin(t))>>;
   o << indent<typename O::char_type,
               I> << mangle<remove_cv_t<remove_reference_t<T>>> << ":=["
@@ -121,32 +121,33 @@ template <typename T> struct printer {
   }
 };
 template <typename T, size_t N> struct printer<T[N]> {
-  template <size_t I = 0, typename O> static O &debug_print(O &o, T (&t)[N]) {
+  template <size_t I = 0, typename O>
+  static O &debug_print(O &o, const T (&t)[N]) {
     return print_sequence<I>(o, t, N);
   }
 };
 template <typename T, size_t N> struct printer<array<T, N>> {
   template <size_t I = 0, typename O>
-  static O &debug_print(O &o, array<T, N> &t) {
+  static O &debug_print(O &o, const array<T, N> &t) {
     return print_sequence<I>(o, t, N);
   }
 };
 template <typename T, typename U> struct printer<pair<T, U>> {
   template <size_t I = 0, typename O>
-  static O &debug_print(O &o, pair<T, U> &t) {
+  static O &debug_print(O &o, const pair<T, U> &t) {
     return print_heterogenous<I>(o, t, make_index_sequence<2>{});
   }
 };
 template <typename T, typename... Ts> struct printer<tuple<T, Ts...>> {
   template <size_t I = 0, typename O>
-  static O &debug_print(O &o, tuple<T, Ts...> &t) {
+  static O &debug_print(O &o, const tuple<T, Ts...> &t) {
     return print_heterogenous<I>(o, t,
                                  make_index_sequence<sizeof...(Ts) + 1>{});
   }
 };
-template <size_t N> struct printer<const char[N]> {
+template <size_t N> struct printer<char[N]> {
   template <size_t I = 0, typename O>
-  static O &debug_print(O &o, char (&t)[N]) {
+  static O &debug_print(O &o, const char (&t)[N]) {
     return o << mangle<basic_string<char>> << ":=\"" << t << '"';
   }
 };
@@ -162,88 +163,88 @@ struct printer<basic_string<T, Traits...>> {
 };
 template <typename T, typename... Traits> struct printer<vector<T, Traits...>> {
   template <size_t I = 0, typename O>
-  static O &debug_print(O &o, vector<T, Traits...> &t) {
+  static O &debug_print(O &o, const vector<T, Traits...> &t) {
     return print_sequence<I>(o, t, t.size());
   }
 };
 template <typename T, typename... Traits> struct printer<list<T, Traits...>> {
   template <size_t I = 0, typename O>
-  static O &debug_print(O &o, list<T, Traits...> &t) {
+  static O &debug_print(O &o, const list<T, Traits...> &t) {
     return print_sequence<I>(o, t, t.size());
   }
 };
 template <typename T, typename... Traits>
 struct printer<forward_list<T, Traits...>> {
   template <size_t I = 0, typename O>
-  static O &debug_print(O &o, forward_list<T, Traits...> &t) {
+  static O &debug_print(O &o, const forward_list<T, Traits...> &t) {
     return print_sequence<I>(o, t, t.size());
   }
 };
 template <typename T, typename... Traits> struct printer<deque<T, Traits...>> {
   template <size_t I = 0, typename O>
-  static O &debug_print(O &o, deque<T, Traits...> &t) {
+  static O &debug_print(O &o, const deque<T, Traits...> &t) {
     return print_sequence<I>(o, t, t.size());
   }
 };
 template <typename T, typename... Traits> struct printer<set<T, Traits...>> {
   template <size_t I = 0, typename O>
-  static O &debug_print(O &o, set<T, Traits...> &t) {
+  static O &debug_print(O &o, const set<T, Traits...> &t) {
     return print_sequence<I>(o, t, t.size());
   }
 };
 template <typename T, typename U, typename... Traits>
 struct printer<map<T, U, Traits...>> {
   template <size_t I = 0, typename O>
-  static O &debug_print(O &o, map<T, U, Traits...> &t) {
+  static O &debug_print(O &o, const map<T, U, Traits...> &t) {
     return print_sequence<I>(o, t, t.size());
   }
 };
 template <typename T, typename... Traits>
 struct printer<unordered_set<T, Traits...>> {
   template <size_t I = 0, typename O>
-  static O &debug_print(O &o, unordered_set<T, Traits...> &t) {
+  static O &debug_print(O &o, const unordered_set<T, Traits...> &t) {
     return print_sequence<I>(o, t, t.size());
   }
 };
 template <typename T, typename U, typename... Traits>
 struct printer<unordered_map<T, U, Traits...>> {
   template <size_t I = 0, typename O>
-  static O &debug_print(O &o, unordered_map<T, U, Traits...> &t) {
+  static O &debug_print(O &o, const unordered_map<T, U, Traits...> &t) {
     return print_sequence<I>(o, t, t.size());
   }
 };
 template <typename T, typename... Traits>
 struct printer<multiset<T, Traits...>> {
   template <size_t I = 0, typename O>
-  static O &debug_print(O &o, multiset<T, Traits...> &t) {
+  static O &debug_print(O &o, const multiset<T, Traits...> &t) {
     return print_sequence<I>(o, t, t.size());
   }
 };
 template <typename T, typename U, typename... Traits>
 struct printer<multimap<T, U, Traits...>> {
   template <size_t I = 0, typename O>
-  static O &debug_print(O &o, multimap<T, U, Traits...> &t) {
+  static O &debug_print(O &o, const multimap<T, U, Traits...> &t) {
     return print_sequence<I>(o, t, t.size());
   }
 };
 template <typename T, typename... Traits>
 struct printer<unordered_multiset<T, Traits...>> {
   template <size_t I = 0, typename O>
-  static O &debug_print(O &o, unordered_multiset<T, Traits...> &t) {
+  static O &debug_print(O &o, const unordered_multiset<T, Traits...> &t) {
     return print_sequence<I>(o, t, t.size());
   }
 };
 template <typename T, typename U, typename... Traits>
 struct printer<unordered_multimap<T, U, Traits...>> {
   template <size_t I = 0, typename O>
-  static O &debug_print(O &o, unordered_multimap<T, U, Traits...> &t) {
+  static O &debug_print(O &o, const unordered_multimap<T, U, Traits...> &t) {
     return print_sequence<I>(o, t, t.size());
   }
 };
 template <typename S, typename T, typename... Ts>
 struct printer<structure<S, T, Ts...>> {
   template <size_t I = 0, typename O>
-  static O &debug_print(O &o, structure<S, T, Ts...> &t) {
+  static O &debug_print(O &o, const structure<S, T, Ts...> &t) {
     return print_heterogenous<I>(o, t, make_index_sequence<sizeof...(Ts) + 1>{})
            << " `" << *begin(t.names) << '`';
   }
@@ -252,7 +253,8 @@ struct printer<structure<S, T, Ts...>> {
 #define DEBUG_SPEC(s, m)                                                       \
   namespace n2w {                                                              \
   template <> struct printer<s> {                                              \
-    template <size_t I = 0, typename O> static O &debug_print(O &o, s &_s) {   \
+    template <size_t I = 0, typename O>                                        \
+    static O &debug_print(O &o, const s &_s) {                                 \
       CONSTRUCTOR(s, m, _s);                                                   \
       return printer<decltype(_s_v)>::template debug_print<I>(o, _s_v);        \
     }                                                                          \

@@ -60,22 +60,26 @@ constexpr auto calc_padding(std::size_t count = 0) {
 
 namespace n2w {
 template <typename S, typename T, typename... Ts> struct structure {
-  S &s;
-  std::tuple<T S::*, Ts S::*...> members;
-  std::initializer_list<const char *> names;
-  structure(S &s, const std::tuple<T S::*, Ts S::*...> &t,
+  S *s_write;
+  const S *s_read;
+  const std::tuple<T S::*, Ts S::*...> members;
+  const std::initializer_list<const char *> names;
+  structure(S *s, const std::tuple<T S::*, Ts S::*...> &t,
             std::initializer_list<const char *> n)
-      : s(s), members(t), names(n) {}
+      : s_write(s), s_read(s), members(t), names(n) {}
+  structure(const S *s, const std::tuple<T S::*, Ts S::*...> &t,
+            std::initializer_list<const char *> n)
+      : s_read(s), members(t), names(n) {}
 };
 
 template <size_t N, typename S, typename T, typename... Ts>
 auto &get(const structure<S, T, Ts...> &s) {
-  return s.s.*get<N>(s.members);
+  return s.s_read->*get<N>(s.members);
 }
 
 template <size_t N, typename S, typename T, typename... Ts>
 auto &get(structure<S, T, Ts...> &s) {
-  return s.s.*get<N>(s.members);
+  return s.s_write->*get<N>(s.members);
 }
 
 template <size_t N, typename T, typename U>
@@ -94,11 +98,6 @@ const char *name(const structure<S, T, Ts...> &s) {
   return *(begin(s.names) + N + 1);
 }
 
-template <size_t N, typename S, typename T, typename... Ts>
-const char *name(structure<S, T, Ts...> &s) {
-  return *(begin(s.names) + N + 1);
-}
-
 template <size_t I, typename T>
 using tuple_element_t = std::remove_cv_t<
     std::remove_reference_t<decltype(get<I>(std::declval<T>()))>>;
@@ -113,7 +112,7 @@ using tuple_element_t = std::remove_cv_t<
 #define MEMBER_NAMES(m) BOOST_PP_SEQ_FOR_EACH_I(MEM_NAME, _, m)
 #define CONSTRUCTOR(s, m, o)                                                   \
   USING_STRUCTURE(s, m) o##_v {                                                \
-    o, MAKE_MEMBER_TUPLE(s, m), { #s, MEMBER_NAMES(m) }                        \
+    &o, MAKE_MEMBER_TUPLE(s, m), { #s, MEMBER_NAMES(m) }                       \
   }
 }
 
