@@ -105,7 +105,7 @@ O &print_heterogenous(O &o, T &t, index_sequence<Is...>) {
   for (auto &_o :
        {&(printer<remove_cv_t<remove_reference_t<element_t<Is, T>>>>::
               template debug_print<(is_num ? 0u : (I + 1))>(o, get<Is>(t))
-          << " `" << name<Is>(t) << '`' << at<Is>(t)
+          << "\t`" << name<Is>(t) << '`' << at<Is>(t)
           << ((Is + 1) < sizeof...(Is) ? string{", "} + (is_num ? "" : "\n")
                                        : ""))...})
     (void)_o;
@@ -248,7 +248,7 @@ struct printer<structure<S, T, Ts...>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, const structure<S, T, Ts...> &t) {
     return print_heterogenous<I>(o, t, make_index_sequence<sizeof...(Ts) + 1>{})
-           << " `" << *begin(t.names) << '`';
+           << "\t`" << *begin(t.names) << '`';
   }
 };
 
