@@ -28,7 +28,7 @@ R execute(I &i, J &j, R (*f)(Ts...), index_sequence<N...>) {
   tuple<remove_cv_t<remove_reference_t<Ts>>...> args;
   for (auto rc : initializer_list<int>{deserialize_arg(j, get<N>(args))...})
     (void)rc;
-  return f(get<N>(args)...);
+  return f(forward<tuple_element_t<N, decltype(args)>>(get<N>(args))...);
 }
 
 template <typename I, typename J, typename R, typename... Ts>
