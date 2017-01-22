@@ -115,7 +115,7 @@ const char *name(const structure<S, T, Ts...> &s) {
 }
 
 template <size_t I, typename T>
-using tuple_element_t = std::remove_cv_t<
+using element_t = std::remove_cv_t<
     std::remove_reference_t<decltype(get<I>(std::declval<T>()))>>;
 
 #define DECLTYPES(r, data, i, elem) BOOST_PP_COMMA_IF(i) decltype(data::elem)

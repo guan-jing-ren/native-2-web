@@ -91,7 +91,7 @@ template <typename T, size_t... Is>
 constexpr bool is_all_num(index_sequence<Is...>) {
   bool is_num = true;
   for (auto b : {is_arithmetic<
-           remove_cv_t<remove_reference_t<tuple_element_t<Is, T>>>>::value...})
+           remove_cv_t<remove_reference_t<element_t<Is, T>>>>::value...})
     is_num &= b;
   return is_num;
 }
@@ -103,7 +103,7 @@ O &print_heterogenous(O &o, T &t, index_sequence<Is...>) {
               I> << mangle<remove_cv_t<remove_reference_t<T>>> << ":={"
     << (is_num ? "" : "\n");
   for (auto &_o :
-       {&(printer<remove_cv_t<remove_reference_t<tuple_element_t<Is, T>>>>::
+       {&(printer<remove_cv_t<remove_reference_t<element_t<Is, T>>>>::
               template debug_print<(is_num ? 0u : (I + 1))>(o, get<Is>(t))
           << " `" << name<Is>(t) << '`' << at<Is>(t)
           << ((Is + 1) < sizeof...(Is) ? string{", "} + (is_num ? "" : "\n")
