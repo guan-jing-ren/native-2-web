@@ -30,18 +30,20 @@ test_structure test_function(const test_structure &t) { return t; }
 int main(int, char **) {
   std::cout << n2w::endianness<> << '\n';
 
-  std::cout << n2w::mangle<int[90]> << '\n';
-  std::cout << n2w::mangle<std::array<std::vector<double>, 5>> << '\n';
-  std::cout << n2w::csv<int[90], float, std::u16string> << '\n';
+  std::cout << n2w::mangled<int[90]>() << '\n';
+  std::cout << n2w::mangled<std::array<std::vector<double>, 5>>() << '\n';
+  std::cout << n2w::csv<int[90], float, std::u16string>() << '\n';
   std::cout
-      << n2w::mangle<
-             std::pair<int[90], std::array<std::vector<double>, 5>>> << '\n';
-  std::cout << n2w::mangle<std::tuple<int[90], float, std::u16string>> << '\n';
+      << n2w::mangled<std::pair<int[90], std::array<std::vector<double>, 5>>>()
+      << '\n';
+  std::cout << n2w::mangled<std::tuple<int[90], float, std::u16string>>()
+            << '\n';
   std::cout
-      << n2w::mangle<std::multimap<
-             std::wstring, std::tuple<std::pair<int, long>, std::vector<double>,
-                                      std::array<std::tuple<char16_t, char32_t>,
-                                                 15>>>> << '\n';
+      << n2w::mangled<std::multimap<
+             std::wstring,
+             std::tuple<std::pair<int, long>, std::vector<double>,
+                        std::array<std::tuple<char16_t, char32_t>, 15>>>>()
+      << '\n';
 
   std::vector<char> ustr;
   ustr.reserve(5000000);
@@ -83,8 +85,9 @@ int main(int, char **) {
 
   swap_test();
 
-  std::cout << n2w::mangle<void (*)(decltype(a), decltype(b), decltype(c),
-                                    decltype(d), decltype(e))> << '\n';
+  std::cout << n2w::mangled<void (*)(decltype(a), decltype(b), decltype(c),
+                                     decltype(d), decltype(e))>()
+            << '\n';
   std::cout << n2w::function_address(swap_test) << '\n';
   std::cout << n2w::function_address(main) << '\n';
   std::uint8_t scrambler[] = {7, 6, 5, 4, 3, 2, 1, 0};

@@ -56,13 +56,13 @@ template <typename O, typename T> O &debug_print(O &o, const T &t) {
   return printer<T>::template debug_print(o, t);
 }
 template <typename O, size_t N> O &debug_print(O &o, const char (&t)[N]) {
-  return o << mangle<basic_string<char>> << ":=\"" << t << '"';
+  return o << mangled<basic_string<char>>() << ":=\"" << t << '"';
 }
 
 template <> struct printer<bool> {
   template <size_t I = 0, typename O> static O &debug_print(O &o, bool t) {
-    return o << indent<typename O::char_type, I> << mangle<bool> << ":='" << t
-             << "'";
+    return o << indent<typename O::char_type, I> << mangled<bool>() << ":='"
+             << t << "'";
   }
 };
 
@@ -70,8 +70,8 @@ template <size_t I = 0, typename O, typename T>
 O &print_sequence(O &o, const T &t, size_t count) {
   using T2 = remove_cv_t<remove_reference_t<decltype(*begin(t))>>;
   o << indent<typename O::char_type,
-              I> << mangle<remove_cv_t<remove_reference_t<T>>> << ":=["
-    << (is_arithmetic<T2>::value || !count ? "" : "\n");
+              I> << mangled<remove_cv_t<remove_reference_t<T>>>()
+    << ":=[" << (is_arithmetic<T2>::value || !count ? "" : "\n");
   size_t i = 0;
   if (count)
     for (auto &_t : t) {
@@ -100,8 +100,8 @@ template <size_t I = 0, typename O, typename T, size_t... Is>
 O &print_heterogenous(O &o, T &t, index_sequence<Is...>) {
   constexpr bool is_num = is_all_num<T>(index_sequence<Is...>{});
   o << indent<typename O::char_type,
-              I> << mangle<remove_cv_t<remove_reference_t<T>>> << ":={"
-    << (is_num ? "" : "\n");
+              I> << mangled<remove_cv_t<remove_reference_t<T>>>()
+    << ":={" << (is_num ? "" : "\n");
   for (auto &_o :
        {&(printer<remove_cv_t<remove_reference_t<element_t<Is, T>>>>::
               template debug_print<(is_num ? 0u : (I + 1))>(o, get<Is>(t))
@@ -118,8 +118,8 @@ template <typename T> struct printer {
   static auto debug_print(O &o, T t)
       -> enable_if_t<is_arithmetic<T>::value, O &> {
     return o << indent<typename O::char_type,
-                       I> << mangle<remove_cv_t<remove_reference_t<T>>> << ":='"
-             << t << "'";
+                       I> << mangled<remove_cv_t<remove_reference_t<T>>>()
+             << ":='" << t << "'";
   }
 };
 template <typename T, size_t N> struct printer<T[N]> {
@@ -150,7 +150,7 @@ template <typename T, typename... Ts> struct printer<tuple<T, Ts...>> {
 template <size_t N> struct printer<char[N]> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, const char (&t)[N]) {
-    return o << mangle<basic_string<char>> << ":=\"" << t << '"';
+    return o << mangled<basic_string<char>>() << ":=\"" << t << '"';
   }
 };
 template <typename T, typename... Traits>
@@ -159,7 +159,7 @@ struct printer<basic_string<T, Traits...>> {
   static O &debug_print(O &o, const basic_string<T, Traits...> &t) {
     struct cvt : codecvt<T, typename O::char_type, mbstate_t> {};
     wstring_convert<cvt, T> cvter;
-    return o << mangle<basic_string<T, Traits...>> << ":=\""
+    return o << mangled<basic_string<T, Traits...>>() << ":=\""
              << cvter.to_bytes(t) << '"';
   }
 };
