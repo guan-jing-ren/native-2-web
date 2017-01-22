@@ -267,7 +267,7 @@ struct filler {
 
   filler &operator++() {
     iteration += S;
-    iteration %= V;
+    iteration %= (V * S);
     return *this;
   }
 
@@ -281,6 +281,49 @@ struct filler {
 
   T operator()() { return *((*this)++); }
 };
+
+// template <size_t V, size_t N, size_t O, size_t S>
+// bool filler<bool, V, N, O, S>::operator()() {
+//   return t;
+// }
+// template <size_t V, size_t N, size_t O, size_t S>
+// char filler<char, V, N, O, S>::operator()() {
+//   return t;
+// }
+// template <size_t V, size_t N, size_t O, size_t S>
+// wchar_t filler<wchar_t, V, N, O, S>::operator()() {
+//   return t;
+// }
+// template <size_t V, size_t N, size_t O, size_t S>
+// char16_t filler<char16_t, V, N, O, S>::operator()() {
+//   return t;
+// }
+// template <size_t V, size_t N, size_t O, size_t S>
+// char32_t filler<char32_t, V, N, O, S>::operator()() {
+//   return t;
+// }
+// template <size_t V, size_t N, size_t O, size_t S> T filler<int8_t,size_t V,
+// size_t N, size_t O, size_t S>::operator()() {return t;}
+// template <size_t V, size_t N, size_t O, size_t S> T filler<int16_t,size_t V,
+// size_t N, size_t O, size_t S>::operator()() {return t;}
+// template <size_t V, size_t N, size_t O, size_t S> T filler<int32_t,size_t V,
+// size_t N, size_t O, size_t S>::operator()() {return t;}
+// template <size_t V, size_t N, size_t O, size_t S> T filler<int64_t,size_t V,
+// size_t N, size_t O, size_t S>::operator()() {return t;}
+// template <size_t V, size_t N, size_t O, size_t S> T filler<uint8_t,size_t V,
+// size_t N, size_t O, size_t S>::operator()() {return t;}
+// template <size_t V, size_t N, size_t O, size_t S> T filler<uint16_t,size_t V,
+// size_t N, size_t O, size_t S>::operator()() {return t;}
+// template <size_t V, size_t N, size_t O, size_t S> T filler<uint32_t,size_t V,
+// size_t N, size_t O, size_t S>::operator()() {return t;}
+// template <size_t V, size_t N, size_t O, size_t S> T filler<uint32_t,size_t V,
+// size_t N, size_t O, size_t S>::operator()() {return t;}
+// template <size_t V, size_t N, size_t O, size_t S> T filler<float,size_t V,
+// size_t N, size_t O, size_t S>::operator()() {return t;}
+// template <size_t V, size_t N, size_t O, size_t S> T filler<double,size_t V,
+// size_t N, size_t O, size_t S>::operator()() {return t;}
+// template <size_t V, size_t N, size_t O, size_t S> T filler<long double,size_t
+// V, size_t N, size_t O, size_t S>::operator()() {return t;}
 
 #define DEBUG_SPEC(s, m)                                                       \
   namespace n2w {                                                              \
