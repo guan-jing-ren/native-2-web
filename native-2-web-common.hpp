@@ -95,7 +95,7 @@ const char *at(const std::tuple<T, Ts...> &) {
 template <size_t N, typename S, typename T, typename... Ts>
 std::string at(const structure<S, T, Ts...> &s) {
   auto m_p = std::get<N>(s.members);
-  return "@" + std::to_string(*reinterpret_cast<std::uintptr_t *>(&m_p));
+  return '@' + std::to_string(*reinterpret_cast<std::uintptr_t *>(&m_p));
 }
 
 template <size_t N, typename T, typename U>
