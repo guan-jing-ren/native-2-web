@@ -25,7 +25,11 @@ struct test_structure {
 
 READ_WRITE_SPEC(test_structure, (a)(b)(c)(d)(e));
 
-test_structure test_function(const test_structure &t) { return t; }
+test_structure test_function(const test_structure &t) {
+  std::cout << "Test function execution test\n";
+  n2w::debug_print(std::cout, t) << '\n';
+  return t;
+}
 
 int main(int, char **) {
   std::cout << n2w::endianness<> << '\n';
@@ -110,20 +114,29 @@ int main(int, char **) {
   n2w::execute(i, j, swap_test);
   std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
             << std::distance(begin(ustr), j) << '\n';
-  n2w::execute(i, j, test_function);
+  n2w::serialize(t, i);
   std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
             << std::distance(begin(ustr), j) << '\n';
 
-  int m[3][4][5][2];
+  bool m[2][3][4];
+  n2w::debug_print(std::cout, m) << '\n';
   n2w::debug_print(std::cout, a) << '\n';
   n2w::debug_print(std::cout, b) << '\n';
   n2w::debug_print(std::cout, c) << '\n';
   n2w::debug_print(std::cout, d) << '\n';
   n2w::debug_print(std::cout, e) << '\n';
-  n2w::debug_print(std::cout, t) << '\n';
   n2w::debug_print(std::cout, "Hello world!") << '\n';
   char s[] = "goodbye world";
   n2w::debug_print(std::cout, s) << '\n';
+
+  n2w::execute(i, j, test_function);
+  n2w::execute(i, j, test_function);
+  n2w::execute(i, j, test_function);
+  std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
+            << std::distance(begin(ustr), j) << '\n';
+  n2w::deserialize(j, t);
+  std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
+            << std::distance(begin(ustr), j) << '\n';
 
   return 0;
 }
