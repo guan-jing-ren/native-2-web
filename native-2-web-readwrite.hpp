@@ -252,6 +252,14 @@ struct printer<structure<S, T, Ts...>> {
   }
 };
 
+template <typename T, size_t V = 5, size_t N = 5, size_t O = 0, size_t S = 1>
+struct filler {
+  T t;
+  template <size_t V2, size_t N2, size_t O2, size_t S2>
+  filler(filler<T, V2, N2, O2, S2> f) : t(f.t) {}
+  T operator()() { return t; }
+};
+
 #define DEBUG_SPEC(s, m)                                                       \
   namespace n2w {                                                              \
   template <> struct printer<s> {                                              \
