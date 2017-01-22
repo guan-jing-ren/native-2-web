@@ -60,13 +60,15 @@ constexpr auto calc_padding(std::size_t count = 0) {
 
 namespace n2w {
 template <typename S, typename T, typename... Ts> struct structure {
-  S *s_write;
-  const S *s_read;
+  union {
+    S *volatile s_write;
+    const S *volatile s_read;
+  };
   const std::tuple<T S::*, Ts S::*...> members;
   const std::initializer_list<const char *> names;
   structure(S *s, const std::tuple<T S::*, Ts S::*...> &t,
             std::initializer_list<const char *> n)
-      : s_write(s), s_read(s), members(t), names(n) {}
+      : s_write(s), members(t), names(n) {}
   structure(const S *s, const std::tuple<T S::*, Ts S::*...> &t,
             std::initializer_list<const char *> n)
       : s_read(s), members(t), names(n) {}
