@@ -94,6 +94,11 @@ const char *at(const std::tuple<T, Ts...> &) {
   return "";
 }
 
+template <size_t N, typename T, size_t S>
+const char *at(const std::array<T, S> &) {
+  return "";
+}
+
 template <size_t N, typename S, typename T, typename... Ts>
 std::string at(const structure<S, T, Ts...> &s) {
   auto m_p = std::get<N>(s.members);
@@ -108,6 +113,11 @@ const char *name(const std::pair<T, U> &) {
 
 template <size_t N, typename T, typename... Ts>
 std::string name(const std::tuple<T, Ts...> &) {
+  return std::to_string(N);
+}
+
+template <size_t N, typename T, size_t S>
+std::string name(const std::array<T, S> &) {
   return std::to_string(N);
 }
 
