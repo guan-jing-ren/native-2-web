@@ -61,7 +61,8 @@ template <typename O, size_t N> O &debug_print(O &o, const char (&t)[N]) {
 
 template <> struct printer<bool> {
   template <size_t I = 0, typename O> static O &debug_print(O &o, bool t) {
-    return o << mangle<bool> << ":='" << t << "'";
+    return o << indent<typename O::char_type, I> << mangle<bool> << ":='" << t
+             << "'";
   }
 };
 
@@ -74,7 +75,8 @@ O &print_sequence(O &o, const T &t, size_t count) {
   size_t i = 0;
   if (count)
     for (auto &_t : t) {
-      printer<T2>::template debug_print<I + 1>(o, _t);
+      printer<T2>::template debug_print<is_arithmetic<T2>::value ? 0u : I + 1>(
+          o, _t);
       if (++i < count)
         o << ", " << (is_arithmetic<T2>::value ? "" : "\n");
     }
