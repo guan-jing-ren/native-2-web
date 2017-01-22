@@ -12,9 +12,17 @@ void swap_test() noexcept {
   std::cout << s << ' ' << s2 << ' ' << s1 << '\n';
 }
 
+struct test_substructure {
+  std::pair<int, std::array<std::vector<double>, 0>> c;         // 90*4 + 5*4
+  std::tuple<int, float, std::unordered_set<std::u16string>> d; // 90*4+4+4
+};
+
+READ_WRITE_SPEC(test_substructure, (c)(d));
+
 struct test_structure {
-  std::tuple<int> a;                                            // 90*4
-  std::array<std::vector<double>, 5> b;                         // 5*4
+  std::tuple<int> a;                    // 90*4
+  std::array<std::vector<double>, 5> b; // 5*4
+  test_substructure b1;
   std::pair<int, std::array<std::vector<double>, 0>> c;         // 90*4 + 5*4
   std::tuple<int, float, std::unordered_set<std::u16string>> d; // 90*4+4+4
   std::multimap<std::wstring,
@@ -23,9 +31,9 @@ struct test_structure {
       e; // 4
 };
 
-READ_WRITE_SPEC(test_structure, (a)(b)(c)(d)(e));
+READ_WRITE_SPEC(test_structure, (a)(b)(b1)(c)(d)(e));
 
-test_structure test_function(const test_structure &t) {
+test_structure test_function(test_structure &&t) {
   std::cout << "Test function execution test\n";
   n2w::debug_print(std::cout, t) << '\n';
   return t;
@@ -129,7 +137,6 @@ int main(int, char **) {
   char s[] = "goodbye world";
   n2w::debug_print(std::cout, s) << '\n';
 
-  n2w::execute(i, j, test_function);
   n2w::execute(i, j, test_function);
   n2w::execute(i, j, test_function);
   std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
