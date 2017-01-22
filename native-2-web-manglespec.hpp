@@ -125,13 +125,12 @@ const auto mangle<unordered_multimap<T, U, Traits...>> =
     mangle_prefix<unordered_multimap<T, U, Traits...>> + kv<T, U>;
 
 template <typename S, typename T, typename... Ts>
-const auto
-    mangle<structure<S, T, Ts...>> = mangle_prefix<structure<S, T, Ts...>> +
-                                     string{} + '}';
+const auto mangle<structure<S, T, Ts...>> =
+    mangle_prefix<structure<S, T, Ts...>> + string{} + '}';
 
 #define MANGLE_SPEC(s, m)                                                      \
   namespace n2w {                                                              \
-  template <> const string mangle<s> = mangle<USING_STRUCTURE(s, m)>;            \
+  template <> const string mangle<s> = mangle<USING_STRUCTURE(s, m)>;          \
   }
 
 template <bool e = __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__>
