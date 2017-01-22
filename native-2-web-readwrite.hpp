@@ -56,7 +56,7 @@ template <typename O, typename T> O &debug_print(O &o, const T &t) {
   return printer<T>::template debug_print(o, t);
 }
 template <typename O, size_t N> O &debug_print(O &o, const char (&t)[N]) {
-  return o << mangle<basic_string<char>> << ":=\"" << t << '"';
+  return o << mangle<basic_string<char>> << ":=\"" << t << "\"";
 }
 
 template <> struct printer<bool> {
@@ -81,7 +81,7 @@ O &print_sequence(O &o, const T &t, size_t count) {
   o << (is_arithmetic<T2>::value || !count
             ? ""
             : "\n" + indent<typename O::char_type, I>)
-    << ']';
+    << "]";
   return o;
 }
 
@@ -103,11 +103,11 @@ O &print_heterogenous(O &o, T &t, index_sequence<Is...>) {
   for (auto &_o :
        {&(printer<remove_cv_t<remove_reference_t<tuple_element_t<Is, T>>>>::
               template debug_print<(is_num ? 0u : (I + 1))>(o, get<Is>(t))
-          << " `" << name<Is>(t) << '`' << at<Is>(t)
+          << " `" << name<Is>(t) << "`" << at<Is>(t)
           << ((Is + 1) < sizeof...(Is) ? string{", "} + (is_num ? "" : "\n")
                                        : ""))...})
     (void)_o;
-  o << (is_num ? "" : "\n" + indent<typename O::char_type, I>) << '}';
+  o << (is_num ? "" : "\n" + indent<typename O::char_type, I>) << "}";
   return o;
 }
 
@@ -148,7 +148,7 @@ template <typename T, typename... Ts> struct printer<tuple<T, Ts...>> {
 template <size_t N> struct printer<char[N]> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, const char (&t)[N]) {
-    return o << mangle<basic_string<char>> << ":=\"" << t << '"';
+    return o << mangle<basic_string<char>> << ":=\"" << t << "\"";
   }
 };
 template <typename T, typename... Traits>
@@ -158,7 +158,7 @@ struct printer<basic_string<T, Traits...>> {
     struct cvt : codecvt<T, typename O::char_type, mbstate_t> {};
     wstring_convert<cvt, T> cvter;
     return o << mangle<basic_string<T, Traits...>> << ":=\""
-             << cvter.to_bytes(t) << '"';
+             << cvter.to_bytes(t) << "\"";
   }
 };
 template <typename T, typename... Traits> struct printer<vector<T, Traits...>> {
@@ -246,7 +246,7 @@ struct printer<structure<S, T, Ts...>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, const structure<S, T, Ts...> &t) {
     return print_heterogenous<I>(o, t, make_index_sequence<sizeof...(Ts) + 1>{})
-           << " `" << *begin(t.names) << '`' << at<I>(t);
+           << " `" << *begin(t.names) << "`";
   }
 };
 
