@@ -252,12 +252,34 @@ struct printer<structure<S, T, Ts...>> {
   }
 };
 
-template <typename T, size_t V = 5, size_t N = 5, size_t O = 0, size_t S = 1>
+template <typename T, size_t V = 5, size_t N = V, size_t O = 0, size_t S = 1>
 struct filler {
+  size_t iteration = O;
   T t;
   template <size_t V2, size_t N2, size_t O2, size_t S2>
-  filler(filler<T, V2, N2, O2, S2> f) : t(f.t) {}
-  T operator()() { return t; }
+  filler(filler<T, V2, N2, O2, S2> f) {}
+  filler() = default;
+  filler(const filler &) = default;
+  filler(filler &&) = default;
+  filler &operator=(const filler &) = default;
+  filler &operator=(filler &&) = default;
+  ~filler() = default;
+
+  filler &operator++() {
+    iteration += S;
+    iteration %= V;
+    return *this;
+  }
+
+  filler operator++(int) {
+    auto current = *this;
+    ++*this;
+    return current;
+  }
+
+  T operator*() { return t; }
+
+  T operator()() { return *((*this)++); }
 };
 
 #define DEBUG_SPEC(s, m)                                                       \
