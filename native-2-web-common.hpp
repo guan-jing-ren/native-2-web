@@ -64,14 +64,10 @@ template <typename S, typename T, typename... Ts> struct structure {
     S *volatile s_write;
     const S *volatile s_read;
   };
-  const std::tuple<T S::*, Ts S::*...> members;
-  const std::initializer_list<const char *> names;
-  structure(S *s, const std::tuple<T S::*, Ts S::*...> &t,
-            std::initializer_list<const char *> n)
-      : s_write(s), members(t), names(n) {}
-  structure(const S *s, const std::tuple<T S::*, Ts S::*...> &t,
-            std::initializer_list<const char *> n)
-      : s_read(s), members(t), names(n) {}
+  static const std::tuple<T S::*, Ts S::*...> members;
+  static const char *names[];
+  structure(S *s) : s_write(s) {}
+  structure(const S *s) : s_read(s) {}
 };
 
 template <size_t N, typename S, typename T, typename... Ts>
@@ -123,7 +119,7 @@ std::string name(const std::array<T, S> &) {
 
 template <size_t N, typename S, typename T, typename... Ts>
 const char *name(const structure<S, T, Ts...> &s) {
-  return *(begin(s.names) + N + 1);
+  return s.names[N + 1];
 }
 
 template <size_t I, typename T>
@@ -138,10 +134,14 @@ using element_t = std::remove_cv_t<
   std::make_tuple(BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m))
 #define MEM_NAME(r, data, i, elem) BOOST_PP_COMMA_IF(i) BOOST_PP_STRINGIZE(elem)
 #define MEMBER_NAMES(m) BOOST_PP_SEQ_FOR_EACH_I(MEM_NAME, _, m)
+#define SPECIALIZE_STRUCTURE(s, m)                                             \
+  template <>                                                                  \
+  const decltype(MAKE_MEMBER_TUPLE(s, m)) USING_STRUCTURE(s, m)::members =     \
+      MAKE_MEMBER_TUPLE(s, m);                                                 \
+  template <>                                                                  \
+  const char *USING_STRUCTURE(s, m)::names[] = {#s, MEMBER_NAMES(m)};
 #define CONSTRUCTOR(s, m, o)                                                   \
-  USING_STRUCTURE(s, m) o##_v {                                                \
-    &o, MAKE_MEMBER_TUPLE(s, m), { #s, MEMBER_NAMES(m) }                       \
-  }
+  USING_STRUCTURE(s, m) o##_v { &o }
 }
 
 #endif
