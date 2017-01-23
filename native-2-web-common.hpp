@@ -150,11 +150,16 @@ bool memberwise_less(const structure<S, T, Ts...> &l,
   if (l.s_read == r.s_read)
     return false;
 
-  bool greater = false;
-  for (auto rc : {(greater = greater || get<Is>(l) > get<Is>(r))...})
-    if (greater)
+  std::pair<bool, bool> lesser_greater = std::make_pair(false, false);
+  for (auto rc : {(lesser_greater = std::make_pair(
+                       lesser_greater.first || get<Is>(l) < get<Is>(r),
+                       lesser_greater.second || get<Is>(r) < get<Is>(l)))...}) {
+    if (lesser_greater.first)
+      return true;
+    if (lesser_greater.second)
       return false;
-  return l != r;
+  }
+  return false;
 }
 template <typename S, typename T, typename... Ts>
 bool operator<(const structure<S, T, Ts...> &l,
