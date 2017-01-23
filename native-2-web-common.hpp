@@ -17,6 +17,44 @@
 #include <algorithm>
 #include <boost/preprocessor.hpp>
 
+namespace std {
+template <typename T> bool less_unordered(const T &l, const T &r) {
+  vector<add_pointer_t<add_const_t<remove_reference_t<decltype(*begin(l))>>>>
+      l_v;
+  auto r_v = l_v;
+  transform(begin(l), end(l), back_inserter(l_v),
+            [](const auto &l) { return &l; });
+  transform(begin(r), end(r), back_inserter(r_v),
+            [](const auto &r) { return &r; });
+  sort(begin(l_v), end(l_v),
+       [](const auto &l, const auto &r) { return *l < *r; });
+  sort(begin(r_v), end(r_v),
+       [](const auto &l, const auto &r) { return *l < *r; });
+  return l_v < r_v;
+}
+
+template <typename T, typename... Traits>
+bool operator<(const unordered_set<T, Traits...> &l,
+               const unordered_set<T, Traits...> &r) {
+  return less_unordered(l, r);
+}
+template <typename T, typename... Traits>
+bool operator<(const unordered_map<T, Traits...> &l,
+               const unordered_map<T, Traits...> &r) {
+  return less_unordered(l, r);
+}
+template <typename T, typename... Traits>
+bool operator<(const unordered_multiset<T, Traits...> &l,
+               const unordered_multiset<T, Traits...> &r) {
+  return less_unordered(l, r);
+}
+template <typename T, typename... Traits>
+bool operator<(const unordered_multimap<T, Traits...> &l,
+               const unordered_multimap<T, Traits...> &r) {
+  return less_unordered(l, r);
+}
+}
+
 template <unsigned I, typename T> constexpr T mask() {
   return static_cast<T>(static_cast<std::uint8_t>(-1)) << (I * 8);
 }
