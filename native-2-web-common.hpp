@@ -171,7 +171,7 @@ bool operator>(const structure<S, T, Ts...> &l,
 template <typename S, typename T, typename... Ts>
 bool operator<=(const structure<S, T, Ts...> &l,
                 const structure<S, T, Ts...> &r) {
-  return !(l > r);
+  return !(r < l);
 };
 
 template <typename S, typename T, typename... Ts>
