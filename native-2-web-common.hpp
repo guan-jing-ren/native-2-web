@@ -60,9 +60,9 @@ constexpr auto calc_padding(std::size_t count = 0) {
 
 namespace n2w {
 template <typename S, typename T, typename... Ts> struct structure {
-  union {
-    S *volatile s_write;
-    const S *volatile s_read;
+  const volatile union {
+    S *const volatile s_write;
+    const S *const volatile s_read;
   };
   static const std::tuple<T S::*, Ts S::*...> members;
   static const char *names[];
@@ -79,6 +79,68 @@ template <size_t N, typename S, typename T, typename... Ts>
 auto &get(structure<S, T, Ts...> &s) {
   return s.s_write->*get<N>(s.members);
 }
+
+template <typename S, typename T, typename... Ts, size_t... Is>
+bool memberwise_equality(const structure<S, T, Ts...> &l,
+                         const structure<S, T, Ts...> &r,
+                         std::index_sequence<Is...>) {
+  if (l.s_read == r.s_read)
+    return true;
+
+  bool equal = true;
+  for (auto rc : {(equal = equal && get<Is>(l) == get<Is>(r))...})
+    if (!equal)
+      return equal;
+  return equal;
+}
+template <typename S, typename T, typename... Ts>
+bool operator==(const structure<S, T, Ts...> &l,
+                const structure<S, T, Ts...> &r) {
+  return memberwise_equality(l, r,
+                             std::make_index_sequence<sizeof...(Ts) + 1>{});
+}
+template <typename S, typename T, typename... Ts>
+bool operator!=(const structure<S, T, Ts...> &l,
+                const structure<S, T, Ts...> &r) {
+  return !(l == r);
+}
+
+template <typename S, typename T, typename... Ts, size_t... Is>
+bool memberwise_less(const structure<S, T, Ts...> &l,
+                     const structure<S, T, Ts...> &r,
+                     std::index_sequence<Is...>) {
+  if (l.s_read == r.s_read)
+    return false;
+
+  bool less = false;
+  for (auto rc : {(less = less || get<Is>(l) < get<Is>(r))...})
+    if (less)
+      return less;
+  return less;
+}
+template <typename S, typename T, typename... Ts>
+bool operator<(const structure<S, T, Ts...> &l,
+               const structure<S, T, Ts...> &r) {
+  return memberwise_less(l, r, std::make_index_sequence<sizeof...(Ts) + 1>{});
+}
+
+template <typename S, typename T, typename... Ts>
+bool operator>(const structure<S, T, Ts...> &l,
+               const structure<S, T, Ts...> &r) {
+  return r < l;
+};
+
+template <typename S, typename T, typename... Ts>
+bool operator<=(const structure<S, T, Ts...> &l,
+                const structure<S, T, Ts...> &r) {
+  return !(l > r);
+};
+
+template <typename S, typename T, typename... Ts>
+bool operator>=(const structure<S, T, Ts...> &l,
+                const structure<S, T, Ts...> &r) {
+  return !(l < r);
+};
 
 template <size_t N, typename T, typename U>
 const char *at(const std::pair<T, U> &) {

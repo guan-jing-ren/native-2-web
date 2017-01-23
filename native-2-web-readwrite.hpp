@@ -11,6 +11,7 @@
   SPECIALIZE_STRUCTURE(s, m);                                                  \
   SERIALIZE_SPEC(s, m);                                                        \
   DESERIALIZE_SPEC(s, m);                                                      \
+  EQUALITY_SPEC(s, m);                                                         \
   DEBUG_SPEC(s, m);
 
 namespace n2w {
@@ -252,6 +253,24 @@ struct printer<structure<S, T, Ts...>> {
            << "\t`" << *begin(t.names) << '`';
   }
 };
+
+#define EQUALITY_SPEC(s, m)                                                    \
+  bool operator==(const s &l, const s &r) {                                    \
+    return USING_STRUCTURE(s, m){&l} == USING_STRUCTURE(s, m){&r};             \
+  }                                                                            \
+  bool operator!=(const s &l, const s &r) { return !(l == r); }                \
+  bool operator<(const s &l, const s &r) {                                     \
+    return USING_STRUCTURE(s, m){&l} < USING_STRUCTURE(s, m){&r};              \
+  }                                                                            \
+  bool operator>(const s &l, const s &r) {                                     \
+    return USING_STRUCTURE(s, m){&l} > USING_STRUCTURE(s, m){&r};              \
+  }                                                                            \
+  bool operator<=(const s &l, const s &r) {                                    \
+    return USING_STRUCTURE(s, m){&l} <= USING_STRUCTURE(s, m){&r};             \
+  }                                                                            \
+  bool operator>=(const s &l, const s &r) {                                    \
+    return USING_STRUCTURE(s, m){&l} >= USING_STRUCTURE(s, m){&r};             \
+  }
 
 #define DEBUG_SPEC(s, m)                                                       \
   namespace n2w {                                                              \
