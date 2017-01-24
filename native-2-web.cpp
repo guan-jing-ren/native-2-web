@@ -145,5 +145,23 @@ int main(int, char **) {
   std::cout << std::boolalpha << (j == end(ustr)) << ' ' << ustr.size() << ' '
             << std::distance(begin(ustr), j) << '\n';
 
+  test_structure u;
+  std::cout << "Equality test: " << (t == u) << '\n';
+  std::cout << "Inequality test: " << (t != u) << '\n';
+
+  std::get<0>(u.a) = 1;
+  std::cout << "Short compare test: " << (t == u) << '\n';
+
+  std::cout << "Less test: " << (t < u) << '\n';
+  std::cout << "Greater test: " << (t > u) << '\n';
+  std::cout << "Less test: " << (u < t) << '\n';
+  std::cout << "Greater test: " << (u > t) << '\n';
+  std::cout << "Less test: " << (t < t) << '\n';
+  std::cout << "Greater test: " << (t > t) << '\n';
+  std::get<0>(u.a) = 0;
+  std::cout << "Less test: " << (t < u) << '\n';
+  std::cout << "Less equal test: " << (t <= u) << '\n';
+  std::cout << "Greater equal test: " << (t >= u) << '\n';
+
   return 0;
 }
