@@ -254,32 +254,130 @@ struct printer<structure<S, T, Ts...>> {
   }
 };
 
-template <typename T, size_t V = 5, size_t N = V, size_t O = 0, size_t S = 1>
-struct filler {
-  size_t iteration = O;
-  T t;
-  template <size_t V2, size_t N2, size_t O2, size_t S2>
-  filler(filler<T, V2, N2, O2, S2> f) {}
+template <typename T, size_t V = 5> struct filler {
+  size_t iteration = 0;
+  remove_cv_t<remove_reference_t<T>> t;
+  vector<remove_cv_t<remove_reference_t<T>>> alphabet;
+
+  template <size_t V2> filler(filler<T, V2> f) {}
   filler(const filler &) = default;
   filler(filler &&) = default;
   filler &operator=(const filler &) = default;
   filler &operator=(filler &&) = default;
   ~filler() = default;
 
-  template <typename D = void>
-  filler(enable_if_t<is_void<D>{} && is_same<T, bool>{}> * = nullptr) {}
-  template <typename D = void>
-  filler(enable_if_t<is_void<D>{} && is_same<T, char>{}> * = nullptr) {}
-  template <typename D = void>
-  filler(enable_if_t<is_void<D>{} && is_same<T, wchar_t>{}> * = nullptr) {}
-  template <typename D = void>
-  filler(enable_if_t<is_void<D>{} && is_same<T, char16_t>{}> * = nullptr) {}
-  template <typename D = void>
-  filler(enable_if_t<is_void<D>{} && is_same<T, char32_t>{}> * = nullptr) {}
-  template <typename D = void>
-  filler(enable_if_t<is_void<D>{} && is_integral<T>{}> * = nullptr) {}
-  template <typename D = void>
-  filler(enable_if_t<is_void<D>{} && is_floating_point<T>{}> * = nullptr) {}
+  void sort_unique() {
+    sort(begin(alphabet), end(alphabet));
+    alphabet.erase(unique(begin(alphabet), end(alphabet)), end(alphabet));
+  }
+
+  template <typename U = bool>
+  auto construct(bool &b) -> enable_if_t<is_same<U, bool>{}> {
+    alphabet.insert(end(alphabet),
+                    {false, true, 0, 1, static_cast<bool>(-1ll),
+                     numeric_limits<bool>::min(), numeric_limits<bool>::max()});
+    sort_unique();
+  }
+  template <typename U = char>
+  auto construct(char &u) -> enable_if_t<is_same<U, char>{}> {
+    const char sample[] = "\x1 09azAZ<&~^[({\\@#";
+    alphabet.insert(end(alphabet), begin(sample), end(sample));
+    alphabet.insert(end(alphabet), {0, 1, -1ll, numeric_limits<char>::min(),
+                                    numeric_limits<char>::max()});
+    sort_unique();
+  }
+  template <typename U = wchar_t>
+  auto construct(wchar_t &u) -> enable_if_t<is_same<U, wchar_t>{}> {
+    const wchar_t sample[] = L"\x1 09azAZ<&~^[({\\@#";
+    alphabet.insert(end(alphabet), begin(sample), end(sample));
+    alphabet.insert(end(alphabet), {0, 1, -1ll, numeric_limits<wchar_t>::min(),
+                                    numeric_limits<wchar_t>::max()});
+    sort_unique();
+  }
+  template <typename U = char16_t>
+  auto construct(char16_t &u) -> enable_if_t<is_same<U, char16_t>{}> {
+    const char16_t sample[] = u"\x1 09azAZ<&~^[({\\@#";
+    alphabet.insert(end(alphabet), begin(sample), end(sample));
+    alphabet.insert(end(alphabet), {0, 1, static_cast<char16_t>(-1ll),
+                                    numeric_limits<char16_t>::min(),
+                                    numeric_limits<char16_t>::max()});
+    sort_unique();
+  }
+  template <typename U = char32_t>
+  auto construct(char32_t &u) -> enable_if_t<is_same<U, char32_t>{}> {
+    const char32_t sample[] = U"\x1 09azAZ<&~^[({\\@#";
+    alphabet.insert(end(alphabet), begin(sample), end(sample));
+    alphabet.insert(end(alphabet), {0, 1, static_cast<char32_t>(-1ll),
+                                    numeric_limits<char32_t>::min(),
+                                    numeric_limits<char32_t>::max()});
+    sort_unique();
+  }
+  template <typename U> auto construct(U &u) -> enable_if_t<is_integral<U>{}> {
+    alphabet.insert(end(alphabet),
+                    {0, 1, static_cast<U>(-1ll), numeric_limits<U>::min(),
+                     numeric_limits<U>::max()});
+    sort_unique();
+  }
+  template <typename U>
+  auto construct(U &u) -> enable_if_t<is_floating_point<U>{}> {
+    alphabet.insert(
+        end(alphabet),
+        {0, 1, static_cast<U>(-1ll), numeric_limits<U>::min(),
+         numeric_limits<U>::lowest(), numeric_limits<U>::max(),
+         numeric_limits<U>::denorm_min(), numeric_limits<U>::infinity(),
+         numeric_limits<U>::quiet_NaN(), numeric_limits<U>::signaling_NaN()});
+    sort_unique();
+  }
+
+  template <typename T2, typename U>
+  static void sequence_init(size_t count, U u) {
+    filler<remove_cv_t<remove_reference_t<T2>>, V> fill;
+    generate_n(u, count, fill);
+  }
+
+  template <typename U>
+  auto construct(U &u) -> enable_if_t<!is_void<typename U::iterator>{}> {
+    sequence_init<typename U::value_type>(V, inserter(u, end(u)));
+  }
+  template <typename U, size_t C> void construct(U (&u)[C]) {
+    sequence_init<U>(C, begin(u));
+  }
+  template <typename U, size_t C> void construct(array<U, C> &u) {
+    sequence_init<U>(C, begin(u));
+  }
+
+  template <typename U> void construct_combine(U &u) { alphabet.push_back(u); }
+
+  template <typename U, size_t I, size_t... Is>
+  void construct_combine(U &u, integral_constant<size_t, I>,
+                         integral_constant<size_t, Is>...) {
+    vector<U> us;
+    filler<tuple_element_t<I, U>, V> fill;
+    generate_n(back_inserter(us), V, [&u, &fill]() {
+      auto u2 = u;
+      get<I>(u2) = fill();
+      return u2;
+    });
+    for (auto &&_u : us)
+      construct_combine(_u, integral_constant<size_t, Is>{}...);
+  }
+
+  template <typename U, size_t... Is>
+  void construct(U &u, index_sequence<Is...>) {
+    construct_combine(u, integral_constant<size_t, Is>{}...);
+  }
+
+  template <typename U, typename U2> void construct(pair<U, U2> &u) {
+    pair<remove_cv_t<U>, remove_cv_t<U2>> u2;
+    construct(u2, make_index_sequence<2>{});
+  }
+
+  template <typename U, typename... Us> void construct(tuple<U, Us...> &u) {
+    tuple<remove_cv_t<U>, remove_cv_t<Us>...> u2;
+    construct(u2, make_index_sequence<sizeof...(Us) + 1>{});
+  }
+
+  filler() { construct(t); }
 
   T operator()() { return t; }
 };

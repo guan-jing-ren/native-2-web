@@ -163,5 +163,20 @@ int main(int, char **) {
   std::cout << "Less equal test: " << (t <= u) << '\n';
   std::cout << "Greater equal test: " << (t >= u) << '\n';
 
+  n2w::filler<int> fill;
+  n2w::filler<decltype(b)> fill2;
+  n2w::filler<decltype(test_structure::e)> fill3;
+  n2w::filler<bool> fill_bool;
+  n2w::filler<char> fill_char;
+  n2w::filler<wchar_t> fill_wchar_t;
+  n2w::filler<char16_t> fill_char16_t;
+  n2w::filler<char32_t> fill_char32_t;
+  n2w::filler<uint8_t> fill_uint8_t;
+  n2w::filler<int8_t> fill_int8_t;
+  n2w::filler<uint16_t> fill_uint16_t;
+  n2w::filler<int16_t> fill_int16_t;
+  n2w::filler<uint64_t> fill_uint64_t;
+  n2w::filler<int64_t> fill_int64_t;
+
   return 0;
 }
