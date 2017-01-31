@@ -114,6 +114,7 @@ template <typename S, typename T, typename... Ts> struct structure {
   structure(structure &&) = delete;
   structure &operator=(const structure &) = delete;
   structure &operator=(structure &&) = delete;
+  structure &operator=(const structure &&) = delete;
 };
 
 template <size_t N, typename S, typename T, typename... Ts>
