@@ -285,7 +285,6 @@ template <typename T, size_t V = 5> struct filler {
     alphabet.insert(end(alphabet),
                     {false, true, 0, 1, static_cast<bool>(-1ll),
                      numeric_limits<bool>::min(), numeric_limits<bool>::max()});
-    sort_unique();
   }
   template <typename U = char>
   auto construct(char &u) -> enable_if_t<is_same<U, char>{}> {
@@ -293,7 +292,6 @@ template <typename T, size_t V = 5> struct filler {
     alphabet.insert(end(alphabet), begin(sample), end(sample));
     alphabet.insert(end(alphabet), {0, 1, -1ll, numeric_limits<char>::min(),
                                     numeric_limits<char>::max()});
-    sort_unique();
   }
   template <typename U = wchar_t>
   auto construct(wchar_t &u) -> enable_if_t<is_same<U, wchar_t>{}> {
@@ -301,7 +299,6 @@ template <typename T, size_t V = 5> struct filler {
     alphabet.insert(end(alphabet), begin(sample), end(sample));
     alphabet.insert(end(alphabet), {0, 1, -1ll, numeric_limits<wchar_t>::min(),
                                     numeric_limits<wchar_t>::max()});
-    sort_unique();
   }
   template <typename U = char16_t>
   auto construct(char16_t &u) -> enable_if_t<is_same<U, char16_t>{}> {
@@ -310,7 +307,6 @@ template <typename T, size_t V = 5> struct filler {
     alphabet.insert(end(alphabet), {0, 1, static_cast<char16_t>(-1ll),
                                     numeric_limits<char16_t>::min(),
                                     numeric_limits<char16_t>::max()});
-    sort_unique();
   }
   template <typename U = char32_t>
   auto construct(char32_t &u) -> enable_if_t<is_same<U, char32_t>{}> {
@@ -319,13 +315,11 @@ template <typename T, size_t V = 5> struct filler {
     alphabet.insert(end(alphabet), {0, 1, static_cast<char32_t>(-1ll),
                                     numeric_limits<char32_t>::min(),
                                     numeric_limits<char32_t>::max()});
-    sort_unique();
   }
   template <typename U> auto construct(U &u) -> enable_if_t<is_integral<U>{}> {
     alphabet.insert(end(alphabet),
                     {0, 1, static_cast<U>(-1ll), numeric_limits<U>::min(),
                      numeric_limits<U>::max()});
-    sort_unique();
   }
   template <typename U>
   auto construct(U &u) -> enable_if_t<is_floating_point<U>{}> {
@@ -335,7 +329,6 @@ template <typename T, size_t V = 5> struct filler {
          numeric_limits<U>::lowest(), numeric_limits<U>::max(),
          numeric_limits<U>::denorm_min(), numeric_limits<U>::infinity(),
          numeric_limits<U>::quiet_NaN(), numeric_limits<U>::signaling_NaN()});
-    sort_unique();
   }
 
   template <typename T2, typename U>
