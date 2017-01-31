@@ -161,8 +161,9 @@ struct printer<basic_string<T, Traits...>> {
   static O &debug_print(O &o, const basic_string<T, Traits...> &t) {
     struct cvt : codecvt<T, typename O::char_type, mbstate_t> {};
     wstring_convert<cvt, T> cvter;
-    return o << mangled<basic_string<T, Traits...>>() << ":=\""
-             << cvter.to_bytes(t) << '"';
+    return o << indent<typename O::char_type,
+                       I> << mangled<basic_string<T, Traits...>>()
+             << ":=\"" << cvter.to_bytes(t) << '"';
   }
 };
 template <typename T, typename... Traits> struct printer<vector<T, Traits...>> {
