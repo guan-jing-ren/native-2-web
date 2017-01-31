@@ -106,6 +106,15 @@ template <typename S, typename T, typename... Ts> struct structure {
   static const char *names[];
   structure(S *s) : s_write(s) {}
   structure(const S *s) : s_read(s) {}
+  structure(std::nullptr_t) = delete;
+  structure(int) = delete;
+  structure(size_t) = delete;
+  structure() = delete;
+  structure(const structure &) = delete;
+  structure(structure &&) = delete;
+  structure &operator=(const structure &) = delete;
+  structure &operator=(structure &&) = delete;
+  structure &operator=(const structure &&) = delete;
 };
 
 template <size_t N, typename S, typename T, typename... Ts>
