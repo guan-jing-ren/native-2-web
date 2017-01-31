@@ -254,10 +254,19 @@ struct printer<structure<S, T, Ts...>> {
   }
 };
 
+template <typename T> struct assignable_filler { using type = remove_cv_t<T>; };
+
+template <typename T, typename U> struct assignable_filler<pair<T, U>> {
+  using type = pair<remove_cv_t<T>, remove_cv_t<U>>;
+};
+
+template <typename T>
+using assignable_filler_t = typename assignable_filler<T>::type;
+
 template <typename T, size_t V = 5> struct filler {
   size_t iteration = 0;
-  remove_cv_t<remove_reference_t<T>> t;
-  vector<remove_cv_t<remove_reference_t<T>>> alphabet;
+  assignable_filler_t<T> t;
+  vector<assignable_filler_t<T>> alphabet;
 
   template <size_t V2> filler(filler<T, V2> f) {}
   filler(const filler &) = default;
@@ -354,9 +363,8 @@ template <typename T, size_t V = 5> struct filler {
     vector<U> us;
     filler<tuple_element_t<I, U>, V> fill;
     generate_n(back_inserter(us), V, [&u, &fill]() {
-      auto u2 = u;
-      get<I>(u2) = fill();
-      return u2;
+      get<I>(u) = fill();
+      return u;
     });
     for (auto &&_u : us)
       construct_combine(_u, integral_constant<size_t, Is>{}...);
@@ -368,18 +376,45 @@ template <typename T, size_t V = 5> struct filler {
   }
 
   template <typename U, typename U2> void construct(pair<U, U2> &u) {
-    pair<remove_cv_t<U>, remove_cv_t<U2>> u2;
-    construct(u2, make_index_sequence<2>{});
+    construct(t, make_index_sequence<2>{});
   }
 
   template <typename U, typename... Us> void construct(tuple<U, Us...> &u) {
-    tuple<remove_cv_t<U>, remove_cv_t<Us>...> u2;
-    construct(u2, make_index_sequence<sizeof...(Us) + 1>{});
+    construct(t, make_index_sequence<sizeof...(Us) + 1>{});
   }
 
-  filler() { construct(t); }
+  filler() {
+    construct(t);
+    sort_unique();
+    t = alphabet[0];
+  }
 
-  T operator()() { return t; }
+  template <typename U = T>
+  auto next(T &t) -> enable_if_t<is_arithmetic<U>{}, T> {
+    auto old = t;
+    t = alphabet[iteration++ % alphabet.size()];
+    return old;
+  }
+
+  template <typename U = T>
+  auto next(U &u) -> enable_if_t<!is_void<typename U::iterator>{}, U> {
+    auto old = t;
+    next_permutation(begin(u), end(u));
+    return old;
+  }
+
+  template <typename U, typename U2> auto next(pair<U, U2> &) {
+    auto old = t;
+    t = alphabet[iteration++ % alphabet.size()];
+    return old;
+  }
+  template <typename U, typename... Us> auto next(tuple<U, Us...> &) {
+    auto old = t;
+    t = alphabet[iteration++ % alphabet.size()];
+    return old;
+  }
+
+  T operator()() { return next(t); }
 };
 
 #define EQUALITY_SPEC(s, m)                                                    \

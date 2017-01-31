@@ -165,7 +165,10 @@ int main(int, char **) {
 
   n2w::filler<int> fill;
   n2w::filler<decltype(b)> fill2;
-  n2w::filler<decltype(test_structure::e)> fill3;
+  n2w::filler<decltype(test_structure::a)> filla;
+  n2w::filler<decltype(test_structure::b)> fillb;
+  n2w::filler<decltype(test_structure::c)> fillc;
+  n2w::filler<decltype(test_structure::e)> fille;
   n2w::filler<bool> fill_bool;
   n2w::filler<char> fill_char;
   n2w::filler<wchar_t> fill_wchar_t;
