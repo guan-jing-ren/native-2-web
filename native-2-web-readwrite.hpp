@@ -386,7 +386,8 @@ template <typename T, size_t V = 5> struct filler {
   filler() {
     construct(t);
     sort_unique();
-    t = alphabet[0];
+    if (!alphabet.empty())
+      t = alphabet[0];
   }
 
   template <typename U = T>
