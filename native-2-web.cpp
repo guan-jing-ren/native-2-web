@@ -164,11 +164,6 @@ int main(int, char **) {
   std::cout << "Greater equal test: " << (t >= u) << '\n';
 
   n2w::filler<int> fill;
-  n2w::filler<decltype(b)> fill2;
-  n2w::filler<decltype(test_structure::a)> filla;
-  n2w::filler<decltype(test_structure::b)> fillb;
-  n2w::filler<decltype(test_structure::c)> fillc;
-  n2w::filler<decltype(test_structure::e)> fille;
   n2w::filler<bool> fill_bool;
   n2w::filler<char> fill_char;
   n2w::filler<wchar_t> fill_wchar_t;
@@ -180,6 +175,15 @@ int main(int, char **) {
   n2w::filler<int16_t> fill_int16_t;
   n2w::filler<uint64_t> fill_uint64_t;
   n2w::filler<int64_t> fill_int64_t;
+  { n2w::filler<decltype(b)> fillb; }
+  {
+    n2w::filler<decltype(test_structure::a)> filla;
+    n2w::filler<decltype(test_structure::b)> fillb;
+    n2w::filler<decltype(test_structure::c)> fillc;
+    n2w::filler<decltype(test_structure::d)> filld;
+    n2w::filler<decltype(test_structure::e)> fille;
+
+  }
 
   return 0;
 }

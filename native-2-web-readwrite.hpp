@@ -397,11 +397,18 @@ template <typename T, size_t V = 5> struct filler {
     return old;
   }
 
-  template <typename U = T>
-  auto next(U &u) -> enable_if_t<!is_void<typename U::iterator>{}, U> {
+  template <typename U = T> auto next(U &u, bidirectional_iterator_tag) {
     auto old = t;
     next_permutation(begin(u), end(u));
     return old;
+  }
+
+  template <typename U = T> auto next(U &u, input_iterator_tag) { return t; }
+
+  template <typename U = T>
+  auto next(U &u) -> enable_if_t<!is_void<typename U::iterator>{}, U> {
+    return next(
+        u, typename iterator_traits<typename U::iterator>::iterator_category{});
   }
 
   template <typename U, typename U2> auto next(pair<U, U2> &) {
