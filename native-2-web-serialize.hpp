@@ -7,8 +7,9 @@ namespace n2w {
 using namespace std;
 
 template <typename T> struct serializer;
-template <typename T, typename I> void serialize(const T &t, I &i) {
+template <typename T, typename I> I serialize(const T &t, I i) {
   serializer<T>::serialize(t, i);
+  return i;
 }
 
 template <typename T, size_t P = P, typename I>

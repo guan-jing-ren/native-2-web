@@ -7,8 +7,9 @@ namespace n2w {
 using namespace std;
 
 template <typename T> struct deserializer;
-template <typename I, typename T> void deserialize(I &i, T &t) {
+template <typename I, typename T> I deserialize(I i, T &t) {
   deserializer<T>::deserialize(i, t);
+  return i;
 }
 
 template <typename T, size_t P = P, typename I> T deserialize_number(I &i) {
