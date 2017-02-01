@@ -160,9 +160,12 @@ bool memberwise_less(const structure<S, T, Ts...> &l,
     return false;
 
   std::pair<bool, bool> lesser_greater = std::make_pair(false, false);
-  for (auto rc : {(lesser_greater = std::make_pair(
-                       lesser_greater.first || get<Is>(l) < get<Is>(r),
-                       lesser_greater.second || get<Is>(r) < get<Is>(l)))...}) {
+  for (auto rc :
+       {(lesser_greater = std::make_pair(
+             !lesser_greater.second &&
+                 (lesser_greater.first || get<Is>(l) < get<Is>(r)),
+             !lesser_greater.first &&
+                 (lesser_greater.second || get<Is>(r) < get<Is>(l))))...}) {
     if (lesser_greater.first)
       return true;
     if (lesser_greater.second)
