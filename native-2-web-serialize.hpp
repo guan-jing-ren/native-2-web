@@ -37,7 +37,7 @@ void serialize_numbers(uint32_t count, J j, I &i) {
 template <typename T, typename I, typename J>
 void serialize_objects(uint32_t count, J j, I &i) {
   for (auto end = count, c = 0u; c < end; ++c)
-    serializer<T>::serialize(*j, i);
+    serializer<T>::serialize(*j++, i);
 }
 
 template <typename T, typename I, typename J>
