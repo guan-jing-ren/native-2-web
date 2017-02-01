@@ -180,9 +180,81 @@ int main(int, char **) {
     n2w::filler<decltype(test_structure::a)> filla;
     n2w::filler<decltype(test_structure::b)> fillb;
     n2w::filler<decltype(test_structure::c)> fillc;
-    n2w::filler<decltype(test_structure::d)> filld;
+    n2w::filler<decltype(test_structure::d), 10> filld;
     n2w::filler<decltype(test_structure::e)> fille;
 
+    n2w::debug_print(std::cout, filla()) << '\n';
+    n2w::debug_print(std::cout, filla()) << '\n';
+    n2w::debug_print(std::cout, filla()) << '\n';
+    n2w::debug_print(std::cout, filla()) << '\n';
+    n2w::debug_print(std::cout, filla()) << '\n';
+    n2w::debug_print(std::cout, filla()) << '\n';
+    n2w::debug_print(std::cout, filla()) << '\n';
+    n2w::debug_print(std::cout, filla()) << '\n';
+    n2w::debug_print(std::cout, filla()) << '\n';
+    n2w::debug_print(std::cout, filla()) << '\n';
+    n2w::debug_print(std::cout, filla()) << '\n';
+    n2w::debug_print(std::cout, filla()) << '\n';
+    n2w::debug_print(std::cout, filla()) << '\n';
+
+    n2w::debug_print(std::cout, fillb()) << '\n';
+    n2w::debug_print(std::cout, fillb()) << '\n';
+    n2w::debug_print(std::cout, fillb()) << '\n';
+    n2w::debug_print(std::cout, fillb()) << '\n';
+    n2w::debug_print(std::cout, fillb()) << '\n';
+    n2w::debug_print(std::cout, fillb()) << '\n';
+    n2w::debug_print(std::cout, fillb()) << '\n';
+    n2w::debug_print(std::cout, fillb()) << '\n';
+    n2w::debug_print(std::cout, fillb()) << '\n';
+    n2w::debug_print(std::cout, fillb()) << '\n';
+
+    n2w::debug_print(std::cout, fillc()) << '\n';
+    n2w::debug_print(std::cout, fillc()) << '\n';
+    n2w::debug_print(std::cout, fillc()) << '\n';
+    n2w::debug_print(std::cout, fillc()) << '\n';
+    n2w::debug_print(std::cout, fillc()) << '\n';
+    n2w::debug_print(std::cout, fillc()) << '\n';
+    n2w::debug_print(std::cout, fillc()) << '\n';
+    n2w::debug_print(std::cout, fillc()) << '\n';
+    n2w::debug_print(std::cout, fillc()) << '\n';
+    n2w::debug_print(std::cout, fillc()) << '\n';
+    n2w::debug_print(std::cout, fillc()) << '\n';
+    n2w::debug_print(std::cout, fillc()) << '\n';
+    n2w::debug_print(std::cout, fillc()) << '\n';
+    n2w::debug_print(std::cout, fillc()) << '\n';
+    n2w::debug_print(std::cout, fillc()) << '\n';
+
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+
+    test_structure fill_test;
+    // n2w::debug_print(std::cout, fill_test) << '\n';
+    fill_test.a = filla();
+    fill_test.b = fillb();
+    fill_test.c = fillc();
+    // fill_test.d = filld();
+
+    test_structure reconst;
+    // n2w::debug_print(std::cout, reconst) << '\n';
+    std::vector<uint8_t> buf;
+    n2w::serialize(fill_test, back_inserter(buf));
+    n2w::deserialize(begin(buf), reconst);
+    std::cout << "Reconstitution test: " << std::boolalpha
+              << (fill_test == reconst) << '\n';
+    n2w::debug_print(std::cout, fill_test) << '\n';
+    n2w::debug_print(std::cout, reconst) << '\n';
   }
 
   return 0;
