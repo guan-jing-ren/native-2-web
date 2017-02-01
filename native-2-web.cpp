@@ -224,27 +224,27 @@ int main(int, char **) {
     n2w::debug_print(std::cout, fillc()) << '\n';
     n2w::debug_print(std::cout, fillc()) << '\n';
 
-    n2w::debug_print(std::cout, filld()) << '\n';
-    n2w::debug_print(std::cout, filld()) << '\n';
-    n2w::debug_print(std::cout, filld()) << '\n';
-    n2w::debug_print(std::cout, filld()) << '\n';
-    n2w::debug_print(std::cout, filld()) << '\n';
-    n2w::debug_print(std::cout, filld()) << '\n';
-    n2w::debug_print(std::cout, filld()) << '\n';
-    n2w::debug_print(std::cout, filld()) << '\n';
-    n2w::debug_print(std::cout, filld()) << '\n';
-    n2w::debug_print(std::cout, filld()) << '\n';
-    n2w::debug_print(std::cout, filld()) << '\n';
-    n2w::debug_print(std::cout, filld()) << '\n';
-    n2w::debug_print(std::cout, filld()) << '\n';
-    n2w::debug_print(std::cout, filld()) << '\n';
+    // n2w::debug_print(std::cout, filld()) << '\n';
+    // n2w::debug_print(std::cout, filld()) << '\n';
+    // n2w::debug_print(std::cout, filld()) << '\n';
+    // n2w::debug_print(std::cout, filld()) << '\n';
+    // n2w::debug_print(std::cout, filld()) << '\n';
+    // n2w::debug_print(std::cout, filld()) << '\n';
+    // n2w::debug_print(std::cout, filld()) << '\n';
+    // n2w::debug_print(std::cout, filld()) << '\n';
+    // n2w::debug_print(std::cout, filld()) << '\n';
+    // n2w::debug_print(std::cout, filld()) << '\n';
+    // n2w::debug_print(std::cout, filld()) << '\n';
+    // n2w::debug_print(std::cout, filld()) << '\n';
+    // n2w::debug_print(std::cout, filld()) << '\n';
+    // n2w::debug_print(std::cout, filld()) << '\n';
 
     test_structure fill_test;
     // n2w::debug_print(std::cout, fill_test) << '\n';
     fill_test.a = filla();
     fill_test.b = fillb();
     fill_test.c = fillc();
-    // fill_test.d = filld();
+    fill_test.d = filld();
 
     test_structure reconst;
     // n2w::debug_print(std::cout, reconst) << '\n';
@@ -253,7 +253,7 @@ int main(int, char **) {
     n2w::deserialize(begin(buf), reconst);
     std::cout << "Reconstitution test: " << std::boolalpha
               << (fill_test == reconst) << '\n';
-    n2w::debug_print(std::cout, fill_test) << '\n';
+    n2w::debug_print(std::cout, fill_test) << "\n\n";
     n2w::debug_print(std::cout, reconst) << '\n';
   }
 
