@@ -41,6 +41,7 @@ test_structure test_function(test_structure &&t) {
 
 int main(int, char **) {
   std::cout << n2w::endianness<> << '\n';
+  std::cout << reverse_endian(reverse_endian(3.14l)) << '\n';
 
   std::cout << n2w::mangled<int[90]>() << '\n';
   std::cout << n2w::mangled<std::array<std::vector<double>, 5>>() << '\n';

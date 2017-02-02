@@ -55,34 +55,10 @@ bool operator<(const unordered_multimap<T, Traits...> &l,
 }
 }
 
-template <unsigned I, typename T> constexpr T mask() {
-  return static_cast<T>(static_cast<std::uint8_t>(-1)) << (I * 8);
-}
-
-template <unsigned I, typename T> constexpr T mask_byte(T t) {
-  return t & mask<I, T>();
-}
-
-template <unsigned I, typename T> constexpr T swap_byte(T t) {
-  static_assert(I < sizeof(T) / 2, "Lower byte to swap is in upper half");
-  constexpr auto J = sizeof(T) - I - 1;
-  constexpr auto S = (J - I) * 8;
-  return (mask_byte<I>(t) << S) | (mask_byte<J>(t) >> S);
-}
-
-template <typename T, std::size_t... Is>
-constexpr T reverse_endian(T t, std::index_sequence<Is...>) {
-  const T swapped[] = {swap_byte<Is>(t)...};
-  t = 0;
-  for (auto s : swapped)
-    t |= s;
-  return t;
-}
-
 template <typename T> constexpr T reverse_endian(T t) {
-  return sizeof(T) == 1
-             ? t
-             : reverse_endian(t, std::make_index_sequence<sizeof(T) / 2>());
+  std::reverse(reinterpret_cast<std::uint8_t *>(&t),
+          reinterpret_cast<std::uint8_t *>(&t) + sizeof(T));
+  return t;
 }
 
 template <typename T> constexpr auto serial_size = sizeof(T);
