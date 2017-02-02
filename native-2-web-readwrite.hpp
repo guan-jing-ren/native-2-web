@@ -261,6 +261,11 @@ template <typename T, typename U> struct assignable_filler<pair<T, U>> {
   using type = pair<remove_cv_t<T>, remove_cv_t<U>>;
 };
 
+template <typename T, typename... Ts>
+struct assignable_filler<tuple<T, Ts...>> {
+  using type = tuple<remove_cv_t<T>, remove_cv_t<Ts>...>;
+};
+
 template <typename T>
 using assignable_filler_t = typename assignable_filler<T>::type;
 
