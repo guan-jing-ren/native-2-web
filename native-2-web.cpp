@@ -246,6 +246,7 @@ int main(int, char **) {
     fill_test.b = fillb();
     fill_test.c = fillc();
     fill_test.d = filld();
+    fill_test.e = fille();
 
     test_structure reconst;
     // n2w::debug_print(std::cout, reconst) << '\n';
