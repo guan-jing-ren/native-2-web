@@ -165,7 +165,7 @@ template <typename... Ts> string csv() {
     return "";
   string v;
   size_t i = 0;
-  for (auto &s : initializer_list<string>{mangle<Ts>...}) {
+  for (auto &s : initializer_list<string>{mangle<remove_cv_t<Ts>>...}) {
     v += s + (++i == sizeof...(Ts) ? "" : ",");
   }
   return v;
