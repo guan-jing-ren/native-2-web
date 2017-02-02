@@ -396,9 +396,18 @@ template <typename T, size_t V = 5> struct filler {
     return old;
   }
 
+  template <typename I, typename U, typename U2>
+  bool permute(I first, I last, const pair<const U, U2> &&) {
+    return true;
+  }
+
+  template <typename I, typename U> bool permute(I first, I last, const U &&) {
+    return next_permutation(first, last);
+  }
+
   template <typename U = T> auto next(U &u, bidirectional_iterator_tag) {
     auto old = t;
-    next_permutation(begin(u), end(u));
+    permute(begin(u), end(u), typename U::value_type{});
     return old;
   }
 
