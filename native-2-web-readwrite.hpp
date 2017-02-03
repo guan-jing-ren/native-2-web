@@ -294,33 +294,23 @@ template <typename T, size_t V = 5> struct filler {
   }
   template <typename U = char>
   auto construct(char &u) -> enable_if_t<is_same<U, char>{}> {
-    const char sample[] = "\x1 09azAZ<&~^[({\\@#";
+    const char sample[] = " 09azAZ<&~^[({\\@#";
     alphabet.insert(end(alphabet), begin(sample), end(sample));
-    alphabet.insert(end(alphabet), {0, 1, -1ll, numeric_limits<char>::min(),
-                                    numeric_limits<char>::max()});
   }
   template <typename U = wchar_t>
   auto construct(wchar_t &u) -> enable_if_t<is_same<U, wchar_t>{}> {
-    const wchar_t sample[] = L"\x1 09azAZ<&~^[({\\@#";
+    const wchar_t sample[] = L" 09azAZ<&~^[({\\@#";
     alphabet.insert(end(alphabet), begin(sample), end(sample));
-    alphabet.insert(end(alphabet), {0, 1, -1ll, numeric_limits<wchar_t>::min(),
-                                    numeric_limits<wchar_t>::max()});
   }
   template <typename U = char16_t>
   auto construct(char16_t &u) -> enable_if_t<is_same<U, char16_t>{}> {
-    const char16_t sample[] = u"\x1 09azAZ<&~^[({\\@#";
+    const char16_t sample[] = u" 09azAZ<&~^[({\\@#";
     alphabet.insert(end(alphabet), begin(sample), end(sample));
-    alphabet.insert(end(alphabet), {0, 1, static_cast<char16_t>(-1ll),
-                                    numeric_limits<char16_t>::min(),
-                                    numeric_limits<char16_t>::max()});
   }
   template <typename U = char32_t>
   auto construct(char32_t &u) -> enable_if_t<is_same<U, char32_t>{}> {
-    const char32_t sample[] = U"\x1 09azAZ<&~^[({\\@#";
+    const char32_t sample[] = U" 09azAZ<&~^[({\\@#";
     alphabet.insert(end(alphabet), begin(sample), end(sample));
-    alphabet.insert(end(alphabet), {0, 1, static_cast<char32_t>(-1ll),
-                                    numeric_limits<char32_t>::min(),
-                                    numeric_limits<char32_t>::max()});
   }
   template <typename U> auto construct(U &u) -> enable_if_t<is_integral<U>{}> {
     alphabet.insert(end(alphabet),
