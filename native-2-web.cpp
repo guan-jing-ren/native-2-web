@@ -225,23 +225,39 @@ int main(int, char **) {
     n2w::debug_print(std::cout, fillc()) << '\n';
     n2w::debug_print(std::cout, fillc()) << '\n';
 
-    // n2w::debug_print(std::cout, filld()) << '\n';
-    // n2w::debug_print(std::cout, filld()) << '\n';
-    // n2w::debug_print(std::cout, filld()) << '\n';
-    // n2w::debug_print(std::cout, filld()) << '\n';
-    // n2w::debug_print(std::cout, filld()) << '\n';
-    // n2w::debug_print(std::cout, filld()) << '\n';
-    // n2w::debug_print(std::cout, filld()) << '\n';
-    // n2w::debug_print(std::cout, filld()) << '\n';
-    // n2w::debug_print(std::cout, filld()) << '\n';
-    // n2w::debug_print(std::cout, filld()) << '\n';
-    // n2w::debug_print(std::cout, filld()) << '\n';
-    // n2w::debug_print(std::cout, filld()) << '\n';
-    // n2w::debug_print(std::cout, filld()) << '\n';
-    // n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+    n2w::debug_print(std::cout, filld()) << '\n';
+
+    n2w::debug_print(std::cout, fille()) << '\n';
+    n2w::debug_print(std::cout, fille()) << '\n';
+    n2w::debug_print(std::cout, fille()) << '\n';
+    n2w::debug_print(std::cout, fille()) << '\n';
+    n2w::debug_print(std::cout, fille()) << '\n';
+    n2w::debug_print(std::cout, fille()) << '\n';
+    n2w::debug_print(std::cout, fille()) << '\n';
+    n2w::debug_print(std::cout, fille()) << '\n';
+    n2w::debug_print(std::cout, fille()) << '\n';
+    n2w::debug_print(std::cout, fille()) << '\n';
+    n2w::debug_print(std::cout, fille()) << '\n';
+    n2w::debug_print(std::cout, fille()) << '\n';
+    n2w::debug_print(std::cout, fille()) << '\n';
+    n2w::debug_print(std::cout, fille()) << '\n';
+    n2w::debug_print(std::cout, fille()) << '\n';
+    n2w::debug_print(std::cout, fille()) << '\n';
 
     test_structure fill_test;
-    // n2w::debug_print(std::cout, fill_test) << '\n';
     fill_test.a = filla();
     fill_test.b = fillb();
     fill_test.c = fillc();
@@ -249,7 +265,6 @@ int main(int, char **) {
     fill_test.e = fille();
 
     test_structure reconst;
-    // n2w::debug_print(std::cout, reconst) << '\n';
     std::vector<uint8_t> buf;
     n2w::serialize(fill_test, back_inserter(buf));
     n2w::deserialize(begin(buf), reconst);

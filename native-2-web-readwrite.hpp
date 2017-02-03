@@ -160,7 +160,9 @@ struct printer<basic_string<T, Traits...>> {
   template <size_t I = 0, typename O>
   static O &debug_print(O &o, const basic_string<T, Traits...> &t) {
     struct cvt : codecvt<T, typename O::char_type, mbstate_t> {};
-    wstring_convert<cvt, T> cvter{"Could not convert from " + mangle<basic_string<T, Traits...>> + " to " + mangle<basic_string<typename O::char_type, Traits...>>};
+    wstring_convert<cvt, T> cvter{
+        "Could not convert from " + mangle<basic_string<T, Traits...>> +
+        " to " + mangle<basic_string<typename O::char_type, Traits...>>};
     return o << indent<typename O::char_type,
                        I> << mangled<basic_string<T, Traits...>>()
              << ":=\"" << cvter.to_bytes(t) << '"';
@@ -319,12 +321,10 @@ template <typename T, size_t V = 5> struct filler {
   }
   template <typename U>
   auto construct(U &u) -> enable_if_t<is_floating_point<U>{}> {
-    alphabet.insert(
-        end(alphabet),
-        {0, 1, static_cast<U>(-1ll), numeric_limits<U>::min(),
-         numeric_limits<U>::lowest(), numeric_limits<U>::max(),
-         numeric_limits<U>::denorm_min(), numeric_limits<U>::infinity(),
-         numeric_limits<U>::quiet_NaN(), numeric_limits<U>::signaling_NaN()});
+    alphabet.insert(end(alphabet),
+                    {0, 1, static_cast<U>(-1ll), numeric_limits<U>::min(),
+                     numeric_limits<U>::lowest(), numeric_limits<U>::max(),
+                     numeric_limits<U>::denorm_min()});
   }
 
   template <typename T2, typename U>
