@@ -276,13 +276,6 @@ template <typename T, size_t V = 5> struct filler {
   assignable_filler_t<T> t;
   vector<assignable_filler_t<T>> alphabet;
 
-  template <size_t V2> filler(filler<T, V2> f) {}
-  filler(const filler &) = default;
-  filler(filler &&) = default;
-  filler &operator=(const filler &) = default;
-  filler &operator=(filler &&) = default;
-  ~filler() = default;
-
   void sort_unique() {
     sort(begin(alphabet), end(alphabet));
     alphabet.erase(unique(begin(alphabet), end(alphabet)), end(alphabet));
@@ -448,6 +441,39 @@ template <typename T, size_t V = 5> struct filler {
     static O &debug_print(O &o, const s &_s) {                                 \
       CONSTRUCTOR(s, m, _s);                                                   \
       return printer<decltype(_s_v)>::template debug_print<I>(o, _s_v);        \
+    }                                                                          \
+  };                                                                           \
+  template <size_t V> struct filler<s, V> {                                    \
+    size_t iteration = 0;                                                      \
+    assignable_filler_t<s> t;                                                  \
+    vector<assignable_filler_t<s>> alphabet;                                   \
+                                                                               \
+    template <typename... Ts> void sink(Ts &&...) {}                           \
+                                                                               \
+    template <size_t... Is>                                                    \
+    s construct(USING_STRUCTURE(s, m) & d,                                     \
+                tuple<BOOST_PP_SEQ_FOR_EACH_I(DECLTYPES, s, m)> &&t,           \
+                index_sequence<Is...>) {                                       \
+      sink((get<Is>(d) = get<Is>(t))...);                                      \
+      return *d.s_write;                                                       \
+    }                                                                          \
+                                                                               \
+    filler() {                                                                 \
+      filler<tuple<BOOST_PP_SEQ_FOR_EACH_I(DECLTYPES, s, m)>, V> fill;         \
+      generate_n(back_inserter(alphabet), V, [this, &fill]() {                 \
+        CONSTRUCTOR(s, m, t);                                                  \
+        return construct(                                                      \
+            t_v, fill(),                                                       \
+            make_index_sequence<tuple_size<decltype(fill.t)>{}>{});            \
+      });                                                                      \
+      if (V)                                                                   \
+        t = alphabet[0];                                                       \
+    }                                                                          \
+                                                                               \
+    s operator()() {                                                           \
+      auto old = t;                                                            \
+      t = alphabet[iteration++ % alphabet.size()];                             \
+      return old;                                                              \
     }                                                                          \
   };                                                                           \
   }

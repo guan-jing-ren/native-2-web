@@ -271,7 +271,14 @@ int main(int, char **) {
     std::cout << "Reconstitution test: " << std::boolalpha
               << (fill_test == reconst) << '\n';
     n2w::debug_print(std::cout, fill_test) << "\n\n";
-    n2w::debug_print(std::cout, reconst) << '\n';
+    n2w::debug_print(std::cout, reconst) << "\n\n";
+
+    std::cout << "Structure fill test\n";
+    test_structure structure_fill_test;
+    n2w::filler<test_structure> fillt;
+    n2w::debug_print(std::cout, fillt()) << '\n';
+    structure_fill_test = fillt();
+    n2w::debug_print(std::cout, structure_fill_test) << '\n';
   }
 
   return 0;
