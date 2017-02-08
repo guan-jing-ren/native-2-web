@@ -33,6 +33,8 @@ test_structure test_function(test_structure &&t) {
 int main(int, char **) {
   using namespace std;
   cout << n2w::to_js<char16_t>::create() << '\n';
+  cout << n2w::to_js<char32_t[3][4][5][2]>::create() << '\n';
+  cout << n2w::to_js<vector<double>[3][2][4][5]>::create() << '\n';
   cout << n2w::to_js<vector<int>>::create() << '\n';
   cout << n2w::to_js<vector<vector<int>>>::create() << '\n';
 
@@ -48,7 +50,7 @@ int main(int, char **) {
                          unordered_multimap<int, unordered_set<int>>>>::create()
        << '\n';
   cout << n2w::to_js<multimap<int, vector<int>>>::create() << '\n';
-  cout << n2w::to_js<unordered_map<unordered_set<int>, int>>::create() << '\n';
+  cout << n2w::to_js<unordered_map<unordered_set<int>, std::string>>::create() << '\n';
   cout << n2w::to_js<unordered_multimap<int, int>>::create() << '\n';
 
   return 0;

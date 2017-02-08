@@ -32,6 +32,10 @@ template <typename T> struct to_js {
   }
 };
 
+template <typename... Traits> struct to_js<basic_string<char, Traits...>> {
+  static string create() { return "read_string"; }
+};
+
 template <typename T, typename... Traits> struct to_js<vector<T, Traits...>> {
   template <typename U = T>
   static auto create() -> enable_if_t<is_arithmetic<U>{}, string> {
@@ -69,16 +73,47 @@ template <typename T> struct to_js_bounded {
   template <typename U = T>
   static auto create() -> enable_if_t<is_arithmetic<U>{}, string> {
     return R"(function (data, offset, size) {
-  read_numbers_bounded(data, offset, )" +
+  return read_numbers_bounded(data, offset, )" +
            constructor<U> + R"(Array, size);
 })";
-
   }
   template <typename U = T>
   static auto create() -> enable_if_t<is_class<U>{}, string> {
     return R"(function (data, offset, size) {
-  read_structures_bounded(data, offset, )" +
+  return read_structures_bounded(data, offset, )" +
            to_js<U>::create() + R"(, size);
+})";
+  }
+};
+
+template <typename T, size_t N> struct to_js<T[N]> {
+  static string extent() { return to_string(N); }
+
+  static string create() {
+    return R"(function (data, offset) {
+  return )" +
+           to_js_bounded<T>::create() + R"((data, offset, )" + to_string(N) +
+           R"();
+})";
+  }
+};
+
+template <typename T, size_t M, size_t N> struct to_js<T[M][N]> {
+  static string extent() { return to_string(M) + "," + to_js<T[N]>::extent(); }
+
+  template <typename U = typename remove_all_extents<T>::type>
+  static auto create() -> enable_if_t<is_arithmetic<U>{}, string> {
+    return R"(function (data, offset) {
+  return read_multiarray(data, offset, )" +
+           constructor<U> + R"(Array, [)" + extent() + R"(]);
+})";
+  }
+
+  template <typename U = typename remove_all_extents<T>::type>
+  static auto create() -> enable_if_t<is_class<U>{}, string> {
+    return R"(function (data, offset) {
+  return read_multiarray(data, offset, )" +
+           to_js<U>::create() + R"(, [)" + extent() + R"(]);
 })";
   }
 };
