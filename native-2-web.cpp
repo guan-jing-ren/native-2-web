@@ -1,4 +1,5 @@
 #include "native-2-web-readwrite.hpp"
+#include "native-2-web-js.hpp"
 #include <iostream>
 #include <algorithm>
 
@@ -30,6 +31,25 @@ test_structure test_function(test_structure &&t) {
 }
 
 int main(int, char **) {
+  using namespace std;
+  cout << n2w::to_js<char16_t>::create() << '\n';
+  cout << n2w::to_js<vector<int>>::create() << '\n';
+  cout << n2w::to_js<vector<vector<int>>>::create() << '\n';
+
+  cout << n2w::to_js<list<vector<float>>>::create() << '\n';
+  cout << n2w::to_js<forward_list<vector<float>>>::create() << '\n';
+  cout << n2w::to_js<deque<vector<float>>>::create() << '\n';
+  cout << n2w::to_js<set<vector<float>>>::create() << '\n';
+  cout << n2w::to_js<multiset<vector<float>>>::create() << '\n';
+  cout << n2w::to_js<unordered_set<vector<float>>>::create() << '\n';
+  cout << n2w::to_js<unordered_multiset<vector<float>>>::create() << '\n';
+
+  cout << n2w::to_js<map<vector<int>,
+                         unordered_multimap<int, unordered_set<int>>>>::create()
+       << '\n';
+  cout << n2w::to_js<multimap<int, vector<int>>>::create() << '\n';
+  cout << n2w::to_js<unordered_map<unordered_set<int>, int>>::create() << '\n';
+  cout << n2w::to_js<unordered_multimap<int, int>>::create() << '\n';
 
   return 0;
 }
