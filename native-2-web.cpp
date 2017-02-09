@@ -9,6 +9,7 @@ struct test_substructure {
 };
 
 READ_WRITE_SPEC(test_substructure, (c)(d));
+JS_SPEC(test_substructure, (c)(d));
 
 struct test_structure {
   std::tuple<int> a;                    // 90*4
@@ -23,6 +24,7 @@ struct test_structure {
 };
 
 READ_WRITE_SPEC(test_structure, (a)(b)(b1)(c)(d)(e));
+JS_SPEC(test_structure, (a)(b)(b1)(c)(d)(e));
 
 test_structure test_function(test_structure &&t) {
   std::cout << "Test function execution test\n";
@@ -58,6 +60,9 @@ int main(int, char **) {
 
   cout << n2w::to_js<tuple<int, double, char16_t>>::create() << '\n';
   cout << n2w::to_js<tuple<string>>::create() << "\n\n";
+
+  cout << "Structure JS test\n";
+  cout << n2w::to_js<test_structure>::create() << '\n';
 
   return 0;
 }

@@ -176,6 +176,31 @@ template <typename T, typename U, typename... Traits>
 struct to_js<unordered_map<T, U, Traits...>> : to_js<map<T, U>> {};
 template <typename T, typename U, typename... Traits>
 struct to_js<unordered_multimap<T, U, Traits...>> : to_js<map<T, U>> {};
+
+template <typename S, typename T, typename... Ts>
+struct to_js<structure<S, T, Ts...>> {
+  static string create() {
+    auto names = accumulate(begin(structure<S, T, Ts...>::names) + 1,
+                            end(structure<S, T, Ts...>::names), string{},
+                            [](const auto &names, const auto &name) {
+                              return names + (names.empty() ? "" : ",") + name;
+                            });
+
+    return R"(function (data, offset) {
+  let tuple = )" +
+           to_js<tuple<T, Ts...>>::create() + R"((data, offset);
+  let names = [)" +
+           names +
+           R"(];
+  return names.reduce((p,c,i) => {p[c] = tuple[i]; return p;}, {});
+})";
+  }
+};
+
+#define JS_SPEC(s, m)                                                          \
+  namespace n2w {                                                              \
+  template <> struct to_js<s> : to_js<USING_STRUCTURE(s, m)> {};               \
+  }
 }
 
 #endif
