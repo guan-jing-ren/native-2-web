@@ -32,7 +32,8 @@ template <typename T> struct to_js {
   }
 };
 
-template <typename... Traits> struct to_js<basic_string<char, Traits...>> {
+template <typename T, typename... Traits>
+struct to_js<basic_string<T, Traits...>> {
   static string create() { return "read_string"; }
 };
 
