@@ -32,6 +32,36 @@ template <typename T> struct to_js {
   }
 };
 
+template <typename T, typename... Ts> struct to_js_homogenous {
+  template <size_t... Is> static string create() {
+    return to_js<T>::create() + ",\n" + to_js_homogenous<Ts...>::create();
+  }
+};
+
+template <typename T> struct to_js_homogenous<T> {
+  template <size_t... Is> static string create() { return to_js<T>::create(); }
+};
+
+template <typename T, typename U> struct to_js<pair<T, U>> {
+  static string create() {
+    return R"(function (data, offset) {
+  return read_structure(data, offset, [)" +
+           to_js_homogenous<T, U>::create() +
+           R"(]);
+})";
+  }
+};
+
+template <typename T, typename... Ts> struct to_js<tuple<T, Ts...>> {
+  static string create() {
+    return R"(function (data, offset) {
+  return read_structure(data, offset, [)" +
+           to_js_homogenous<T, Ts...>::create() +
+           R"(]);
+})";
+  }
+};
+
 template <typename T, typename... Traits>
 struct to_js<basic_string<T, Traits...>> {
   static string create() { return "read_string"; }

@@ -56,5 +56,8 @@ int main(int, char **) {
        << '\n';
   cout << n2w::to_js<unordered_multimap<int, int>>::create() << '\n';
 
+  cout << n2w::to_js<tuple<int, double, char16_t>>::create() << '\n';
+  cout << n2w::to_js<tuple<string>>::create() << "\n\n";
+
   return 0;
 }
