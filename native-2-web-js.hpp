@@ -118,6 +118,16 @@ template <typename T, size_t M, size_t N> struct to_js<T[M][N]> {
   }
 };
 
+template <typename T, size_t N> struct to_js<array<T, N>> {
+  static string create() {
+    return R"(function (data, offset) {
+  return )" +
+           to_js_bounded<T>::create() + R"((data, offset, )" + to_string(N) +
+           R"();
+})";
+  }
+};
+
 template <typename T, typename U, typename... Traits>
 struct to_js<map<T, U, Traits...>> {
   template <typename V = T> static string create() {
