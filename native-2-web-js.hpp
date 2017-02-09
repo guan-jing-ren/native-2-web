@@ -6,20 +6,20 @@
 namespace n2w {
 using namespace std;
 
-template <typename T> string constructor = "";
-template <> const string constructor<bool> = "Uint8";
-template <> const string constructor<char> = "Int8";
-template <> const string constructor<wchar_t> = "Uint32";
-template <> const string constructor<char16_t> = "Uint16";
-template <> const string constructor<char32_t> = "Uint32";
-template <> const string constructor<int8_t> = "Int8";
-template <> const string constructor<int16_t> = "Int16";
-template <> const string constructor<int32_t> = "Int32";
-template <> const string constructor<uint8_t> = "Uint8";
-template <> const string constructor<uint16_t> = "Uint16";
-template <> const string constructor<uint32_t> = "Uint32";
-template <> const string constructor<float> = "Float32";
-template <> const string constructor<double> = "Float64";
+template <typename T> string js_constructor = "";
+template <> const string js_constructor<bool> = "Uint8";
+template <> const string js_constructor<char> = "Int8";
+template <> const string js_constructor<wchar_t> = "Uint32";
+template <> const string js_constructor<char16_t> = "Uint16";
+template <> const string js_constructor<char32_t> = "Uint32";
+template <> const string js_constructor<int8_t> = "Int8";
+template <> const string js_constructor<int16_t> = "Int16";
+template <> const string js_constructor<int32_t> = "Int32";
+template <> const string js_constructor<uint8_t> = "Uint8";
+template <> const string js_constructor<uint16_t> = "Uint16";
+template <> const string js_constructor<uint32_t> = "Uint32";
+template <> const string js_constructor<float> = "Float32";
+template <> const string js_constructor<double> = "Float64";
 
 template <typename T> struct to_js {
   template <typename U = T>
@@ -27,7 +27,7 @@ template <typename T> struct to_js {
     return
         R"(function (data, offset) {
   return read_number(data, offset, )" +
-        constructor<U> + R"(Array);
+        js_constructor<U> + R"(Array);
 })";
   }
 };
@@ -41,7 +41,7 @@ template <typename T, typename... Traits> struct to_js<vector<T, Traits...>> {
   static auto create() -> enable_if_t<is_arithmetic<U>{}, string> {
     return R"(function (data, offset) {
   return read_numbers(data, offset, )" +
-           constructor<U> + R"(Array);
+           js_constructor<U> + R"(Array);
 })";
   }
 
@@ -74,7 +74,7 @@ template <typename T> struct to_js_bounded {
   static auto create() -> enable_if_t<is_arithmetic<U>{}, string> {
     return R"(function (data, offset, size) {
   return read_numbers_bounded(data, offset, )" +
-           constructor<U> + R"(Array, size);
+           js_constructor<U> + R"(Array, size);
 })";
   }
   template <typename U = T>
@@ -105,7 +105,7 @@ template <typename T, size_t M, size_t N> struct to_js<T[M][N]> {
   static auto create() -> enable_if_t<is_arithmetic<U>{}, string> {
     return R"(function (data, offset) {
   return read_multiarray(data, offset, )" +
-           constructor<U> + R"(Array, [)" + extent() + R"(]);
+           js_constructor<U> + R"(Array, [)" + extent() + R"(]);
 })";
   }
 
