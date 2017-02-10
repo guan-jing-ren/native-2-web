@@ -34,35 +34,39 @@ test_structure test_function(test_structure &&t) {
 
 int main(int, char **) {
   using namespace std;
-  cout << n2w::to_js<char16_t>::create() << '\n';
-  cout << n2w::to_js<char32_t[3][4][5][2]>::create() << '\n';
-  cout << n2w::to_js<vector<double>[3][2][4][5]>::create() << '\n';
-  cout << n2w::to_js<array<array<array<array<float, 3>, 2>, 4>, 5>>
-      ::create() << '\n';
-  cout << n2w::to_js<vector<int>>::create() << '\n';
-  cout << n2w::to_js<vector<vector<int>>>::create() << '\n';
-
-  cout << n2w::to_js<list<vector<float>>>::create() << '\n';
-  cout << n2w::to_js<forward_list<vector<float>>>::create() << '\n';
-  cout << n2w::to_js<deque<vector<float>>>::create() << '\n';
-  cout << n2w::to_js<set<vector<float>>>::create() << '\n';
-  cout << n2w::to_js<multiset<vector<float>>>::create() << '\n';
-  cout << n2w::to_js<unordered_set<vector<float>>>::create() << '\n';
-  cout << n2w::to_js<unordered_multiset<vector<float>>>::create() << '\n';
-
-  cout << n2w::to_js<map<vector<int>,
-                         unordered_multimap<int, unordered_set<int>>>>::create()
+  cout << n2w::to_js<char16_t>::create_reader() << '\n';
+  cout << n2w::to_js<char32_t[3][4][5][2]>::create_reader() << '\n';
+  cout << n2w::to_js<vector<double>[3][2][4][5]>::create_reader() << '\n';
+  cout << n2w::to_js<
+              array<array<array<array<float, 3>, 2>, 4>, 5>>::create_reader()
        << '\n';
-  cout << n2w::to_js<multimap<int, vector<int>>>::create() << '\n';
-  cout << n2w::to_js<unordered_map<unordered_set<int>, std::string>>::create()
-       << '\n';
-  cout << n2w::to_js<unordered_multimap<int, int>>::create() << '\n';
+  cout << n2w::to_js<vector<int>>::create_reader() << '\n';
+  cout << n2w::to_js<vector<vector<int>>>::create_reader() << '\n';
 
-  cout << n2w::to_js<tuple<int, double, char16_t>>::create() << '\n';
-  cout << n2w::to_js<tuple<string>>::create() << "\n\n";
+  cout << n2w::to_js<list<vector<float>>>::create_reader() << '\n';
+  cout << n2w::to_js<forward_list<vector<float>>>::create_reader() << '\n';
+  cout << n2w::to_js<deque<vector<float>>>::create_reader() << '\n';
+  cout << n2w::to_js<set<vector<float>>>::create_reader() << '\n';
+  cout << n2w::to_js<multiset<vector<float>>>::create_reader() << '\n';
+  cout << n2w::to_js<unordered_set<vector<float>>>::create_reader() << '\n';
+  cout << n2w::to_js<unordered_multiset<vector<float>>>::create_reader()
+       << '\n';
+
+  cout << n2w::to_js<
+              map<vector<int>,
+                  unordered_multimap<int, unordered_set<int>>>>::create_reader()
+       << '\n';
+  cout << n2w::to_js<multimap<int, vector<int>>>::create_reader() << '\n';
+  cout << n2w::to_js<
+              unordered_map<unordered_set<int>, std::string>>::create_reader()
+       << '\n';
+  cout << n2w::to_js<unordered_multimap<int, int>>::create_reader() << '\n';
+
+  cout << n2w::to_js<tuple<int, double, char16_t>>::create_reader() << '\n';
+  cout << n2w::to_js<tuple<string>>::create_reader() << "\n\n";
 
   cout << "Structure JS test\n";
-  cout << n2w::to_js<test_structure>::create() << '\n';
+  cout << n2w::to_js<test_structure>::create_reader() << '\n';
 
   return 0;
 }
