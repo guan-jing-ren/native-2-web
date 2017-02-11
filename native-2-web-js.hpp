@@ -199,7 +199,7 @@ struct to_js<structure<S, T, Ts...>> {
   let names = [)" +
            names +
            R"(];
-  return names.reduce((p,c,i) => {p[c] = tuple[i]; return p;}, {});
+  return [names.reduce((p,c,i) => {p[c] = tuple[i]; return p;}, {}), offset];
 })";
   }
 };
