@@ -171,7 +171,7 @@ struct to_js<map<T, U, Traits...>> {
   return read_associative(data, offset, )" +
            to_js_bounded<T>::create_reader() + R"(, )" +
            to_js_bounded<U>::create_reader() +
-           R"(
+           R"();
 })";
   }
 };
@@ -189,7 +189,8 @@ struct to_js<structure<S, T, Ts...>> {
     auto names = accumulate(begin(structure<S, T, Ts...>::names) + 1,
                             end(structure<S, T, Ts...>::names), string{},
                             [](const auto &names, const auto &name) {
-                              return names + (names.empty() ? "" : ",") + name;
+                              return names + (names.empty() ? "" : ",") + "'" +
+                                     name + "'";
                             });
 
     return R"(function (data, offset) {

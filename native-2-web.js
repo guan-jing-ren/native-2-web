@@ -17,13 +17,13 @@ function calc_padding(size, count) {
 }
 
 function read_number(data, offset, type) {
-    let n = type.prototype.constructor.call(data, offset, number_size[type])[0];
-    offset += calc_padding(number_size[type], size);
+    let n = new type.prototype.constructor(data, offset, number_size[type])[0];
+    offset += calc_padding(number_size[type], 1);
     return [n, offset];
 }
 
 function read_numbers_bounded(data, offset, type, size) {
-    let numbers = type.prototype.constructor.call(data, offset, size * number_size[type]);
+    let numbers = new type.prototype.constructor(data, offset, size * number_size[type]);
     offset += calc_padding(number_size[type], size);
     return [numbers, offset];
 }
@@ -73,7 +73,7 @@ function read_associative_bounded(data, offset, key_reader, value_reader, size) 
     [keys, offset] = key_reader(data, offset, size);
     [values, offset] = value_reader(data, offset, size);
     for (let k in keys) map[keys[k]] = values[k];
-    return map;
+    return [map, offset];
 }
 
 function read_associative(data, offset, key_reader, value_reader) {
