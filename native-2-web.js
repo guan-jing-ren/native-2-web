@@ -61,7 +61,7 @@ function read_associative_bounded(data, offset, key_reader, value_reader, size) 
     let keys, values, map = {};
     [keys, offset] = key_reader(data, offset, size);
     [values, offset] = value_reader(data, offset, size);
-    for (let k in keys) map[keys[k]] = values[k];
+    for (let k in keys) map[JSON.stringify(keys[k])] = values[k];
     return [map, offset];
 }
 
