@@ -65,8 +65,32 @@ int main(int, char **) {
   cout << n2w::to_js<tuple<int, double, char16_t>>::create_reader() << '\n';
   cout << n2w::to_js<tuple<string>>::create_reader() << "\n\n";
 
-  cout << "Structure JS test\n";
-  cout << n2w::to_js<test_structure>::create_reader() << '\n';
+  cout << "// Structure JS test\n";
+  cout << "let test_structure_read = "
+       << n2w::to_js<test_structure>::create_reader() << '\n';
+
+  vector<uint8_t> data;
+  n2w::filler<test_structure> filler;
+  filler();
+  filler();
+  filler();
+  filler();
+  auto strct = filler();
+  n2w::serialize(strct, back_inserter(data));
+  cerr << "Pad: " << P << '\n';
+  cerr << "Size of structure fill: " << data.size() << '\n';
+  n2w::debug_print(cerr, strct) << '\n';
+
+  cout << "let rval = Uint8Array.from(["
+       << accumulate(begin(data), end(data), string{},
+                     [](const auto &result, const auto &elem) {
+                       return result + (result.empty() ? "" : ",") +
+                              to_string((unsigned)elem);
+                     })
+       << "]).buffer;\n";
+  cout << "document.write('<pre>' + JSON.stringify(test_structure_read(rval, "
+          "0)[0], null, "
+          "'\\t') + '</pre>');\n";
 
   return 0;
 }
