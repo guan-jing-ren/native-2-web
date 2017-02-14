@@ -19,7 +19,7 @@ void serialize_number(T t, I &i) {
   // "Not dereferenceable or uint8_t iterator");
 
   i = copy_n(reinterpret_cast<uint8_t *>(&t), serial_size<T>, i);
-  i = fill_n(i, calc_padding<P, T>(), 0);
+  i = fill_n(i, calc_padding<P, T>(1), 0);
 }
 
 template <typename T, typename I, typename J>

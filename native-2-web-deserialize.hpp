@@ -19,7 +19,7 @@ template <typename T, size_t P = P, typename I> T deserialize_number(I &i) {
 
   T t = 0;
   copy_n(i, serial_size<T>, reinterpret_cast<uint8_t *>(&t));
-  i += serial_size<T> + calc_padding<P, T>();
+  i += serial_size<T> + calc_padding<P, T>(1);
   return t;
 }
 
