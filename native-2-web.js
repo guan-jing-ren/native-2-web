@@ -1,30 +1,19 @@
-var number_size = {
-    Boolean: 1,
-    Int8Array: 1,
-    Uint8Array: 1,
-    Int16Array: 2,
-    Uint16Array: 2,
-    Int32Array: 4,
-    Uint32Array: 4,
-    Float32Array: 4,
-    Float64Array: 8,
-}
+var pad = Float64Array.BYTES_PER_ELEMENT;
 
-var pad = number_size[Float64Array];
-
-function calc_padding(size, count) {
-    return pad == 0 ? 0 : (pad - ((count * size) % pad)) % pad;
+function calc_padding(type, count) {
+    return pad == 0 ? 0 : (pad - ((count * type.BYTES_PER_ELEMENT) % pad)) % pad;
 }
 
 function read_number(data, offset, type) {
-    let n = new type.prototype.constructor(data, offset, number_size[type])[0];
-    offset += calc_padding(number_size[type], 1);
+    let n = new type(data, offset, 1);
+    n = n[0];
+    offset += pad;
     return [n, offset];
 }
 
 function read_numbers_bounded(data, offset, type, size) {
-    let numbers = new type.prototype.constructor(data, offset, size * number_size[type]);
-    offset += calc_padding(number_size[type], size);
+    let numbers = new type(data, offset, size);
+    offset += size * type.BYTES_PER_ELEMENT + calc_padding(type, size);
     return [numbers, offset];
 }
 
@@ -34,9 +23,9 @@ function read_numbers(data, offset, type) {
     return read_numbers_bounded(data, offset, type, size);
 }
 
-function read_string(data, offset) {
+function read_string(data, offset, type) {
     let s;
-    [s, offset] = read_numbers(data, offset, Uint8Array);
+    [s, offset] = read_numbers(data, offset, type);
     return [s, offset];
 }
 
