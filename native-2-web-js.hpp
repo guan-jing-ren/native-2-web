@@ -67,12 +67,7 @@ template <typename T, typename... Ts> struct to_js<tuple<T, Ts...>> {
 
 template <typename T, typename... Traits>
 struct to_js<basic_string<T, Traits...>> {
-  static string create_reader() {
-    return R"(function (data, offset) {
-  return read_string(data, offset, )" +
-           js_constructor<T> + R"(Array);
-})";
-  }
+  static string create_reader() { return "read_string"; }
 };
 
 template <typename T, typename... Traits> struct to_js<vector<T, Traits...>> {

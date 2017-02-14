@@ -23,9 +23,9 @@ function read_numbers(data, offset, type) {
     return read_numbers_bounded(data, offset, type, size);
 }
 
-function read_string(data, offset, type) {
+function read_string(data, offset) {
     let s;
-    [s, offset] = read_numbers(data, offset, type);
+    [s, offset] = read_numbers(data, offset, Uint8Array);
     return [s, offset];
 }
 
