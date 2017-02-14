@@ -2,6 +2,7 @@
 #define _NATIVE_2_WEB_DESERIALIZE_HPP_
 
 #include "native-2-web-common.hpp"
+#include <locale>
 
 namespace n2w {
 using namespace std;
@@ -126,7 +127,13 @@ template <typename T, typename... Traits>
 struct deserializer<basic_string<T, Traits...>> {
   template <typename I>
   static void deserialize(I &i, basic_string<T, Traits...> &t) {
-    deserialize_sequence<T>(i, back_inserter(t));
+    string utf8;
+    deserialize_sequence<char>(i, back_inserter(utf8));
+    struct cvt : codecvt<T, char, mbstate_t> {};
+    wstring_convert<cvt, T> cvter{"Could not convert from " +
+                                  mangle<basic_string<char, Traits...>> +
+                                  " to " + mangle<basic_string<T, Traits...>>};
+    t = cvter.from_bytes(utf8);
   }
 };
 template <typename T, typename... Traits>

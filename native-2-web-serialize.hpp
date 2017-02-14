@@ -2,6 +2,7 @@
 #define _NATIVE_2_WEB_SERIALIZE_HPP_
 
 #include "native-2-web-common.hpp"
+#include <locale>
 
 namespace n2w {
 using namespace std;
@@ -135,7 +136,12 @@ template <typename T, typename... Traits>
 struct serializer<basic_string<T, Traits...>> {
   template <typename I>
   static void serialize(const basic_string<T, Traits...> &t, I &i) {
-    serialize_sequence<T>(t.size(), cbegin(t), i);
+    struct cvt : codecvt<T, char, mbstate_t> {};
+    wstring_convert<cvt, T> cvter{"Could not convert from " +
+                                  mangle<basic_string<T, Traits...>> + " to " +
+                                  mangle<basic_string<char, Traits...>>};
+    string utf8 = cvter.to_bytes(t);
+    serialize_sequence<char>(utf8.size(), cbegin(utf8), i);
   }
 };
 template <typename T, typename... Traits>
