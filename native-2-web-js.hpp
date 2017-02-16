@@ -26,8 +26,8 @@ template <typename T> struct to_js {
   static auto create_reader() -> enable_if_t<is_arithmetic<U>{}, string> {
     return
         R"(function (data, offset) {
-  return read_number(data, offset, )" +
-        js_constructor<U> + R"(Array);
+  return read_number(data, offset, 'get)" +
+        js_constructor<U> + R"(');
 })";
   }
 };
@@ -74,8 +74,8 @@ template <typename T, typename... Traits> struct to_js<vector<T, Traits...>> {
   template <typename U = T>
   static auto create_reader() -> enable_if_t<is_arithmetic<U>{}, string> {
     return R"(function (data, offset) {
-  return read_numbers(data, offset, )" +
-           js_constructor<U> + R"(Array);
+  return read_numbers(data, offset, 'get)" +
+           js_constructor<U> + R"(');
 })";
   }
 
@@ -107,8 +107,8 @@ template <typename T> struct to_js_bounded {
   template <typename U = T>
   static auto create_reader() -> enable_if_t<is_arithmetic<U>{}, string> {
     return R"(function (data, offset, size) {
-  return read_numbers_bounded(data, offset, )" +
-           js_constructor<U> + R"(Array, size);
+  return read_numbers_bounded(data, offset, 'get)" +
+           js_constructor<U> + R"(', size);
 })";
   }
   template <typename U = T>
@@ -139,8 +139,8 @@ template <typename T, size_t M, size_t N> struct to_js<T[M][N]> {
   template <typename U = typename remove_all_extents<T>::type>
   static auto create_reader() -> enable_if_t<is_arithmetic<U>{}, string> {
     return R"(function (data, offset) {
-  return read_multiarray(data, offset, )" +
-           js_constructor<U> + R"(Array, [)" + extent() + R"(]);
+  return read_multiarray(data, offset, 'get)" +
+           js_constructor<U> + R"(' [)" + extent() + R"(]);
 })";
   }
 

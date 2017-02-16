@@ -18,7 +18,7 @@ struct test_structure {
   std::pair<int, std::array<std::vector<double>, 0>> c;         // 90*4 + 5*4
   std::tuple<int, float, std::unordered_set<std::u16string>> d; // 90*4+4+4
   std::multimap<std::wstring,
-                std::tuple<std::pair<int, long>, std::vector<double>,
+                std::tuple<std::pair<int, short>, std::vector<double>,
                            std::array<std::tuple<char16_t, char32_t>, 15>>>
       e; // 4
 };
@@ -77,17 +77,16 @@ int main(int, char **) {
   filler();
   auto strct = filler();
   n2w::serialize(strct, back_inserter(data));
-  cerr << "Pad: " << P << '\n';
   cerr << "Size of structure fill: " << data.size() << '\n';
   n2w::debug_print(cerr, strct) << '\n';
 
-  cout << "let rval = Uint8Array.from(["
+  cout << "let rval = new DataView(Uint8Array.from(["
        << accumulate(begin(data), end(data), string{},
                      [](const auto &result, const auto &elem) {
                        return result + (result.empty() ? "" : ",") +
                               to_string((unsigned)elem);
                      })
-       << "]).buffer;\n";
+       << "]).buffer);\n";
   cout << "document.write('<pre>' + JSON.stringify(test_structure_read(rval, "
           "0)[0], null, "
           "'\\t') + '</pre>');\n";

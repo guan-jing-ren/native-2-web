@@ -1,31 +1,38 @@
 var pad = Float64Array.BYTES_PER_ELEMENT;
 
-function calc_padding(type, count) {
-    return pad == 0 ? 0 : (pad - ((count * type.BYTES_PER_ELEMENT) % pad)) % pad;
+var sizes = {
+    "getInt8": 1,
+    "getInt16": 2,
+    "getInt32": 4,
+    "getUint8": 1,
+    "getUint16": 2,
+    "getUint32": 4,
+    "getFloat32": 4,
+    "getFloat64": 8,
 }
 
 function read_number(data, offset, type) {
-    let n = new type(data, offset, 1);
-    n = n[0];
-    offset += pad;
+    let n = data[type](offset, true);
+    offset += sizes[type];
     return [n, offset];
 }
 
 function read_numbers_bounded(data, offset, type, size) {
-    let numbers = new type(data, offset, size);
-    offset += size * type.BYTES_PER_ELEMENT + calc_padding(type, size);
+    let numbers = [];
+    for(let i = 0; i < size; ++i, offset += sizes[type])
+        numbers.push(data[type](offset, true));
     return [numbers, offset];
 }
 
 function read_numbers(data, offset, type) {
     let size;
-    [size, offset] = read_number(data, offset, Uint32Array);
+    [size, offset] = read_number(data, offset, "getUint32");
     return read_numbers_bounded(data, offset, type, size);
 }
 
 function read_string(data, offset) {
     let s;
-    [s, offset] = read_numbers(data, offset, Uint8Array);
+    [s, offset] = read_numbers(data, offset, "getUint8");
     return [s, offset];
 }
 
@@ -53,7 +60,7 @@ function read_structures_bounded(data, offset, readers, size) {
 
 function read_structures(data, offset, readers) {
     let size;
-    [size, offset] = read_number(data, offset, Uint32Array);
+    [size, offset] = read_number(data, offset, "getUint32");
     return read_structures_bounded(data, offset, readers, size);
 }
 
@@ -67,7 +74,7 @@ function read_associative_bounded(data, offset, key_reader, value_reader, size) 
 
 function read_associative(data, offset, key_reader, value_reader) {
     let size;
-    [size, offset] = read_number(data, offset, Uint32Array);
+    [size, offset] = read_number(data, offset, "getUint32");
     return read_associative_bounded(data, offset, key_reader, value_reader, size);
 }
 

@@ -65,12 +65,6 @@ template <typename T> constexpr auto serial_size = sizeof(T);
 // template <> constexpr auto serial_size<void> = sizeof("void");
 // template <> constexpr auto serial_size<bool> = sizeof(std::uint8_t);
 // template <> constexpr auto serial_size<wchar_t> = sizeof(char32_t);
-constexpr size_t P = serial_size<double>;
-
-template <std::size_t P, typename T>
-constexpr auto calc_padding(std::size_t count = 0) {
-  return P == 0 ? 0 : (P - ((count * serial_size<T>) % P)) % P;
-}
 
 namespace n2w {
 template <typename S, typename T, typename... Ts> struct structure {

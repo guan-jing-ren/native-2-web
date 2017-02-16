@@ -13,14 +13,13 @@ template <typename T, typename I> I serialize(const T &t, I i) {
   return i;
 }
 
-template <typename T, size_t P = P, typename I>
+template <typename T, typename I>
 void serialize_number(T t, I &i) {
   static_assert(is_arithmetic<T>::value, "Not an arithmetic type");
   // static_assert(is_same<uint8_t, remove_reference_t<decltype(*i)>>::value,
   // "Not dereferenceable or uint8_t iterator");
 
   i = copy_n(reinterpret_cast<uint8_t *>(&t), serial_size<T>, i);
-  i = fill_n(i, calc_padding<P, T>(1), 0);
 }
 
 template <typename T, typename I, typename J>
@@ -31,8 +30,7 @@ void serialize_numbers(uint32_t count, J j, I &i) {
   // static_assert(is_same<T, remove_reference_t<decltype(*j)>>::value,
   // "Output iterator does not dereference T");
 
-  for_each(j, j + count, [&i](const T &t) { serialize_number<T, 0>(t, i); });
-  i = fill_n(i, calc_padding<P, T>(count), 0);
+  for_each(j, j + count, [&i](const T &t) { serialize_number<T>(t, i); });
 }
 
 template <typename T, typename I, typename J>
