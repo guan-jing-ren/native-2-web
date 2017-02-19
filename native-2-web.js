@@ -19,7 +19,7 @@ function read_number(data, offset, type) {
 
 function read_numbers_bounded(data, offset, type, size) {
     let numbers = [];
-    for(let i = 0; i < size; ++i, offset += sizes[type])
+    for (let i = 0; i < size; ++i, offset += sizes[type])
         numbers.push(data[type](offset, true));
     return [numbers, offset];
 }
@@ -30,10 +30,36 @@ function read_numbers(data, offset, type) {
     return read_numbers_bounded(data, offset, type, size);
 }
 
+function to_codepoint(c, data, offset, count) {
+    for (let i = 0; i < count; ++i)
+        c = (c << 6) | ((data[offset + i] & 0b00111111));
+    return c;
+}
+
 function read_string(data, offset) {
     let s;
     [s, offset] = read_numbers(data, offset, "getUint8");
-    return [s, offset];
+    let u = [];
+    for (let i = 0; i < s.length;) {
+        let c = s[i];
+        if ((c & 0b11110000) == 0b11110000) {
+            u.push(to_codepoint(c & 0b00000111, s, ++i, 3));
+            i += 3;
+        }
+        else if ((c & 0b11100000) == 0b11100000) {
+            u.push(to_codepoint(c & 0b00001111, s, ++i, 2));
+            i += 2;
+        }
+        else if ((c & 0b11000000) == 0b11000000) {
+            u.push(to_codepoint(c & 0b00011111, s, ++i, 1));
+            i += 1;
+        }
+        else {// if((c & 0b00000000) == 0b00000000) {
+            u.push(c);
+            i += 1;
+        }
+    }
+    return [String.fromCodePoint(...u), offset];
 }
 
 function read_structure(data, offset, readers) {

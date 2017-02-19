@@ -289,28 +289,29 @@ template <typename T, size_t V = 5> struct filler {
   }
   template <typename U = char>
   auto construct(char &u) -> enable_if_t<is_same<U, char>{}> {
-    const char sample[] = " 09azAZ<&~^[({\\@#";
+    const char sample[] = "丑乗 09azAZ<&~^[({\\@#";
     alphabet.insert(end(alphabet), begin(sample), end(sample));
   }
   template <typename U = wchar_t>
   auto construct(wchar_t &u) -> enable_if_t<is_same<U, wchar_t>{}> {
-    const wchar_t sample[] = L" 09azAZ<&~^[({\\@#";
+    const wchar_t sample[] = L"丑乗 09azAZ<&~^[({\\@#";
     alphabet.insert(end(alphabet), begin(sample), end(sample));
   }
   template <typename U = char16_t>
   auto construct(char16_t &u) -> enable_if_t<is_same<U, char16_t>{}> {
-    const char16_t sample[] = u" 09azAZ<&~^[({\\@#";
+    const char16_t sample[] = u"丑乗 09azAZ<&~^[({\\@#";
     alphabet.insert(end(alphabet), begin(sample), end(sample));
   }
   template <typename U = char32_t>
   auto construct(char32_t &u) -> enable_if_t<is_same<U, char32_t>{}> {
-    const char32_t sample[] = U" 09azAZ<&~^[({\\@#";
+    const char32_t sample[] = U"丑乗 09azAZ<&~^[({\\@#";
     alphabet.insert(end(alphabet), begin(sample), end(sample));
   }
   template <typename U> auto construct(U &u) -> enable_if_t<is_integral<U>{}> {
     alphabet.insert(end(alphabet),
                     {0, 1, static_cast<U>(-1ll), numeric_limits<U>::min(),
                      numeric_limits<U>::max()});
+    sort_unique();
   }
   template <typename U>
   auto construct(U &u) -> enable_if_t<is_floating_point<U>{}> {
@@ -318,6 +319,7 @@ template <typename T, size_t V = 5> struct filler {
                     {0, 1, static_cast<U>(-1ll), numeric_limits<U>::min(),
                      numeric_limits<U>::lowest(), numeric_limits<U>::max(),
                      numeric_limits<U>::denorm_min()});
+    sort_unique();
   }
 
   template <typename T2, typename U>
@@ -367,9 +369,8 @@ template <typename T, size_t V = 5> struct filler {
 
   filler() {
     construct(t);
-    sort_unique();
     if (!alphabet.empty())
-      t = alphabet[0];
+      t = alphabet[iteration++ % alphabet.size()];
   }
 
   template <typename U = T>
