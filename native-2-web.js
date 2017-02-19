@@ -36,28 +36,34 @@ function to_codepoint(c, data, offset, count) {
     return c;
 }
 
+function read_char(data, offset) {
+    let c = data[offset];
+    if ((c & 0b11110000) == 0b11110000) {
+        c = to_codepoint(c & 0b00000111, data, ++offset, 3);
+        offset += 3;
+    }
+    else if ((c & 0b11100000) == 0b11100000) {
+        c = to_codepoint(c & 0b00001111, data, ++offset, 2);
+        offset += 2;
+    }
+    else if ((c & 0b11000000) == 0b11000000) {
+        c = to_codepoint(c & 0b00011111, data, ++offset, 1);
+        offset += 1;
+    }
+    else {// if((c & 0b00000000) == 0b00000000) {
+        offset += 1;
+    }
+    return [c, offset];
+}
+
 function read_string(data, offset) {
     let s;
     [s, offset] = read_numbers(data, offset, "getUint8");
     let u = [];
     for (let i = 0; i < s.length;) {
-        let c = s[i];
-        if ((c & 0b11110000) == 0b11110000) {
-            u.push(to_codepoint(c & 0b00000111, s, ++i, 3));
-            i += 3;
-        }
-        else if ((c & 0b11100000) == 0b11100000) {
-            u.push(to_codepoint(c & 0b00001111, s, ++i, 2));
-            i += 2;
-        }
-        else if ((c & 0b11000000) == 0b11000000) {
-            u.push(to_codepoint(c & 0b00011111, s, ++i, 1));
-            i += 1;
-        }
-        else {// if((c & 0b00000000) == 0b00000000) {
-            u.push(c);
-            i += 1;
-        }
+        let c = 0;
+        [c, i] = read_char(s, i);
+        u.push(c);
     }
     return [String.fromCodePoint(...u), offset];
 }
