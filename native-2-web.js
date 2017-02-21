@@ -32,12 +32,12 @@ function read_numbers(data, offset, type) {
 
 function to_codepoint(c, data, offset, count) {
     for (let i = 0; i < count; ++i)
-        c = (c << 6) | ((data[offset + i] & 0b00111111));
+        c = (c << 6) | ((Array.isArray(data) ? data[offset + i] : data.getUint8(offset + i)) & 0b00111111);
     return c;
 }
 
-function read_char(data, offset) {
-    let c = data[offset];
+function read_codepoint(data, offset) {
+    let c = Array.isArray(data) ? data[offset] : data.getUint8(offset);
     if ((c & 0b11110000) == 0b11110000) {
         c = to_codepoint(c & 0b00000111, data, ++offset, 3);
         offset += 3;
@@ -56,13 +56,21 @@ function read_char(data, offset) {
     return [c, offset];
 }
 
+function read_char(data, offset) {
+    return [String.fromCodePoint(data.getUint8(offset))[0], offset + 1];
+}
+
+function read_char32(data, offset) {
+    return [String.fromCodePoint(data.getUint32(offset, true))[0], offset + Uint32Array.BYTES_PER_ELEMENT];
+}
+
 function read_string(data, offset) {
     let s;
     [s, offset] = read_numbers(data, offset, "getUint8");
     let u = [];
     for (let i = 0; i < s.length;) {
         let c = 0;
-        [c, i] = read_char(s, i);
+        [c, i] = read_codepoint(s, i);
         u.push(c);
     }
     return [String.fromCodePoint(...u), offset];

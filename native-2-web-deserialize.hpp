@@ -91,9 +91,33 @@ void deserialize_heterogenous(I &i, T &t, std::index_sequence<Is...>) {
 }
 
 template <typename T> struct deserializer {
-  template <typename I>
-  static auto deserialize(I &i, T &t) -> enable_if_t<is_arithmetic<T>::value> {
-    t = deserialize_number<T>(i);
+  template <typename U = T, typename I>
+  static auto deserialize(I &i, U &t) -> enable_if_t<is_arithmetic<U>::value> {
+    t = deserialize_number<U>(i);
+  }
+  template <typename U = T, typename I>
+  static auto deserialize(I &i, char16_t &t)
+      -> enable_if_t<is_same<U, char16_t>::value> {
+    struct cvt32 : codecvt<char32_t, char, mbstate_t> {};
+    wstring_convert<cvt32, char32_t> cvter32;
+    u32string c32s;
+    c32s += deserialize_number<char32_t>(i);
+    auto cs = cvter32.to_bytes(c32s);
+
+    struct cvt16 : codecvt<char16_t, char, mbstate_t> {};
+    wstring_convert<cvt16, char16_t> cvter16;
+    auto ts = cvter16.from_bytes(cs);
+    t = ts[0];
+  }
+  template <typename U = T, typename I>
+  static auto deserialize(I &i, wchar_t &t)
+      -> enable_if_t<is_same<U, wchar_t>::value> {
+    char s[sizeof(char32_t)];
+    auto n = min(utflen(*i), sizeof(s));
+    copy_n(i, n, s);
+    i += n;
+    mbstate_t state;
+    mbrtowc(&t, s, n, &state);
   }
 };
 template <typename T, size_t N> struct deserializer<T[N]> {

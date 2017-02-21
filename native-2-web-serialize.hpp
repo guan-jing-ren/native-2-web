@@ -98,10 +98,36 @@ void serialize_heterogenous(const T &t, std::index_sequence<Is...>, I &i) {
 }
 
 template <typename T> struct serializer {
-  template <typename I>
-  static auto serialize(const T &t, I &i)
-      -> enable_if_t<is_arithmetic<T>::value> {
+  template <typename U = T, typename I>
+  static auto serialize(const U t, I &i)
+      -> enable_if_t<is_arithmetic<U>::value> {
     serialize_number(t, i);
+  }
+  template <typename U = T, typename I>
+  static auto serialize(const char16_t t, I &i)
+      -> enable_if_t<is_same<U, char16_t>::value> {
+    u16string ts;
+    ts += t;
+    struct cvt16 : codecvt<char16_t, char, mbstate_t> {};
+    wstring_convert<cvt16, char16_t> cvter16;
+    auto cs = cvter16.to_bytes(ts);
+    struct cvt32 : codecvt<char32_t, char, mbstate_t> {};
+    wstring_convert<cvt32, char32_t> cvter32;
+    auto c32s = cvter32.from_bytes(cs);
+    serialize_number<char32_t>(c32s[0], i);
+  }
+  template <typename U = T, typename I>
+  static auto serialize(const wchar_t t, I &i)
+      -> enable_if_t<is_same<U, wchar_t>::value> {
+    wstring ts;
+    ts += t;
+    struct wcvt : codecvt<wchar_t, char, mbstate_t> {};
+    wstring_convert<wcvt, wchar_t> wcvter;
+    auto cs = wcvter.to_bytes(ts);
+    struct cvt32 : codecvt<char32_t, char, mbstate_t> {};
+    wstring_convert<cvt32, char32_t> cvter32;
+    auto c32s = cvter32.from_bytes(cs);
+    serialize_number<char32_t>(c32s[0], i);
   }
 };
 template <typename T, size_t N> struct serializer<T[N]> {

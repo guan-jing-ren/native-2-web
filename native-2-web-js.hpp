@@ -32,6 +32,16 @@ template <typename T> struct to_js {
   }
 };
 
+template <> struct to_js<char> {
+  static string create_reader() { return R"(read_char)"; }
+};
+template <> struct to_js<char32_t> {
+  static string create_reader() { return R"(read_char32)"; }
+};
+
+template <> struct to_js<char16_t> : to_js<char32_t> {};
+template <> struct to_js<wchar_t> : to_js<char32_t> {};
+
 template <typename T, typename... Ts> struct to_js_homogenous {
   template <size_t... Is> static string create_reader() {
     return to_js<T>::create_reader() + ",\n" +
