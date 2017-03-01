@@ -20,7 +20,8 @@ struct test_structure {
   std::multimap<std::wstring,
                 std::tuple<std::pair<int, short>, std::vector<double>,
                            std::array<std::tuple<char16_t, char32_t>, 15>>>
-      e; // 4
+      e;                    // 4
+  float arrays[3][4][5][2]; // Ignore for now
 };
 
 READ_WRITE_SPEC(test_structure, (a)(b)(b1)(c)(d)(e));

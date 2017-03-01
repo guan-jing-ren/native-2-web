@@ -150,7 +150,7 @@ template <typename T, size_t M, size_t N> struct to_js<T[M][N]> {
   static auto create_reader() -> enable_if_t<is_arithmetic<U>{}, string> {
     return R"(function (data, offset) {
   return read_multiarray(data, offset, 'get)" +
-           js_constructor<U> + R"(' [)" + extent() + R"(]);
+           js_constructor<U> + R"(', [)" + extent() + R"(]);
 })";
   }
 

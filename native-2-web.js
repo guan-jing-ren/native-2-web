@@ -137,7 +137,7 @@ function subdivide(source, dest, extents) {
 function read_multiarray(data, offset, type, extents) {
     let total = extents.reduce((p, c) => { return c + p; }, 0);
     let array, dest = [];
-    if (number_size[type] !== undefined)
+    if (sizes[type] !== undefined)
         [array, offset] = read_numbers_bounded(data, offset, type, total);
     else
         [array, offset] = read_structures_bounded(data, offset, type, total);
