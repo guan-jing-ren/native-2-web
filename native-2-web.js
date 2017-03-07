@@ -1,5 +1,3 @@
-var pad = Float64Array.BYTES_PER_ELEMENT;
-
 var sizes = {
     "getInt8": 1,
     "getInt16": 2,
@@ -9,6 +7,14 @@ var sizes = {
     "getUint32": 4,
     "getFloat32": 4,
     "getFloat64": 8,
+    "setInt8": 1,
+    "setInt16": 2,
+    "setInt32": 4,
+    "setUint8": 1,
+    "setUint16": 2,
+    "setUint32": 4,
+    "setFloat32": 4,
+    "setFloat64": 8,
 }
 
 function read_number(data, offset, type) {
@@ -129,7 +135,7 @@ function subdivide(source, dest, extents) {
     let sublevel = [...extents];
     for (let i = 0, end = sublevel.shift(); i < end; ++i) {
         let subdest = [];
-        subdivide(source, subdest, sublevel);
+        subdivide(source, subdest, [...sublevel]);
         dest.push(subdest);
     }
 }
@@ -143,4 +149,106 @@ function read_multiarray(data, offset, type, extents) {
         [array, offset] = read_structures_bounded(data, offset, type, total);
     subdivide(array, dest, extents);
     return [dest, offset];
+}
+
+function concat_buffer(l, r) {
+    [l, r] = [new DataView(l), new DataView(r)];
+    let joined = new Uint8Array(l.buffer.byteLength + r.buffer.byteLength);
+    let buf = new DataView(joined.buffer);
+    for (let i = 0; i < l.byteLength; ++i)
+        buf.setUint8(i, l.getUint8(i));
+    for (let i = 0; i < r.byteLength; ++i)
+        buf.setUint8(i + l.byteLength, r.getUint8(i));
+    return buf.buffer;
+}
+
+function write_number(object, type) {
+    let data = new DataView(new ArrayBuffer(sizes[type]));
+    data[type](0, object, true);
+    return data.buffer;
+}
+
+function write_numbers_bounded(object, type, size) {
+    let data = new DataView(new ArrayBuffer(sizes[type] * size));
+    for (let i = 0, offset = 0; i < size; ++i, offset += sizes[type])
+        data[type](offset, object[i], true);
+    return data.buffer;
+
+}
+
+function write_numbers(object, type) {
+    return concat_buffer(write_number(object.length, "setUint32"), write_numbers_bounded(object, type, object.length));
+}
+
+function from_codepoint(c) {
+    if (c <= 0b01111111) return [c];
+    if (c <= 0b011111111111) return [(c >> 6) | 0b11000000, (c & 0b111111) | 0b10000000];
+    if (c <= 0b01111111111111111) return [(c >> 12) | 0b11100000, ((c >> 6) & 0b111111) | 0b10000000, (c & 0b111111) | 0b10000000];
+    if (c <= 0b0111111111111111111111) return [(c >> 18) | 0b11110000, ((c >> 12) & 0b111111) | 0b10000000, ((c >> 6) & 0b111111) | 0b10000000, (c & 0b111111) | 0b10000000];
+}
+
+function write_char(object) {
+    return Uint8Array.of(...from_codepoint(object)).buffer;
+}
+
+function write_char32(object) {
+    return Uint8Array.of(...from_codepoint(object)).buffer;
+}
+
+function write_string(object) {
+    let codepoints = [];
+    for (let i = 0; i < object.length; ++i)
+        codepoints.push(...from_codepoint(object.codePointAt(i)));
+    return concat_buffer(write_number(object.length, "setUint32"), Uint8Array.of(...codepoints).buffer);
+}
+
+function write_structure(object, writers) {
+    if (typeof writers === "function")
+        return writers(object);
+
+    if (Array.isArray(writers))
+        return writers.map(v => v(object)).reduce((p, c) => concat_buffer(p, c));
+}
+
+function write_structures_bounded(object, writers, size) {
+    let o = [];
+    for (let n = 0; n < size; ++n)
+        o.push(write_structure(object, writers));
+    return o.reduce((p, c) => concat_buffer(p, c));
+}
+
+function write_structures(object, writers) {
+    return concat_buffer(write_number(object.length, "setUint32"), write_structures_bounded(object, writers, size));
+}
+
+function write_associative_bounded(object, key_writer, value_writer, size) {
+    return concat_buffer(key_writer(object, size), value_writer(object, size));
+}
+
+function write_associative(object, key_writer, value_writer) {
+    return concat_buffer(write_number(Object.keys(object).length, "setUint32"), write_associative_bounded(object, key_reader, value_reader, Object.keys(object).length));
+}
+
+function subcombine(source, dest, extents) {
+    if (extents.length == 1) {
+        for (let i = 0, end = extents[0]; i < end; ++i)
+            dest.push(source.shift());
+        return;
+    }
+
+    let sublevel = [...extents];
+    for (let i = 0, end = sublevel.shift(); i < end; ++i)
+        subcombine(source[i], dest, [...sublevel]);
+}
+
+function write_multiarray(object, type, extents) {
+    let dest = [];
+    subcombine(object, dest, extents);
+    let total = extents.reduce((p, c) => { return c + p; }, 0);
+    let array;
+    if (sizes[type] !== undefined)
+        array = write_numbers_bounded(object, type, total);
+    else
+        array = write_structures_bounded(object, type, total);
+    return concat_buffer(write_number(total, "setUint32"), array);
 }
