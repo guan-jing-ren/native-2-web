@@ -192,7 +192,7 @@ function write_char(object) {
 }
 
 function write_char32(object) {
-    return Uint8Array.of(...from_codepoint(object)).buffer;
+    return Uint32Array.of(object).buffer;
 }
 
 function write_string(object) {
