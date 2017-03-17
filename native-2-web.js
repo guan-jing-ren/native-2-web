@@ -218,8 +218,10 @@ function write_string(object) {
       Uint8Array.of(...codepoints).buffer);
 }
 
-function write_structure(object, writers) {
-  if (typeof writers === "function") return writers(object);
+function write_structure(object, writers, names) {
+  if (typeof writers === "function") return writers(object[names[0]] || object);
+
+  if (names) writers = names.map((v, i) => o => writers[i](o[v]));
 
   if (Array.isArray(writers))
     return writers.map(v => v(object)).reduce((p, c) => concat_buffer(p, c));

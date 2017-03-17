@@ -30,13 +30,23 @@ template <typename T> struct to_js {
         js_constructor<U> + R"(');
 })";
   }
+  template <typename U = T>
+  static auto create_writer() -> enable_if_t<is_arithmetic<U>{}, string> {
+    return
+        R"(function (object) {
+  return write_number(object, 'set)" +
+        js_constructor<U> + R"(');
+})";
+  }
 };
 
 template <> struct to_js<char> {
   static string create_reader() { return R"(read_char)"; }
+  static string create_writer() { return R"(write_char)"; }
 };
 template <> struct to_js<char32_t> {
   static string create_reader() { return R"(read_char32)"; }
+  static string create_writer() { return R"(write_char32)"; }
 };
 
 template <> struct to_js<char16_t> : to_js<char32_t> {};
@@ -47,11 +57,18 @@ template <typename T, typename... Ts> struct to_js_homogenous {
     return to_js<T>::create_reader() + ",\n" +
            to_js_homogenous<Ts...>::create_reader();
   }
+  template <size_t... Is> static string create_writer() {
+    return to_js<T>::create_writer() + ",\n" +
+           to_js_homogenous<Ts...>::create_writer();
+  }
 };
 
 template <typename T> struct to_js_homogenous<T> {
   template <size_t... Is> static string create_reader() {
     return to_js<T>::create_reader();
+  }
+  template <size_t... Is> static string create_writer() {
+    return to_js<T>::create_writer();
   }
 };
 
@@ -60,6 +77,13 @@ template <typename T, typename U> struct to_js<pair<T, U>> {
     return R"(function (data, offset) {
   return read_structure(data, offset, [)" +
            to_js_homogenous<T, U>::create_reader() +
+           R"(]);
+})";
+  }
+  static string create_writer() {
+    return R"(function (object) {
+  return write_structure(object, [)" +
+           to_js_homogenous<T, U>::create_writer() +
            R"(]);
 })";
   }
@@ -73,11 +97,19 @@ template <typename T, typename... Ts> struct to_js<tuple<T, Ts...>> {
            R"(]);
 })";
   }
+  static string create_writer() {
+    return R"(function (object) {
+  return write_structure(object, [)" +
+           to_js_homogenous<T, Ts...>::create_writer() +
+           R"(]);
+})";
+  }
 };
 
 template <typename T, typename... Traits>
 struct to_js<basic_string<T, Traits...>> {
   static string create_reader() { return "read_string"; }
+  static string create_writer() { return "write_string"; }
 };
 
 template <typename T, typename... Traits> struct to_js<vector<T, Traits...>> {
@@ -94,6 +126,22 @@ template <typename T, typename... Traits> struct to_js<vector<T, Traits...>> {
     return R"(function (data, offset) {
   return read_structures(data, offset, )" +
            to_js<U>::create_reader() + R"();
+})";
+  }
+
+  template <typename U = T>
+  static auto create_writer() -> enable_if_t<is_arithmetic<U>{}, string> {
+    return R"(function (object) {
+  return write_numbers(object, 'set)" +
+           js_constructor<U> + R"(');
+})";
+  }
+
+  template <typename U = T>
+  static auto create_writer() -> enable_if_t<is_class<U>{}, string> {
+    return R"(function (object) {
+  return write_structures(object, )" +
+           to_js<U>::create_writer() + R"();
 })";
   }
 };
@@ -128,6 +176,21 @@ template <typename T> struct to_js_bounded {
            to_js<U>::create_reader() + R"(, size);
 })";
   }
+
+  template <typename U = T>
+  static auto create_writer() -> enable_if_t<is_arithmetic<U>{}, string> {
+    return R"(function (object, size) {
+  return write_numbers_bounded(object, 'set)" +
+           js_constructor<U> + R"(', size);
+})";
+  }
+  template <typename U = T>
+  static auto create_writer() -> enable_if_t<is_class<U>{}, string> {
+    return R"(function (object, size) {
+  return write_structures_bounded(object, )" +
+           to_js<U>::create_writer() + R"(, size);
+})";
+  }
 };
 
 template <typename T, size_t N> struct to_js<T[N]> {
@@ -138,6 +201,13 @@ template <typename T, size_t N> struct to_js<T[N]> {
   return )" +
            to_js_bounded<T>::create_reader() + R"((data, offset, )" +
            to_string(N) +
+           R"();
+})";
+  }
+  static string create_writer() {
+    return R"(function (object) {
+  return )" +
+           to_js_bounded<T>::create_writer() + R"((object, )" + to_string(N) +
            R"();
 })";
   }
@@ -161,6 +231,22 @@ template <typename T, size_t M, size_t N> struct to_js<T[M][N]> {
            to_js<U>::create_reader() + R"(, [)" + extent() + R"(]);
 })";
   }
+
+  template <typename U = typename remove_all_extents<T>::type>
+  static auto create_writer() -> enable_if_t<is_arithmetic<U>{}, string> {
+    return R"(function (object) {
+  return write_multiarray(object, 'set)" +
+           js_constructor<U> + R"(', [)" + extent() + R"(]);
+})";
+  }
+
+  template <typename U = typename remove_all_extents<T>::type>
+  static auto create_writer() -> enable_if_t<is_class<U>{}, string> {
+    return R"(function (object) {
+  return write_multiarray(object, )" +
+           to_js<U>::create_reader() + R"(, [)" + extent() + R"(]);
+})";
+  }
 };
 
 template <typename T, size_t N> struct to_js<array<T, N>> {
@@ -169,6 +255,13 @@ template <typename T, size_t N> struct to_js<array<T, N>> {
   return )" +
            to_js_bounded<T>::create_reader() + R"((data, offset, )" +
            to_string(N) +
+           R"();
+})";
+  }
+  static string create_writer() {
+    return R"(function (object) {
+  return )" +
+           to_js_bounded<T>::create_writer() + R"((object, )" + to_string(N) +
            R"();
 })";
   }
@@ -184,6 +277,14 @@ struct to_js<map<T, U, Traits...>> {
            R"();
 })";
   }
+  template <typename V = T> static string create_writer() {
+    return R"(function (object) {
+  return read_associative(object, )" +
+           to_js_bounded<T>::create_writer() + R"(, )" +
+           to_js_bounded<U>::create_writer() +
+           R"();
+})";
+  }
 };
 
 template <typename T, typename U, typename... Traits>
@@ -195,14 +296,9 @@ struct to_js<unordered_multimap<T, U, Traits...>> : to_js<map<T, U>> {};
 
 template <typename S, typename T, typename... Ts>
 struct to_js<structure<S, T, Ts...>> {
-  static string create_reader() {
-    auto names = accumulate(begin(structure<S, T, Ts...>::names) + 1,
-                            end(structure<S, T, Ts...>::names), string{},
-                            [](const auto &names, const auto &name) {
-                              return names + (names.empty() ? "" : ",") + "'" +
-                                     name + "'";
-                            });
+  static const string names;
 
+  static string create_reader() {
     return R"(function (data, offset) {
   let tuple;
   [tuple, offset] = )" +
@@ -213,7 +309,24 @@ struct to_js<structure<S, T, Ts...>> {
   return [names.reduce((p,c,i) => {p[c] = tuple[i]; return p;}, {}), offset];
 })";
   }
+  static string create_writer() {
+    return R"(function (object) {
+  let names = [)" +
+           names +
+           R"(];
+  return )" +
+           to_js<tuple<T, Ts...>>::create_writer() + R"((object, names);
+})";
+  }
 };
+
+template <typename S, typename T, typename... Ts>
+const string to_js<structure<S, T, Ts...>>::names =
+    accumulate(begin(structure<S, T, Ts...>::names) + 1,
+               end(structure<S, T, Ts...>::names), string{},
+               [](const auto &names, const auto &name) {
+                 return names + (names.empty() ? "" : ",") + "'" + name + "'";
+               });
 
 #define JS_SPEC(s, m)                                                          \
   namespace n2w {                                                              \
