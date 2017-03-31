@@ -182,9 +182,10 @@ function write_numbers_bounded(object, type, size) {
 }
 
 function write_numbers(object, type) {
-  return concat_buffer(
+  let buffer = concat_buffer(
       write_number(object.length, "setUint32"),
       write_numbers_bounded(object, type, object.length));
+  return buffer;
 }
 
 function from_codepoint(c) {
@@ -204,57 +205,64 @@ function from_codepoint(c) {
 }
 
 function write_char(object) {
-  return Uint8Array.of(...from_codepoint(object)).buffer;
+  let buffer = Uint8Array.of(...from_codepoint(object)).buffer;
+  return buffer;
 }
 
 function write_char32(object) {
-  return Uint32Array.of(object).buffer;
+  let buffer = Uint32Array.of(object).buffer;
+  return buffer;
 }
 
 function write_string(object) {
   let codepoints = [];
   for (let i = 0; i < object.length; ++i)
     codepoints.push(...from_codepoint(object.codePointAt(i)));
-  return concat_buffer(
-      write_number(object.length, "setUint32"),
-      Uint8Array.of(...codepoints).buffer);
+  let buffer = Uint8Array.of(...codepoints).buffer;
+  buffer = concat_buffer(write_number(buffer.byteLength, "setUint32"), buffer);
+  return buffer;
 }
 
 function write_structure(object, writers, names) {
+  let buffer;
   if (typeof writers === "function")
-    return writers(names ? object[names[0]] || object : object);
-
-  if (Array.isArray(writers))
-    return writers.map((v, i) => v(object[names ? names[i] : i]))
-        .reduce((p, c) => concat_buffer(p, c));
+    buffer = writers(names ? object[names[0]] || object : object);
+  else if (Array.isArray(writers))
+    buffer = writers.map((v, i) => v(object[names ? names[i] : i]))
+                 .reduce((p, c) => concat_buffer(p, c));
+  return buffer;
 }
 
 function write_structures_bounded(object, writers, size) {
   if (size == 0) return [];
   let o = [];
   for (let n = 0; n < size; ++n) o.push(write_structure(object[n], writers));
-  return o.reduce((p, c) => concat_buffer(p, c));
+  let buffer = o.reduce((p, c) => concat_buffer(p, c));
+  return buffer;
 }
 
 function write_structures(object, writers) {
-  return concat_buffer(
+  let buffer = concat_buffer(
       write_number(object.length, "setUint32"),
       write_structures_bounded(
           object, writers,
           Array.isArray(object) ? object.length : Object.keys(object).length));
+  return buffer;
 }
 
 function write_associative_bounded(object, key_writer, value_writer, size) {
   let keys = Object.keys(object);
-  return concat_buffer(
+  let buffer = concat_buffer(
       key_writer(keys, size), value_writer(keys.map(v => object[v]), size));
+  return buffer;
 }
 
 function write_associative(object, key_writer, value_writer) {
-  return concat_buffer(
+  let buffer = concat_buffer(
       write_number(Object.keys(object).length, "setUint32"),
       write_associative_bounded(
           object, key_writer, value_writer, Object.keys(object).length));
+  return buffer;
 }
 
 function subcombine(source, dest, extents) {
@@ -277,5 +285,6 @@ function write_multiarray(object, type, extents) {
     array = write_numbers_bounded(object, type, total);
   else
     array = write_structures_bounded(object, type, total);
-  return concat_buffer(write_number(total, "setUint32"), array);
+  let buffer = concat_buffer(write_number(total, "setUint32"), array);
+  return buffer;
 }
