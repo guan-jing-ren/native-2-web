@@ -156,6 +156,8 @@ function read_multiarray(data, offset, type, extents) {
 }
 
 function concat_buffer(l, r) {
+  if (l.length == 0) return r;
+  if (r.length == 0) return l;
   [l, r] = [new DataView(l), new DataView(r)];
   let joined = new Uint8Array(l.buffer.byteLength + r.buffer.byteLength);
   let buf = new DataView(joined.buffer);
@@ -219,35 +221,40 @@ function write_string(object) {
 }
 
 function write_structure(object, writers, names) {
-  if (typeof writers === "function") return writers(object[names[0]] || object);
-
-  if (names) writers = names.map((v, i) => o => writers[i](o[v]));
+  if (typeof writers === "function")
+    return writers(names ? object[names[0]] || object : object);
 
   if (Array.isArray(writers))
-    return writers.map(v => v(object)).reduce((p, c) => concat_buffer(p, c));
+    return writers.map((v, i) => v(object[names ? names[i] : i]))
+        .reduce((p, c) => concat_buffer(p, c));
 }
 
 function write_structures_bounded(object, writers, size) {
+  if (size == 0) return [];
   let o = [];
-  for (let n = 0; n < size; ++n) o.push(write_structure(object, writers));
+  for (let n = 0; n < size; ++n) o.push(write_structure(object[n], writers));
   return o.reduce((p, c) => concat_buffer(p, c));
 }
 
 function write_structures(object, writers) {
   return concat_buffer(
       write_number(object.length, "setUint32"),
-      write_structures_bounded(object, writers, size));
+      write_structures_bounded(
+          object, writers,
+          Array.isArray(object) ? object.length : Object.keys(object).length));
 }
 
 function write_associative_bounded(object, key_writer, value_writer, size) {
-  return concat_buffer(key_writer(object, size), value_writer(object, size));
+  let keys = Object.keys(object);
+  return concat_buffer(
+      key_writer(keys, size), value_writer(keys.map(v => object[v]), size));
 }
 
 function write_associative(object, key_writer, value_writer) {
   return concat_buffer(
       write_number(Object.keys(object).length, "setUint32"),
       write_associative_bounded(
-          object, key_reader, value_reader, Object.keys(object).length));
+          object, key_writer, value_writer, Object.keys(object).length));
 }
 
 function subcombine(source, dest, extents) {

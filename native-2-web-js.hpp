@@ -98,10 +98,10 @@ template <typename T, typename... Ts> struct to_js<tuple<T, Ts...>> {
 })";
   }
   static string create_writer() {
-    return R"(function (object) {
+    return R"(function (object, names) {
   return write_structure(object, [)" +
            to_js_homogenous<T, Ts...>::create_writer() +
-           R"(]);
+           R"(], names);
 })";
   }
 };
@@ -279,7 +279,7 @@ struct to_js<map<T, U, Traits...>> {
   }
   template <typename V = T> static string create_writer() {
     return R"(function (object) {
-  return read_associative(object, )" +
+  return write_associative(object, )" +
            to_js_bounded<T>::create_writer() + R"(, )" +
            to_js_bounded<U>::create_writer() +
            R"();

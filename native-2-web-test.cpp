@@ -1,6 +1,6 @@
 #include "native-2-web-readwrite.hpp"
-#include <iostream>
 #include <algorithm>
+#include <iostream>
 
 void swap_test() noexcept {
   auto s =

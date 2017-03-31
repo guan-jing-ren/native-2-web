@@ -1,7 +1,7 @@
-#include "native-2-web-readwrite.hpp"
 #include "native-2-web-js.hpp"
-#include <iostream>
+#include "native-2-web-readwrite.hpp"
 #include <algorithm>
+#include <iostream>
 
 struct test_substructure {
   std::pair<int, std::array<std::vector<double>, 0>> c;         // 90*4 + 5*4
@@ -69,6 +69,8 @@ int main(int, char **) {
   cout << "// Structure JS test\n";
   cout << "let test_structure_read = "
        << n2w::to_js<test_structure>::create_reader() << '\n';
+  cout << "let test_structure_write = "
+       << n2w::to_js<test_structure>::create_writer() << '\n';
 
   vector<uint8_t> data;
   n2w::filler<test_structure> filler;
@@ -88,9 +90,11 @@ int main(int, char **) {
                               to_string((unsigned)elem);
                      })
        << "]).buffer);\n";
-  cout << "document.write('<pre>' + JSON.stringify(test_structure_read(rval, "
-          "0)[0], null, "
-          "'\\t') + '</pre>');\n";
+  cout << "rval = test_structure_read(rval, 0)[0]\n";
+  cout << "document.write('<pre>' + JSON.stringify(rval, null, '\\t') + "
+          "'</pre>');\n";
+  cout << "let valr = test_structure_write(rval);\n";
+  cout << "console.log(valr);\n";
 
   return 0;
 }
