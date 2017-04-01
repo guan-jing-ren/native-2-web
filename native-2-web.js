@@ -205,12 +205,12 @@ function from_codepoint(c) {
 }
 
 function write_char(object) {
-  let buffer = Uint8Array.of(...from_codepoint(object)).buffer;
+  let buffer = Uint8Array.of(object.codePointAt(0)).buffer;
   return buffer;
 }
 
 function write_char32(object) {
-  let buffer = Uint32Array.of(object).buffer;
+  let buffer = Uint32Array.of(object.codePointAt(0)).buffer;
   return buffer;
 }
 
