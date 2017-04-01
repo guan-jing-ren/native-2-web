@@ -278,6 +278,11 @@ int main(int, char **) {
     n2w::filler<test_structure> fillt;
     n2w::debug_print(std::cout, fillt()) << '\n';
     structure_fill_test = fillt();
+    structure_fill_test = fillt();
+    structure_fill_test = fillt();
+    structure_fill_test = fillt();
+    structure_fill_test = fillt();
+    structure_fill_test = fillt();
     n2w::debug_print(std::cout, structure_fill_test) << '\n';
   }
 
