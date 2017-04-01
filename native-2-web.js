@@ -253,7 +253,7 @@ function write_structures(object, writers) {
 function write_associative_bounded(object, key_writer, value_writer, size) {
   let keys = Object.keys(object);
   let buffer = concat_buffer(
-      key_writer(keys, size), value_writer(keys.map(v => object[v]), size));
+      key_writer(keys.map(k => JSON.parse(k)), size), value_writer(keys.map(v => object[v]), size));
   return buffer;
 }
 
