@@ -93,8 +93,11 @@ int main(int, char **) {
   cout << "rval = test_structure_read(rval, 0)[0]\n";
   cout << "document.write('<pre>' + JSON.stringify(rval, null, '\\t') + "
           "'</pre>');\n";
-  cout << "let valr = test_structure_write(rval);\n";
+  cout << "let valr = new DataView(test_structure_write(rval));\n";
   cout << "console.log(valr);\n";
+  cout << "let rval2 = test_structure_read(valr, 0)[0];\n";
+  cout << "document.write('<pre>' + JSON.stringify(rval2, null, '\\t') + "
+          "'</pre>');\n";
 
   return 0;
 }
