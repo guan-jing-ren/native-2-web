@@ -18,6 +18,10 @@ var sizes =
       "setFloat64": 8,
     }
 
+//////////////////////////////////
+// Native to Javascript readers //
+//////////////////////////////////
+
 function read_number(data, offset, type) {
   let n = data[type](offset, true);
   offset += sizes[type];
@@ -155,6 +159,10 @@ function read_multiarray(data, offset, type, extents) {
   return [dest, offset];
 }
 
+//////////////////////////////////
+// Javascript to native writers //
+//////////////////////////////////
+
 function concat_buffer(l, r) {
   if (l.length == 0) return r;
   if (r.length == 0) return l;
@@ -289,3 +297,7 @@ function write_multiarray(object, type, extents) {
   let buffer = concat_buffer(write_number(total, "setUint32"), array);
   return buffer;
 }
+
+//////////////////////////////
+// Native to HTML generator //
+//////////////////////////////
