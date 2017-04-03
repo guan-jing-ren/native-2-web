@@ -52,18 +52,18 @@ template <> struct to_js<char32_t> {
 template <> struct to_js<char16_t> : to_js<char32_t> {};
 template <> struct to_js<wchar_t> : to_js<char32_t> {};
 
-template <typename T, typename... Ts> struct to_js_homogenous {
+template <typename T, typename... Ts> struct to_js_heterogenous {
   template <size_t... Is> static string create_reader() {
     return to_js<T>::create_reader() + ",\n" +
-           to_js_homogenous<Ts...>::create_reader();
+           to_js_heterogenous<Ts...>::create_reader();
   }
   template <size_t... Is> static string create_writer() {
     return to_js<T>::create_writer() + ",\n" +
-           to_js_homogenous<Ts...>::create_writer();
+           to_js_heterogenous<Ts...>::create_writer();
   }
 };
 
-template <typename T> struct to_js_homogenous<T> {
+template <typename T> struct to_js_heterogenous<T> {
   template <size_t... Is> static string create_reader() {
     return to_js<T>::create_reader();
   }
@@ -76,14 +76,14 @@ template <typename T, typename U> struct to_js<pair<T, U>> {
   static string create_reader() {
     return R"(function (data, offset) {
   return read_structure(data, offset, [)" +
-           to_js_homogenous<T, U>::create_reader() +
+           to_js_heterogenous<T, U>::create_reader() +
            R"(]);
 })";
   }
   static string create_writer() {
     return R"(function (object) {
   return write_structure(object, [)" +
-           to_js_homogenous<T, U>::create_writer() +
+           to_js_heterogenous<T, U>::create_writer() +
            R"(]);
 })";
   }
@@ -93,14 +93,14 @@ template <typename T, typename... Ts> struct to_js<tuple<T, Ts...>> {
   static string create_reader() {
     return R"(function (data, offset) {
   return read_structure(data, offset, [)" +
-           to_js_homogenous<T, Ts...>::create_reader() +
+           to_js_heterogenous<T, Ts...>::create_reader() +
            R"(]);
 })";
   }
   static string create_writer() {
     return R"(function (object, names) {
   return write_structure(object, [)" +
-           to_js_homogenous<T, Ts...>::create_writer() +
+           to_js_heterogenous<T, Ts...>::create_writer() +
            R"(], names);
 })";
   }
