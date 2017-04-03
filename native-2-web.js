@@ -301,3 +301,88 @@ function write_multiarray(object, type, extents) {
 //////////////////////////////
 // Native to HTML generator //
 //////////////////////////////
+
+function html_number(parent, value, dispatcher) {
+  let node = d3.select(parent).append('input').attr('type', 'number').node();
+  dispatcher.on('gather', () => value(node.value));
+}
+
+function html_char(parent, value, dispatcher) {
+  let node = d3.select(parent).append('input').attr('type', 'text').node();
+  dispatcher.on('gather', () => value(node.value.codePointAt(0)));
+}
+
+function html_char32(parent, value, dispatcher) {
+  let node = d3.select(parent).append('input').attr('type', 'text').node();
+  dispatcher.on('gather', () => value(node.value.codePointAt(0)));
+}
+
+function html_string(parent, value, dispatcher) {
+  let node = d3.select(parent).append('input').attr('type', 'text').node();
+  dispatcher.on('gather', () => value(node.value));
+}
+
+function html_structure(parent, value, dispatcher, html, names) {
+  let table = d3.select(parent).append('table').node();
+  let subvalue = {};
+  let subdispatcher = d3.dispatcher();
+
+  html.forEach((h, i) => {
+    let row = d3.select(table).append('tr');
+    row.append('td').text((names ? names[i] : i) + ': ');
+    let cell = row.append('td').node();
+    h(cell, v => subvalue[names ? names[i] : i] = v, subdispatcher);
+  });
+
+  dispatcher.on('gather', () => {
+    subdispatcher.call('dispatch');
+    value(subvalue);
+  });
+}
+
+function html_sequence(parent, value, dispatcher, html) {
+  let table = d3.select(parent).append('table');
+  let expand_row = d3.select(table).append('tr');
+  let subvalue = [];
+  let subdispatcher = d3.dispatcher();
+
+  let expand_button =
+      expand_row.append('td')
+          .append('input')
+          .attr('type', 'button')
+          .text('+')
+          .on('click', () => {
+            let cell = table.insert('tr', 'tr:last-child').append('td').node();
+            html(cell, v => subvalue.push(v), subdispatcher);
+          });
+
+  dispatcher.on('gather', () => {
+    subdispatcher.call('dispatch');
+    value(subvalue);
+  });
+}
+
+function html_associative(parent, value, dispatcher, html_key, html_value) {
+  let subvalue = {};
+  let subdispatcher = d3.dispatcher();
+
+  html_sequence(
+      parent, v => {}, d3.dispatcher(),
+      (p, v, d) => {
+        let key_value = [];
+        html_key(p, v => {
+          key_value[0] = v;
+          if (key_value[1]) subvalue[key_value[0]] = key_value[1];
+        }, subdispatcher);
+        d3.select(p.parentElement).append('td').text('->');
+        html_value(d3.select(p.parentElement).append('td').node(), v => {
+          key_value[1] = v;
+          if (key_value[0]) subvalue[key_value[0]] = key_value[1];
+        }, subdispatcher);
+      });
+
+  dispatcher.on('gather', () => {
+    subdispatcher.call('dispatch');
+    value(subvalue);
+  });
+}
