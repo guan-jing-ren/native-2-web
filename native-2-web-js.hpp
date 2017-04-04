@@ -53,21 +53,21 @@ template <> struct to_js<char16_t> : to_js<char32_t> {};
 template <> struct to_js<wchar_t> : to_js<char32_t> {};
 
 template <typename T, typename... Ts> struct to_js_heterogenous {
-  template <size_t... Is> static string create_reader() {
+  template static string create_reader() {
     return to_js<T>::create_reader() + ",\n" +
            to_js_heterogenous<Ts...>::create_reader();
   }
-  template <size_t... Is> static string create_writer() {
+  template static string create_writer() {
     return to_js<T>::create_writer() + ",\n" +
            to_js_heterogenous<Ts...>::create_writer();
   }
 };
 
 template <typename T> struct to_js_heterogenous<T> {
-  template <size_t... Is> static string create_reader() {
+  template static string create_reader() {
     return to_js<T>::create_reader();
   }
-  template <size_t... Is> static string create_writer() {
+  template static string create_writer() {
     return to_js<T>::create_writer();
   }
 };
