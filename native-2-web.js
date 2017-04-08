@@ -149,7 +149,7 @@ function subdivide(source, dest, extents) {
 }
 
 function read_multiarray(data, offset, type, extents) {
-  let total = extents.reduce((p, c) => { return c + p; }, 0);
+  let total = extents.reduce((p, c) => c + p, 0);
   let array, dest = [];
   if (sizes[type] !== undefined)
     [array, offset] = read_numbers_bounded(data, offset, type, total);
@@ -288,7 +288,7 @@ function subcombine(source, dest, extents) {
 function write_multiarray(object, type, extents) {
   let dest = [];
   subcombine(object, dest, extents);
-  let total = extents.reduce((p, c) => { return c + p; }, 0);
+  let total = extents.reduce((p, c) => c + p, 0);
   let array;
   if (sizes[type] !== undefined)
     array = write_numbers_bounded(object, type, total);
