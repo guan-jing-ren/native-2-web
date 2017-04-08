@@ -64,12 +64,9 @@ template <typename T, typename... Ts> struct to_js_heterogenous {
 };
 
 template <typename T> struct to_js_heterogenous<T> {
-  template static string create_reader() {
-    return to_js<T>::create_reader();
-  }
-  template static string create_writer() {
-    return to_js<T>::create_writer();
-  }
+  template static string create_reader() { return to_js<T>::create_reader(); }
+  template static string create_writer() { return to_js<T>::create_writer(); }
+  template static string create_html() { return to_js<T>::create_html(); }
 };
 
 template <typename T, typename U> struct to_js<pair<T, U>> {
