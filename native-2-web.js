@@ -327,12 +327,15 @@ function html_structure(parent, value, dispatcher, html, names) {
   let subvalue = {};
   let subdispatcher = d3.dispatch('gather');
 
-  html.forEach((h, i) => {
-    let row = d3.select(table).append('tr');
-    row.append('td').text((names ? names[i] : i) + ': ');
-    let cell = row.append('td').node();
-    h(cell, v => subvalue[names ? names[i] : i] = v, subdispatcher);
-  });
+  if (typeof(html) == "function") html = [html];
+
+  if (Array.isArray(html))
+    html.forEach((h, i) => {
+      let row = d3.select(table).append('tr');
+      row.append('td').text((names ? names[i] : i) + ': ');
+      let cell = row.append('td').node();
+      h(cell, v => subvalue[names ? names[i] : i] = v, subdispatcher);
+    });
 
   dispatcher.on('gather', () => {
     subdispatcher.call('gather');
