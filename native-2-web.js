@@ -1,22 +1,21 @@
-var sizes =
-    {
-      "getInt8": 1,
-      "getInt16": 2,
-      "getInt32": 4,
-      "getUint8": 1,
-      "getUint16": 2,
-      "getUint32": 4,
-      "getFloat32": 4,
-      "getFloat64": 8,
-      "setInt8": 1,
-      "setInt16": 2,
-      "setInt32": 4,
-      "setUint8": 1,
-      "setUint16": 2,
-      "setUint32": 4,
-      "setFloat32": 4,
-      "setFloat64": 8,
-    }
+var sizes = {
+  "getInt8": 1,
+  "getInt16": 2,
+  "getInt32": 4,
+  "getUint8": 1,
+  "getUint16": 2,
+  "getUint32": 4,
+  "getFloat32": 4,
+  "getFloat64": 8,
+  "setInt8": 1,
+  "setInt16": 2,
+  "setInt32": 4,
+  "setUint8": 1,
+  "setUint16": 2,
+  "setUint32": 4,
+  "setFloat32": 4,
+  "setFloat64": 8,
+};
 
 //////////////////////////////////
 // Native to Javascript readers //
