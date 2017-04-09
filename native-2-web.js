@@ -88,16 +88,16 @@ function read_string(data, offset) {
   return [String.fromCodePoint(...u), offset];
 }
 
-function read_structure(data, offset, readers) {
-  let object = [], o;
-  if (typeof readers === "function") return readers(data, offset);
-
-  if (Array.isArray(readers)) {
-    for (let r in readers) {
-      [o, offset] = readers[r](data, offset);
-      object.push(o);
-    }
-  }
+function read_structure(data, offset, readers, names) {
+  let object = {}, o;
+  if (typeof readers === "function") {
+    [o, offset] = readers(data, offset);
+    object[names ? names[0] : 0] = o;
+  } else if (Array.isArray(readers))
+    readers.forEach((v, i) => {
+      [o, offset] = v(data, offset);
+      object[names ? names[i] : i] = o;
+    });
   return [object, offset];
 }
 
@@ -185,7 +185,6 @@ function write_numbers_bounded(object, type, size) {
   for (let i = 0, offset = 0; i < size; ++i, offset += sizes[type])
     data[type](offset, object[i], true);
   return data.buffer;
-
 }
 
 function write_numbers(object, type) {
@@ -231,9 +230,11 @@ function write_string(object) {
 }
 
 function write_structure(object, writers, names) {
+  console.log(object);
+  console.log(names);
   let buffer;
   if (typeof writers === "function")
-    buffer = writers(names ? object[names[0]] || object : object);
+    buffer = writers(names ? object[names[0]] : object);
   else if (Array.isArray(writers))
     buffer = writers.map((v, i) => v(object[names ? names[i] : i]))
                  .reduce((p, c) => concat_buffer(p, c));
@@ -261,7 +262,7 @@ function write_associative_bounded(object, key_writer, value_writer, size) {
   let keys = Object.keys(object);
   let buffer = concat_buffer(
       key_writer(keys.map(k => JSON.parse(k)), size),
-      value_writer(keys.map(v => object[v]), size));
+      value_writer(keys.map(k => object[JSON.parse(k)]), size));
   return buffer;
 }
 

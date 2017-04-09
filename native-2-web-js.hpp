@@ -83,13 +83,15 @@ template <typename T, typename U> struct to_js<pair<T, U>> {
   static string create_reader() {
     return R"(function (data, offset) {
   return read_structure(data, offset, [)" +
-           to_js_heterogenous<T, U>::create_reader() + R"(]);
+           to_js_heterogenous<T, U>::create_reader() +
+           R"(], ['first', 'second']);
 })";
   }
   static string create_writer() {
     return R"(function (object) {
   return write_structure(object, [)" +
-           to_js_heterogenous<T, U>::create_writer() + R"(]);
+           to_js_heterogenous<T, U>::create_writer() +
+           R"(], ['first', 'second']);
 })";
   }
   static string create_html() {
@@ -102,9 +104,9 @@ template <typename T, typename U> struct to_js<pair<T, U>> {
 
 template <typename T, typename... Ts> struct to_js<tuple<T, Ts...>> {
   static string create_reader() {
-    return R"(function (data, offset) {
+    return R"(function (data, offset, names) {
   return read_structure(data, offset, [)" +
-           to_js_heterogenous<T, Ts...>::create_reader() + R"(]);
+           to_js_heterogenous<T, Ts...>::create_reader() + R"(], names);
 })";
   }
   static string create_writer() {
@@ -346,12 +348,10 @@ struct to_js<structure<S, T, Ts...>> {
 
   static string create_reader() {
     return R"(function (data, offset) {
-  let tuple;
-  [tuple, offset] = )" +
-           to_js<tuple<T, Ts...>>::create_reader() + R"((data, offset);
   )" + names +
            R"(
-  return [names.reduce((p,c,i) => {p[c] = tuple[i]; return p;}, {}), offset];
+  return )" +
+           to_js<tuple<T, Ts...>>::create_reader() + R"((data, offset, names);
 })";
   }
   static string create_writer() {
