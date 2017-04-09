@@ -166,7 +166,7 @@ template <typename T, typename... Traits> struct to_js<vector<T, Traits...>> {
   static auto create_html() {
     return R"(function(parent, value, dispatcher) {
   return html_sequence(parent, value, dispatcher, )" +
-           to_js<T>::create_html() + R"(;
+           to_js<T>::create_html() + R"();
 })";
   }
 };
@@ -283,7 +283,7 @@ template <typename T, size_t M, size_t N> struct to_js<T[M][N]> {
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
   return html_multiarray(parent, value, dispatcher, html, [)" +
-           extent() + R"(])
+           extent() + R"(]);
 })";
   }
 };
