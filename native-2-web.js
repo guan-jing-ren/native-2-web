@@ -325,7 +325,7 @@ function html_string(parent, value, dispatcher) {
 function html_structure(parent, value, dispatcher, html, names) {
   let table = d3.select(parent).append('table').node();
   let subvalue = {};
-  let subdispatcher = d3.dispatcher();
+  let subdispatcher = d3.dispatch('gather');
 
   html.forEach((h, i) => {
     let row = d3.select(table).append('tr');
@@ -335,7 +335,7 @@ function html_structure(parent, value, dispatcher, html, names) {
   });
 
   dispatcher.on('gather', () => {
-    subdispatcher.call('dispatch');
+    subdispatcher.call('gather');
     value(subvalue);
   });
 }
@@ -344,13 +344,13 @@ function html_bounded(parent, value, dispatcher, html, size) {
   let table = d3.select(parent).append('table');
   let expand_row = d3.select(table).append('tr');
   let subvalue = [];
-  let subdispatcher = d3.dispatcher();
+  let subdispatcher = d3.dispatch('gather');
 
   for (let i = 0; i < size; ++i)
     html(expand_row.append('td').node(), v => subvalue[i] = v, subdispatcher);
 
   dispatcher.on('gather', () => {
-    subdispatcher.call('dispatch');
+    subdispatcher.call('gather');
     value(subvalue);
   });
 }
@@ -359,7 +359,7 @@ function html_sequence(parent, value, dispatcher, html) {
   let table = d3.select(parent).append('table');
   let expand_row = d3.select(table).append('tr');
   let subvalue = [];
-  let subdispatcher = d3.dispatcher();
+  let subdispatcher = d3.dispatch('gather');
 
   let expand_button =
       expand_row.append('td')
@@ -372,17 +372,17 @@ function html_sequence(parent, value, dispatcher, html) {
           });
 
   dispatcher.on('gather', () => {
-    subdispatcher.call('dispatch');
+    subdispatcher.call('gather');
     value(subvalue);
   });
 }
 
 function html_associative(parent, value, dispatcher, html_key, html_value) {
   let subvalue = {};
-  let subdispatcher = d3.dispatcher();
+  let subdispatcher = d3.dispatch('gather');
 
   html_sequence(
-      parent, v => {}, d3.dispatcher(),
+      parent, v => {}, d3.dispatch('gather'),
       (p, v, d) => {
         let key_value = [];
         html_key(p, v => {
@@ -397,7 +397,7 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
       });
 
   dispatcher.on('gather', () => {
-    subdispatcher.call('dispatch');
+    subdispatcher.call('gather');
     value(subvalue);
   });
 }
