@@ -38,15 +38,21 @@ template <typename T> struct to_js {
         js_constructor<U> + R"(');
 })";
   }
+  template <typename U = T>
+  static auto create_html() -> enable_if_t<is_arithmetic<U>{}, string> {
+    return R"(html_number)";
+  }
 };
 
 template <> struct to_js<char> {
   static string create_reader() { return R"(read_char)"; }
   static string create_writer() { return R"(write_char)"; }
+  static string create_html() { return R"(html_char)"; }
 };
 template <> struct to_js<char32_t> {
   static string create_reader() { return R"(read_char32)"; }
   static string create_writer() { return R"(write_char32)"; }
+  static string create_html() { return R"(html_char32)"; }
 };
 
 template <> struct to_js<char16_t> : to_js<char32_t> {};
@@ -60,6 +66,10 @@ template <typename T, typename... Ts> struct to_js_heterogenous {
   template static string create_writer() {
     return to_js<T>::create_writer() + ",\n" +
            to_js_heterogenous<Ts...>::create_writer();
+  }
+  template static string create_html() {
+    return to_js<T>::create_html() + ",\n" +
+           to_js_heterogenous<Ts...>::create_html();
   }
 };
 
@@ -82,6 +92,10 @@ template <typename T, typename U> struct to_js<pair<T, U>> {
            to_js_heterogenous<T, U>::create_writer() + R"(]);
 })";
   }
+  static string create_html() {
+    return R"(function (parent, value, dispatcher) {
+  return html_structure(parent, value, dispatcher, [)" +
+           to_js_heterogenous<T, U>::create_html() + R"(], ['first', 'second']);
 })";
   }
 };
@@ -99,6 +113,10 @@ template <typename T, typename... Ts> struct to_js<tuple<T, Ts...>> {
            to_js_heterogenous<T, Ts...>::create_writer() + R"(], names);
 })";
   }
+  static string create_html() {
+    return R"(function(parent, value, dispatcher, names) {
+  return html_structure(parent, value, dispatcher, [)" +
+           to_js_heterogenous<T, Ts...>::create_html() + R"(], names);
 })";
   }
 };
@@ -107,6 +125,7 @@ template <typename T, typename... Traits>
 struct to_js<basic_string<T, Traits...>> {
   static string create_reader() { return "read_string"; }
   static string create_writer() { return "write_string"; }
+  static string create_html() { return "html_string"; }
 };
 
 template <typename T, typename... Traits> struct to_js<vector<T, Traits...>> {
@@ -139,6 +158,13 @@ template <typename T, typename... Traits> struct to_js<vector<T, Traits...>> {
     return R"(function (object) {
   return write_structures(object, )" +
            to_js<U>::create_writer() + R"();
+})";
+  }
+
+  static auto create_html() {
+    return R"(function(parent, value, dispatcher) {
+  return html_sequence(parent, value, dispatcher, )" +
+           to_js<T>::create_html() + R"(;
 })";
   }
 };
@@ -188,6 +214,8 @@ template <typename T> struct to_js_bounded {
            to_js<U>::create_writer() + R"(, size);
 })";
   }
+
+  static string create_html() { return R"(html_sequence)"; }
 };
 
 template <typename T, size_t N> struct to_js<T[N]> {
@@ -205,6 +233,12 @@ template <typename T, size_t N> struct to_js<T[N]> {
   return )" +
            to_js_bounded<T>::create_writer() + R"((object, )" + to_string(N) +
            R"();
+})";
+  }
+  static string create_html() {
+    return R"(function (parent, value, dispatcher) {
+  return html_bounded(parent, value, dispatcher, )" +
+           to_js<T>::create_html() + R"(, )" + to_string(N) + R"();
 })";
   }
 };
@@ -243,6 +277,13 @@ template <typename T, size_t M, size_t N> struct to_js<T[M][N]> {
            to_js<U>::create_reader() + R"(, [)" + extent() + R"(]);
 })";
   }
+
+  static string create_html() {
+    return R"(function (parent, value, dispatcher) {
+  return html_multiarray(parent, value, dispatcher, html, [)" +
+           extent() + R"(])
+})";
+  }
 };
 
 template <typename T, size_t N> struct to_js<array<T, N>> {
@@ -258,6 +299,12 @@ template <typename T, size_t N> struct to_js<array<T, N>> {
   return )" +
            to_js_bounded<T>::create_writer() + R"((object, )" + to_string(N) +
            R"();
+})";
+  }
+  static string create_html() {
+    return R"(function (parent, value, dispatcher) {
+  return html_bounded(parent, value, dispatcher, )" +
+           to_js<T>::create_html() + R"(, )" + to_string(N) + R"();
 })";
   }
 };
@@ -278,6 +325,10 @@ struct to_js<map<T, U, Traits...>> {
            to_js_bounded<U>::create_writer() + R"();
 })";
   }
+  static string create_html() {
+    return R"(function(parent, value, dispatcher) {
+  return html_associative(parent, value, dispatcher, )" +
+           to_js<T>::create_html() + R"(, )" + to_js<U>::create_html() + R"();
 })";
   }
 };
@@ -309,6 +360,14 @@ struct to_js<structure<S, T, Ts...>> {
            R"(
   return )" +
            to_js<tuple<T, Ts...>>::create_writer() + R"((object, names);
+})";
+  }
+  static string create_html() {
+    return R"(function (parent, value, dispatcher) {
+  )" + names +
+           R"(
+  return html_structure(parent, value, dispatcher, )" +
+           to_js<tuple<T, Ts...>>::create_html() + R"(, names);
 })";
   }
 };
