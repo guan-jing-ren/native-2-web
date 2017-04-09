@@ -101,19 +101,19 @@ function read_structure(data, offset, readers, names) {
   return [object, offset];
 }
 
-function read_structures_bounded(data, offset, readers, size) {
+function read_structures_bounded(data, offset, reader, size) {
   let objects = [], o;
   for (let n = 0; n < size; ++n) {
-    [o, offset] = read_structure(data, offset, readers);
+    [o, offset] = reader(data, offset);
     objects.push(o);
   }
   return [objects, offset];
 }
 
-function read_structures(data, offset, readers) {
+function read_structures(data, offset, reader) {
   let size;
   [size, offset] = read_number(data, offset, "getUint32");
-  return read_structures_bounded(data, offset, readers, size);
+  return read_structures_bounded(data, offset, reader, size);
 }
 
 function read_associative_bounded(
@@ -241,19 +241,19 @@ function write_structure(object, writers, names) {
   return buffer;
 }
 
-function write_structures_bounded(object, writers, size) {
+function write_structures_bounded(object, writer, size) {
   if (size == 0) return [];
   let o = [];
-  for (let n = 0; n < size; ++n) o.push(write_structure(object[n], writers));
+  for (let n = 0; n < size; ++n) o.push(writer(object[n]));
   let buffer = o.reduce((p, c) => concat_buffer(p, c));
   return buffer;
 }
 
-function write_structures(object, writers) {
+function write_structures(object, writer) {
   let buffer = concat_buffer(
       write_number(object.length, "setUint32"),
       write_structures_bounded(
-          object, writers,
+          object, writer,
           Array.isArray(object) ? object.length : Object.keys(object).length));
   return buffer;
 }
@@ -262,7 +262,7 @@ function write_associative_bounded(object, key_writer, value_writer, size) {
   let keys = Object.keys(object);
   let buffer = concat_buffer(
       key_writer(keys.map(k => JSON.parse(k)), size),
-      value_writer(keys.map(k => object[JSON.parse(k)]), size));
+      value_writer(keys.map(k => object[k]), size));
   return buffer;
 }
 
