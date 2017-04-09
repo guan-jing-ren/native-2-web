@@ -340,6 +340,21 @@ function html_structure(parent, value, dispatcher, html, names) {
   });
 }
 
+function html_bounded(parent, value, dispatcher, html, size) {
+  let table = d3.select(parent).append('table');
+  let expand_row = d3.select(table).append('tr');
+  let subvalue = [];
+  let subdispatcher = d3.dispatcher();
+
+  for (let i = 0; i < size; ++i)
+    html(expand_row.append('td').node(), v => subvalue[i] = v, subdispatcher);
+
+  dispatcher.on('gather', () => {
+    subdispatcher.call('dispatch');
+    value(subvalue);
+  });
+}
+
 function html_sequence(parent, value, dispatcher, html) {
   let table = d3.select(parent).append('table');
   let expand_row = d3.select(table).append('tr');
