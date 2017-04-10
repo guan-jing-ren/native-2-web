@@ -217,7 +217,7 @@ template <typename T> struct to_js_bounded {
 })";
   }
 
-  static string create_html() { return R"(html_sequence)"; }
+  static string create_html() { return R"(html_bounded)"; }
 };
 
 template <typename T, size_t N> struct to_js<T[N]> {
@@ -239,8 +239,9 @@ template <typename T, size_t N> struct to_js<T[N]> {
   }
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
-  return html_bounded(parent, value, dispatcher, )" +
-           to_js<T>::create_html() + R"(, )" + to_string(N) + R"();
+  return )" +
+           to_js_bounded<T>::create_html() + R"((parent, value, dispatcher, )" +
+           to_string(N) + R"();
 })";
   }
 };
@@ -366,8 +367,8 @@ struct to_js<structure<S, T, Ts...>> {
     return R"(function (parent, value, dispatcher) {
   )" + names +
            R"(
-  return html_structure(parent, value, dispatcher, )" +
-           to_js<tuple<T, Ts...>>::create_html() + R"(, names);
+  return )" +
+           to_js<tuple<T, Ts...>>::create_html() + R"((parent, value, dispatcher, names);
 })";
   }
 };
