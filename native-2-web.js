@@ -332,8 +332,8 @@ function html_structure(parent, value, dispatcher, html, names) {
   if (Array.isArray(html))
     html.forEach((h, i) => {
       let row = d3.select(table).append('tr');
-      row.append('td').text((names ? names[i] : i) + ': ');
-      let cell = row.append('td').node();
+      row.append('td').attr('class', 'n2w-html').text((names ? names[i] : i) + ': ');
+      let cell = row.append('td').attr('class', 'n2w-html').node();
       h(cell, v => subvalue[names ? names[i] : i] = v, subdispatcher);
     });
 
@@ -344,13 +344,13 @@ function html_structure(parent, value, dispatcher, html, names) {
 }
 
 function html_bounded(parent, value, dispatcher, html, size) {
-  let table = d3.select(parent).append('table');
+  let table = d3.select(parent).append('table').node();
   let expand_row = d3.select(table).append('tr');
   let subvalue = [];
   let subdispatcher = d3.dispatch('gather');
 
   for (let i = 0; i < size; ++i)
-    html(expand_row.append('td').node(), v => subvalue[i] = v, subdispatcher);
+    html(expand_row.append('td').attr('class', 'n2w-html').node(), v => subvalue[i] = v, subdispatcher);
 
   dispatcher.on('gather', () => {
     subdispatcher.call('gather');
@@ -359,20 +359,22 @@ function html_bounded(parent, value, dispatcher, html, size) {
 }
 
 function html_sequence(parent, value, dispatcher, html) {
-  let table = d3.select(parent).append('table');
+  let table = d3.select(parent).append('table').node();
   let expand_row = d3.select(table).append('tr');
   let subvalue = [];
   let subdispatcher = d3.dispatch('gather');
 
-  let expand_button =
-      expand_row.append('td')
-          .append('input')
-          .attr('type', 'button')
-          .text('+')
-          .on('click', () => {
-            let cell = table.insert('tr', 'tr:last-child').append('td').node();
-            html(cell, v => subvalue.push(v), subdispatcher);
-          });
+  let expand_button = expand_row.append('td').attr('class', 'n2w-html')
+                          .append('input')
+                          .attr('type', 'button')
+                          .text('+')
+                          .on('click', () => {
+                            let cell = d3.select(table)
+                                           .insert('tr', 'tr:last-child')
+                                           .append('td').attr('class', 'n2w-html')
+                                           .node();
+                            html(cell, v => subvalue.push(v), subdispatcher);
+                          });
 
   dispatcher.on('gather', () => {
     subdispatcher.call('gather');
@@ -393,7 +395,7 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
           if (key_value[1]) subvalue[key_value[0]] = key_value[1];
         }, subdispatcher);
         d3.select(p.parentElement).append('td').text('->');
-        html_value(d3.select(p.parentElement).append('td').node(), v => {
+        html_value(d3.select(p.parentElement).append('td').attr('class', 'n2w-html').node(), v => {
           key_value[1] = v;
           if (key_value[0]) subvalue[key_value[0]] = key_value[1];
         }, subdispatcher);
