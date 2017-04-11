@@ -103,7 +103,7 @@ int main(int, char **) {
   d3.select(parent)
     .append('input')
     .attr('type', 'button')
-    .text('test_structure_html')
+    .attr('value','test_structure_html')
     .on('click', () => {
       dispatcher.call('gather');
       d3.select(parent).append('pre').text(JSON.stringify(value, null, '\\t'));
