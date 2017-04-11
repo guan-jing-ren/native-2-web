@@ -230,8 +230,6 @@ function write_string(object) {
 }
 
 function write_structure(object, writers, names) {
-  console.log(object);
-  console.log(names);
   let buffer;
   if (typeof writers === "function")
     buffer = writers(names ? object[names[0]] : object);
