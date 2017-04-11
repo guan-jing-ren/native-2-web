@@ -330,7 +330,9 @@ function html_structure(parent, value, dispatcher, html, names) {
   if (Array.isArray(html))
     html.forEach((h, i) => {
       let row = d3.select(table).append('tr');
-      row.attr('class', 'n2w-html').append('td').text((names ? names[i] : i) + ': ');
+      row.attr('class', 'n2w-html')
+          .append('td')
+          .text((names ? names[i] : i) + ': ');
       let cell = row.append('td').attr('class', 'n2w-html').node();
       h(cell, v => subvalue[names ? names[i] : i] = v, subdispatcher);
     });
@@ -348,7 +350,9 @@ function html_bounded(parent, value, dispatcher, html, size) {
   let subdispatcher = d3.dispatch('gather');
 
   for (let i = 0; i < size; ++i)
-    html(expand_row.append('td').attr('class', 'n2w-html').node(), v => subvalue[i] = v, subdispatcher);
+    html(
+        expand_row.append('td').attr('class', 'n2w-html').node(),
+        v => subvalue[i] = v, subdispatcher);
 
   dispatcher.on('gather', () => {
     subdispatcher.call('gather');
@@ -393,10 +397,16 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
           if (key_value[1]) subvalue[key_value[0]] = key_value[1];
         }, subdispatcher);
         d3.select(p.parentElement).append('td').text('->');
-        html_value(d3.select(p.parentElement).append('td').attr('class', 'n2w-html').node(), v => {
-          key_value[1] = v;
-          if (key_value[0]) subvalue[key_value[0]] = key_value[1];
-        }, subdispatcher);
+        html_value(
+            d3.select(p.parentElement)
+                .append('td')
+                .attr('class', 'n2w-html')
+                .node(),
+            v => {
+              key_value[1] = v;
+              if (key_value[0]) subvalue[key_value[0]] = key_value[1];
+            },
+            subdispatcher);
       });
 
   dispatcher.on('gather', () => {
