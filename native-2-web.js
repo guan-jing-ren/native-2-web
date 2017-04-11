@@ -369,11 +369,12 @@ function html_sequence(parent, value, dispatcher, html) {
   let expand_button = expand_row.append('td')
                           .append('input')
                           .attr('type', 'button')
-                          .text('+')
+                          .attr('value', '+')
                           .on('click', () => {
                             let cell = d3.select(table)
-                                           .insert('tr', 'tr:last-child')
-                                           .append('td').attr('class', 'n2w-html')
+                                           .append('tr')
+                                           .append('td')
+                                           .attr('class', 'n2w-html')
                                            .node();
                             html(cell, v => subvalue.push(v), subdispatcher);
                           });
