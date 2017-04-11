@@ -330,9 +330,7 @@ function html_structure(parent, value, dispatcher, html, names) {
   if (Array.isArray(html))
     html.forEach((h, i) => {
       let row = d3.select(table).append('tr');
-      row.attr('class', 'n2w-html')
-          .append('td')
-          .text((names ? names[i] : i) + ': ');
+      row.append('td').text((names ? names[i] : i) + ': ');
       let cell = row.append('td').attr('class', 'n2w-html').node();
       h(cell, v => subvalue[names ? names[i] : i] = v, subdispatcher);
     });
@@ -362,7 +360,7 @@ function html_bounded(parent, value, dispatcher, html, size) {
 
 function html_sequence(parent, value, dispatcher, html) {
   let table = d3.select(parent).append('table').node();
-  let expand_row = d3.select(table).append('tr').attr('class', 'n2w-html');
+  let expand_row = d3.select(table).append('tr');
   let subvalue = [];
   let subdispatcher = d3.dispatch('gather');
 
