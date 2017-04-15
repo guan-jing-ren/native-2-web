@@ -91,11 +91,13 @@ int main(int, char **) {
                      })
        << "]).buffer);\n";
   cout << "rval = test_structure_read(rval, 0)[0];\n";
-  cout << "d3.select('body').append('pre').text(JSON.stringify(rval, null, '\\t'));\n";
+  cout << "d3.select('body').append('pre').text(JSON.stringify(rval, null, "
+          "'\\t'));\n";
   cout << "let valr = new DataView(test_structure_write(rval));\n";
   cout << "console.log(valr);\n";
   cout << "let rval2 = test_structure_read(valr, 0)[0];\n";
-  cout << "d3.select('body').append('pre').text(JSON.stringify(rval2, null, '\\t'));\n";
+  cout << "d3.select('body').append('pre').text(JSON.stringify(rval2, null, "
+          "'\\t'));\n";
   cout << R"(let test_structure_html = function(parent) {
   let value = {}, dispatcher = d3.dispatch('gather');
   ()" + n2w::to_js<test_structure>::create_html() +

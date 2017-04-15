@@ -368,7 +368,8 @@ struct to_js<structure<S, T, Ts...>> {
   )" + names +
            R"(
   return )" +
-           to_js<tuple<T, Ts...>>::create_html() + R"((parent, value, dispatcher, names);
+           to_js<tuple<T, Ts...>>::create_html() +
+           R"((parent, value, dispatcher, names);
 })";
   }
 };
