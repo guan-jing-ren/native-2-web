@@ -327,7 +327,7 @@ function html_string(parent, value, dispatcher) {
 function html_structure(parent, value, dispatcher, html, names) {
   let table = d3.select(parent).append('table').node();
   let subvalue = {};
-  let subdispatcher = d3.dispatch('gather');
+  let subdispatchers = [];
 
   if (typeof(html) == "function") html = [html];
 
@@ -336,11 +336,13 @@ function html_structure(parent, value, dispatcher, html, names) {
       let row = d3.select(table).append('tr');
       row.append('td').text((names ? names[i] : i) + ': ');
       let cell = row.append('td').attr('class', 'n2w-html').node();
+      let subdispatcher = d3.dispatch('gather');
+      subdispatchers.push(subdispatcher);
       h(cell, v => subvalue[names ? names[i] : i] = v, subdispatcher);
     });
 
   dispatcher.on('gather', () => {
-    subdispatcher.call('gather');
+    subdispatchers.forEach(s => s.call('gather'));
     value(subvalue);
   });
 }
@@ -349,15 +351,18 @@ function html_bounded(parent, value, dispatcher, html, size) {
   let table = d3.select(parent).append('table').node();
   let expand_row = d3.select(table).append('tr');
   let subvalue = [];
-  let subdispatcher = d3.dispatch('gather');
+  let subdispatchers = [];
 
-  for (let i = 0; i < size; ++i)
+  for (let i = 0; i < size; ++i) {
+    let subdispatcher = d3.dispatch('gather');
+    subdispatchers.push(subdispatcher);
     html(
         expand_row.append('td').attr('class', 'n2w-html').node(),
         v => subvalue[i] = v, subdispatcher);
+  }
 
   dispatcher.on('gather', () => {
-    subdispatcher.call('gather');
+    subdispatchers.forEach(s => s.call('gather'));
     value(subvalue);
   });
 }
@@ -365,36 +370,42 @@ function html_bounded(parent, value, dispatcher, html, size) {
 function html_sequence(parent, value, dispatcher, html) {
   let table = d3.select(parent).append('table').node();
   let expand_row = d3.select(table).append('tr');
-  let subvalue = [];
-  let subdispatcher = d3.dispatch('gather');
+  let subvalue = [], index = 0;
+  let subdispatchers = [];
 
-  let expand_button = expand_row.append('td')
-                          .append('input')
-                          .attr('type', 'button')
-                          .attr('value', '+')
-                          .on('click', () => {
-                            let cell = d3.select(table)
-                                           .append('tr')
-                                           .append('td')
-                                           .attr('class', 'n2w-html')
-                                           .node();
-                            html(cell, v => subvalue.push(v), subdispatcher);
-                          });
+  let expand_button =
+      expand_row.append('td')
+          .append('input')
+          .attr('type', 'button')
+          .attr('value', '+')
+          .on('click', () => {
+            let cell = d3.select(table)
+                           .append('tr')
+                           .append('td')
+                           .attr('class', 'n2w-html')
+                           .node();
+            let subdispatcher = d3.dispatch('gather');
+            subdispatchers.push(subdispatcher);
+            let slot = index++;
+            html(cell, v => { subvalue[slot] = v; }, subdispatcher);
+          });
 
   dispatcher.on('gather', () => {
-    subdispatcher.call('gather');
+    subdispatchers.forEach(s => s.call('gather'));
     value(subvalue);
   });
 }
 
 function html_associative(parent, value, dispatcher, html_key, html_value) {
   let subvalue = {};
-  let subdispatcher = d3.dispatch('gather');
+  let subdispatchers = [];
 
   html_sequence(
       parent, v => {}, d3.dispatch('gather'),
       (p, v, d) => {
         let key_value = [];
+        let subdispatcher = d3.dispatch('gather');
+        subdispatchers.push(subdispatcher);
         html_key(p, v => {
           key_value[0] = v;
           if (key_value[1]) subvalue[key_value[0]] = key_value[1];
@@ -413,7 +424,7 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
       });
 
   dispatcher.on('gather', () => {
-    subdispatcher.call('gather');
+    subdispatchers.forEach(s => s.call('gather'));
     value(subvalue);
   });
 }
