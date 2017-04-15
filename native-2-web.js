@@ -309,13 +309,13 @@ function html_number(parent, value, dispatcher) {
 function html_char(parent, value, dispatcher) {
   d3.select(parent).attr('class', null);
   let node = d3.select(parent).append('input').attr('type', 'text').node();
-  dispatcher.on('gather', () => value(node.value.codePointAt(0) || 0));
+  dispatcher.on('gather', () => value(node.value[0] || '\0'));
 }
 
 function html_char32(parent, value, dispatcher) {
   d3.select(parent).attr('class', null);
   let node = d3.select(parent).append('input').attr('type', 'text').node();
-  dispatcher.on('gather', () => value(node.value.codePointAt(0) || 0));
+  dispatcher.on('gather', () => value(node.value[0] || '\0'));
 }
 
 function html_string(parent, value, dispatcher) {
