@@ -106,7 +106,7 @@ int main(int, char **) {
     .attr('value','test_structure_html')
     .on('click', () => {
       dispatcher.call('gather');
-      d3.select(parent).append('pre').text(JSON.stringify(value, null, '\\t'));
+      d3.select(parent).append('pre').text(JSON.stringify(value, null, '\t'));
     });
 };
 test_structure_html(d3.select('body').node());)";
