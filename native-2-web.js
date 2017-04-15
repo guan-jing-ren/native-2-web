@@ -404,12 +404,14 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
       parent, v => {}, d3.dispatch('gather'),
       (p, v, d) => {
         let key_value = [];
-        let subdispatcher = d3.dispatch('gather');
-        subdispatchers.push(subdispatcher);
+        let key_subdispatcher = d3.dispatch('gather'),
+            value_subdispatcher = d3.dispatch('gather');
+        subdispatchers.push(key_subdispatcher);
+        subdispatchers.push(value_subdispatcher);
         html_key(p, v => {
           key_value[0] = v;
           if (key_value[1]) subvalue[key_value[0]] = key_value[1];
-        }, subdispatcher);
+        }, key_subdispatcher);
         d3.select(p.parentElement).append('td').text('->');
         html_value(
             d3.select(p.parentElement)
@@ -420,7 +422,7 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
               key_value[1] = v;
               if (key_value[0]) subvalue[key_value[0]] = key_value[1];
             },
-            subdispatcher);
+            value_subdispatcher);
       });
 
   dispatcher.on('gather', () => {
