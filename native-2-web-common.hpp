@@ -1,21 +1,21 @@
 #ifndef _NATIVE_2_WEB_COMMON_HPP_
 #define _NATIVE_2_WEB_COMMON_HPP_
 
-#include <cstdint>
-#include <bitset>
-#include <array>
-#include <tuple>
-#include <string>
-#include <vector>
-#include <list>
-#include <forward_list>
-#include <deque>
-#include <set>
-#include <map>
-#include <unordered_set>
-#include <unordered_map>
 #include <algorithm>
+#include <array>
+#include <bitset>
 #include <boost/preprocessor.hpp>
+#include <cstdint>
+#include <deque>
+#include <forward_list>
+#include <list>
+#include <map>
+#include <set>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
 namespace std {
 template <typename T> bool less_unordered(const T &l, const T &r) {
@@ -57,7 +57,7 @@ bool operator<(const unordered_multimap<T, Traits...> &l,
 
 template <typename T> constexpr T reverse_endian(T t) {
   std::reverse(reinterpret_cast<std::uint8_t *>(&t),
-          reinterpret_cast<std::uint8_t *>(&t) + sizeof(T));
+               reinterpret_cast<std::uint8_t *>(&t) + sizeof(T));
   return t;
 }
 

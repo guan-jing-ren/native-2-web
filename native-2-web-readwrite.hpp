@@ -1,7 +1,6 @@
 #ifndef _NATIVE_2_WEB_READWRITE_HPP_
 #define _NATIVE_2_WEB_READWRITE_HPP_
 
-#include "native-2-web-manglespec.hpp"
 #include "native-2-web-deserialize.hpp"
 #include "native-2-web-serialize.hpp"
 #include <locale>

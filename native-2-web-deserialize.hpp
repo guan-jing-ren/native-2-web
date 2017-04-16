@@ -2,6 +2,7 @@
 #define _NATIVE_2_WEB_DESERIALIZE_HPP_
 
 #include "native-2-web-common.hpp"
+#include "native-2-web-manglespec.hpp"
 #include <locale>
 
 namespace n2w {

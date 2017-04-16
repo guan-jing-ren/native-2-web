@@ -410,7 +410,8 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
         subdispatchers.push(value_subdispatcher);
         html_key(p, v => {
           key_value[0] = v;
-          if (key_value[1]) subvalue[JSON.stringify(key_value[0])] = key_value[1];
+          if (key_value[1])
+            subvalue[JSON.stringify(key_value[0])] = key_value[1];
         }, key_subdispatcher);
         d3.select(p.parentElement).append('td').text('->');
         html_value(
@@ -420,7 +421,8 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
                 .node(),
             v => {
               key_value[1] = v;
-              if (key_value[0]) subvalue[JSON.stringify(key_value[0])] = key_value[1];
+              if (key_value[0])
+                subvalue[JSON.stringify(key_value[0])] = key_value[1];
             },
             value_subdispatcher);
       });
