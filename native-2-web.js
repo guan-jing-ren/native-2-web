@@ -259,7 +259,7 @@ function write_structures(object, writer) {
 function write_associative_bounded(object, key_writer, value_writer, size) {
   let keys = Object.keys(object);
   let buffer = concat_buffer(
-      key_writer(keys.map(k => JSON.parse(k)), size),
+      key_writer(keys.map(JSON.parse), size),
       value_writer(keys.map(k => object[k]), size));
   return buffer;
 }
@@ -410,7 +410,7 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
         subdispatchers.push(value_subdispatcher);
         html_key(p, v => {
           key_value[0] = v;
-          if (key_value[1]) subvalue[key_value[0]] = key_value[1];
+          if (key_value[1]) subvalue[JSON.stringify(key_value[0])] = key_value[1];
         }, key_subdispatcher);
         d3.select(p.parentElement).append('td').text('->');
         html_value(
@@ -420,7 +420,7 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
                 .node(),
             v => {
               key_value[1] = v;
-              if (key_value[0]) subvalue[key_value[0]] = key_value[1];
+              if (key_value[0]) subvalue[JSON.stringify(key_value[0])] = key_value[1];
             },
             value_subdispatcher);
       });

@@ -111,6 +111,8 @@ int main(int, char **) {
     .on('click', () => {
       dispatcher.call('gather');
       d3.select(parent).append('pre').text(JSON.stringify(value, null, '\t'));
+      let eulav = test_structure_read(new DataView(test_structure_write(value)), 0)[0];
+      d3.select(parent).append('pre').text(JSON.stringify(eulav, null, '\t'));
     });
 };
 test_structure_html(d3.select('body').node());)";
