@@ -247,10 +247,12 @@ struct printer<unordered_multimap<T, U, Traits...>> {
     return print_sequence<I>(o, t, t.size());
   }
 };
-template <typename S, typename T, typename... Ts>
-struct printer<structure<S, T, Ts...>> {
+template <typename S, typename T, typename... Ts, typename... Bs>
+struct printer<structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>>> {
   template <size_t I = 0, typename O>
-  static O &debug_print(O &o, const structure<S, T, Ts...> &t) {
+  static O &
+  debug_print(O &o,
+              const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &t) {
     return print_heterogenous<I>(o, t, make_index_sequence<sizeof...(Ts) + 1>{})
            << "\t`" << *begin(t.names) << '`';
   }

@@ -67,7 +67,10 @@ template <typename T> constexpr auto serial_size = sizeof(T);
 // template <> constexpr auto serial_size<wchar_t> = sizeof(char32_t);
 
 namespace n2w {
-template <typename S, typename T, typename... Ts> struct structure {
+template <typename S, typename M, typename B> struct structure;
+
+template <typename S, typename T, typename... Ts, typename... Bs>
+struct structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> {
   const volatile union {
     S *const volatile s_write;
     const S *const volatile s_read;
@@ -87,20 +90,21 @@ template <typename S, typename T, typename... Ts> struct structure {
   structure &operator=(const structure &&) = delete;
 };
 
-template <size_t N, typename S, typename T, typename... Ts>
-auto &get(const structure<S, T, Ts...> &s) {
+template <size_t N, typename S, typename T, typename... Ts, typename... Bs>
+auto &get(const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &s) {
   return s.s_read->*get<N>(s.members);
 }
 
-template <size_t N, typename S, typename T, typename... Ts>
-auto &get(structure<S, T, Ts...> &s) {
+template <size_t N, typename S, typename T, typename... Ts, typename... Bs>
+auto &get(structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &s) {
   return s.s_write->*get<N>(s.members);
 }
 
-template <typename S, typename T, typename... Ts, size_t... Is>
-bool memberwise_equality(const structure<S, T, Ts...> &l,
-                         const structure<S, T, Ts...> &r,
-                         std::index_sequence<Is...>) {
+template <typename S, typename T, typename... Ts, typename... Bs, size_t... Is>
+bool memberwise_equality(
+    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &l,
+    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &r,
+    std::index_sequence<Is...>) {
   if (l.s_read == r.s_read)
     return true;
 
@@ -110,22 +114,25 @@ bool memberwise_equality(const structure<S, T, Ts...> &l,
       return equal;
   return equal;
 }
-template <typename S, typename T, typename... Ts>
-bool operator==(const structure<S, T, Ts...> &l,
-                const structure<S, T, Ts...> &r) {
+template <typename S, typename T, typename... Ts, typename... Bs>
+bool operator==(
+    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &l,
+    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &r) {
   return memberwise_equality(l, r,
                              std::make_index_sequence<sizeof...(Ts) + 1>{});
 }
-template <typename S, typename T, typename... Ts>
-bool operator!=(const structure<S, T, Ts...> &l,
-                const structure<S, T, Ts...> &r) {
+template <typename S, typename T, typename... Ts, typename... Bs>
+bool operator!=(
+    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &l,
+    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &r) {
   return !(l == r);
 }
 
-template <typename S, typename T, typename... Ts, size_t... Is>
-bool memberwise_less(const structure<S, T, Ts...> &l,
-                     const structure<S, T, Ts...> &r,
-                     std::index_sequence<Is...>) {
+template <typename S, typename T, typename... Ts, typename... Bs, size_t... Is>
+bool memberwise_less(
+    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &l,
+    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &r,
+    std::index_sequence<Is...>) {
   if (l.s_read == r.s_read)
     return false;
 
@@ -143,27 +150,29 @@ bool memberwise_less(const structure<S, T, Ts...> &l,
   }
   return false;
 }
-template <typename S, typename T, typename... Ts>
-bool operator<(const structure<S, T, Ts...> &l,
-               const structure<S, T, Ts...> &r) {
+template <typename S, typename T, typename... Ts, typename... Bs>
+bool operator<(const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &l,
+               const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &r) {
   return memberwise_less(l, r, std::make_index_sequence<sizeof...(Ts) + 1>{});
 }
 
-template <typename S, typename T, typename... Ts>
-bool operator>(const structure<S, T, Ts...> &l,
-               const structure<S, T, Ts...> &r) {
+template <typename S, typename T, typename... Ts, typename... Bs>
+bool operator>(const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &l,
+               const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &r) {
   return r < l;
 };
 
-template <typename S, typename T, typename... Ts>
-bool operator<=(const structure<S, T, Ts...> &l,
-                const structure<S, T, Ts...> &r) {
+template <typename S, typename T, typename... Ts, typename... Bs>
+bool operator<=(
+    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &l,
+    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &r) {
   return !(r < l);
 };
 
-template <typename S, typename T, typename... Ts>
-bool operator>=(const structure<S, T, Ts...> &l,
-                const structure<S, T, Ts...> &r) {
+template <typename S, typename T, typename... Ts, typename... Bs>
+bool operator>=(
+    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &l,
+    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &r) {
   return !(l < r);
 };
 
@@ -182,8 +191,8 @@ const char *at(const std::array<T, S> &) {
   return "";
 }
 
-template <size_t N, typename S, typename T, typename... Ts>
-std::string at(const structure<S, T, Ts...> &s) {
+template <size_t N, typename S, typename T, typename... Ts, typename... Bs>
+std::string at(const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &s) {
   auto m_p = std::get<N>(s.members);
   return '@' + std::to_string(*reinterpret_cast<std::uintptr_t *>(&m_p));
 }
@@ -204,8 +213,9 @@ std::string name(const std::array<T, S> &) {
   return std::to_string(N);
 }
 
-template <size_t N, typename S, typename T, typename... Ts>
-const char *name(const structure<S, T, Ts...> &s) {
+template <size_t N, typename S, typename T, typename... Ts, typename... Bs>
+const char *
+name(const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &s) {
   return s.names[N + 1];
 }
 
@@ -215,13 +225,14 @@ using element_t = std::remove_cv_t<
 
 #define DECLTYPES(r, data, i, elem) BOOST_PP_COMMA_IF(i) decltype(data::elem)
 #define USING_STRUCTURE(s, m)                                                  \
-  n2w::structure<s, BOOST_PP_SEQ_FOR_EACH_I(DECLTYPES, s, m)>
+  n2w::structure<s, std::tuple<BOOST_PP_SEQ_FOR_EACH_I(DECLTYPES, s, m)>,      \
+                 std::tuple<>>
 #define POINTER_TO_MEMBER(r, data, i, elem) BOOST_PP_COMMA_IF(i) & data::elem
 #define MAKE_MEMBER_TUPLE(s, m)                                                \
   std::make_tuple(BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m))
 #define MEM_NAME(r, data, i, elem) BOOST_PP_COMMA_IF(i) BOOST_PP_STRINGIZE(elem)
 #define MEMBER_NAMES(m) BOOST_PP_SEQ_FOR_EACH_I(MEM_NAME, _, m)
-#define SPECIALIZE_STRUCTURE(s, m)                                             \
+#define SPECIALIZE_STRUCTURE(s, m, ...)                                        \
   template <>                                                                  \
   const decltype(MAKE_MEMBER_TUPLE(s, m)) USING_STRUCTURE(s, m)::members =     \
       MAKE_MEMBER_TUPLE(s, m);                                                 \

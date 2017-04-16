@@ -343,8 +343,8 @@ struct to_js<unordered_map<T, U, Traits...>> : to_js<map<T, U>> {};
 template <typename T, typename U, typename... Traits>
 struct to_js<unordered_multimap<T, U, Traits...>> : to_js<map<T, U>> {};
 
-template <typename S, typename T, typename... Ts>
-struct to_js<structure<S, T, Ts...>> {
+template <typename S, typename T, typename... Ts, typename... Bs>
+struct to_js<structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>>> {
   static const string names;
 
   static string create_reader() {
@@ -374,15 +374,20 @@ struct to_js<structure<S, T, Ts...>> {
   }
 };
 
-template <typename S, typename T, typename... Ts>
-const string to_js<structure<S, T, Ts...>>::names =
-    "let names = [" +
-    accumulate(begin(structure<S, T, Ts...>::names) + 1,
-               end(structure<S, T, Ts...>::names), string{},
-               [](const auto &names, const auto &name) {
-                 return names + (names.empty() ? "" : ",") + "'" + name + "'";
-               }) +
-    "];";
+template <typename S, typename T, typename... Ts, typename... Bs>
+const string
+    to_js<structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>>>::names =
+        "let names = [" +
+        accumulate(
+            begin(
+                structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>>::names) +
+                1,
+            end(structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>>::names),
+            string{},
+            [](const auto &names, const auto &name) {
+              return names + (names.empty() ? "" : ",") + "'" + name + "'";
+            }) +
+        "];";
 
 #define JS_SPEC(s, m)                                                          \
   namespace n2w {                                                              \

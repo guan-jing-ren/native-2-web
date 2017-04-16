@@ -239,10 +239,11 @@ struct deserializer<unordered_multimap<T, U, Traits...>> {
     deserialize_associative<T, U>(i, t);
   }
 };
-template <typename S, typename T, typename... Ts>
-struct deserializer<structure<S, T, Ts...>> {
+template <typename S, typename T, typename... Ts, typename... Bs>
+struct deserializer<structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>>> {
   template <typename I>
-  static void deserialize(I &i, structure<S, T, Ts...> &t) {
+  static void
+  deserialize(I &i, structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &t) {
     deserialize_heterogenous(i, t,
                              std::make_index_sequence<sizeof...(Ts) + 1>{});
   }

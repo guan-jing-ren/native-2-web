@@ -49,8 +49,9 @@ template <typename T, typename... Traits>
 constexpr auto mangle_prefix<unordered_multiset<T, Traits...>> = "H[";
 template <typename T, typename U, typename... Traits>
 constexpr auto mangle_prefix<unordered_multimap<T, U, Traits...>> = "H{";
-template <typename S, typename T, typename... Ts>
-const auto mangle_prefix<structure<S, T, Ts...>> = "{";
+template <typename S, typename T, typename... Ts, typename... Bs>
+const auto
+    mangle_prefix<structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>>> = "{";
 template <typename R, typename... Ts>
 constexpr auto mangle_prefix<R(Ts...)> = "^";
 
@@ -124,9 +125,10 @@ template <typename T, typename U, typename... Traits>
 const auto mangle<unordered_multimap<T, U, Traits...>> =
     mangle_prefix<unordered_multimap<T, U, Traits...>> + kv<T, U>;
 
-template <typename S, typename T, typename... Ts>
-const auto mangle<structure<S, T, Ts...>> =
-    mangle_prefix<structure<S, T, Ts...>> + string{} + '}';
+template <typename S, typename T, typename... Ts, typename... Bs>
+const auto mangle<structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>>> =
+    mangle_prefix<structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>>> +
+    string{} + '}';
 
 #define MANGLE_SPEC(s, m)                                                      \
   namespace n2w {                                                              \
