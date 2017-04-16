@@ -249,11 +249,11 @@ struct deserializer<structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>>> {
   }
 };
 
-#define DESERIALIZE_SPEC(s, m)                                                 \
+#define DESERIALIZE_SPEC(s, m, ...)                                            \
   namespace n2w {                                                              \
   template <> struct deserializer<s> {                                         \
     template <typename I> static void deserialize(I &i, s &_s) {               \
-      CONSTRUCTOR(s, m, _s);                                                   \
+      CONSTRUCTOR(s, m, _s, __VA_ARGS__);                                      \
       deserializer<decltype(_s_v)>::deserialize(i, _s_v);                      \
     }                                                                          \
   };                                                                           \

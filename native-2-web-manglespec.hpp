@@ -130,9 +130,10 @@ const auto mangle<structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>>> =
     mangle_prefix<structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>>> +
     string{} + '}';
 
-#define MANGLE_SPEC(s, m)                                                      \
+#define MANGLE_SPEC(s, m, ...)                                                 \
   namespace n2w {                                                              \
-  template <> const string mangle<s> = mangle<USING_STRUCTURE(s, m)>;          \
+  template <>                                                                  \
+  const string mangle<s> = mangle<USING_STRUCTURE(s, m, __VA_ARGS__)>;         \
   }
 
 template <bool e = __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__>

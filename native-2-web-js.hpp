@@ -389,9 +389,9 @@ const string
             }) +
         "];";
 
-#define JS_SPEC(s, m)                                                          \
+#define JS_SPEC(s, m, ...)                                                     \
   namespace n2w {                                                              \
-  template <> struct to_js<s> : to_js<USING_STRUCTURE(s, m)> {};               \
+  template <> struct to_js<s> : to_js<USING_STRUCTURE(s, m, __VA_ARGS__)> {};  \
   }
 }
 

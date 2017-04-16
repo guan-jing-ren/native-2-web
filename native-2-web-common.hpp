@@ -77,6 +77,7 @@ struct structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> {
   };
   static const std::tuple<T S::*, Ts S::*...> members;
   static const char *names[];
+  static const char *base_names[];
   structure(S *s) : s_write(s) {}
   structure(const S *s) : s_read(s) {}
   structure(std::nullptr_t) = delete;
@@ -224,9 +225,9 @@ using element_t = std::remove_cv_t<
     std::remove_reference_t<decltype(get<I>(std::declval<T>()))>>;
 
 #define DECLTYPES(r, data, i, elem) BOOST_PP_COMMA_IF(i) decltype(data::elem)
-#define USING_STRUCTURE(s, m)                                                  \
+#define USING_STRUCTURE(s, m, ...)                                             \
   n2w::structure<s, std::tuple<BOOST_PP_SEQ_FOR_EACH_I(DECLTYPES, s, m)>,      \
-                 std::tuple<>>
+                 std::tuple<__VA_ARGS__>>
 #define POINTER_TO_MEMBER(r, data, i, elem) BOOST_PP_COMMA_IF(i) & data::elem
 #define MAKE_MEMBER_TUPLE(s, m)                                                \
   std::make_tuple(BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m))
@@ -234,12 +235,16 @@ using element_t = std::remove_cv_t<
 #define MEMBER_NAMES(m) BOOST_PP_SEQ_FOR_EACH_I(MEM_NAME, _, m)
 #define SPECIALIZE_STRUCTURE(s, m, ...)                                        \
   template <>                                                                  \
-  const decltype(MAKE_MEMBER_TUPLE(s, m)) USING_STRUCTURE(s, m)::members =     \
-      MAKE_MEMBER_TUPLE(s, m);                                                 \
+  const decltype(MAKE_MEMBER_TUPLE(s, m)) USING_STRUCTURE(                     \
+      s, m, __VA_ARGS__)::members = MAKE_MEMBER_TUPLE(s, m);                   \
   template <>                                                                  \
-  const char *USING_STRUCTURE(s, m)::names[] = {#s, MEMBER_NAMES(m)};
-#define CONSTRUCTOR(s, m, o)                                                   \
-  USING_STRUCTURE(s, m) o##_v { &o }
+  const char *USING_STRUCTURE(s, m, __VA_ARGS__)::names[] = {#s,               \
+                                                             MEMBER_NAMES(m)}; \
+  template <>                                                                  \
+  const char *USING_STRUCTURE(s, m, __VA_ARGS__)::base_names[] = {             \
+      MEMBER_NAMES(BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))};
+#define CONSTRUCTOR(s, m, o, ...)                                              \
+  USING_STRUCTURE(s, m, __VA_ARGS__) o##_v { &o }
 }
 
 #endif
