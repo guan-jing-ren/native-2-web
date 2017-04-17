@@ -346,6 +346,7 @@ struct to_js<unordered_multimap<T, U, Traits...>> : to_js<map<T, U>> {};
 template <typename S, typename T, typename... Ts, typename... Bs>
 struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
   static const string names;
+  static const string base_names;
 
   static string create_reader() {
     return R"(function (data, offset) {
@@ -382,6 +383,18 @@ const string to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>>::names =
                string{},
                [](const auto &names, const auto &name) {
                  return names + (names.empty() ? "" : ",") + "'" + name + "'";
+               }) +
+    "];";
+
+template <typename S, typename T, typename... Ts, typename... Bs>
+const string to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>>::base_names =
+    "let base_names = [" +
+    accumulate(begin(structure<S, tuple<T, Ts...>, tuple<Bs...>>::base_names),
+               end(structure<S, tuple<T, Ts...>, tuple<Bs...>>::base_names),
+               string{},
+               [](const auto &names, const auto &name) {
+                 return "base class " + names + (names.empty() ? "" : ",") +
+                        "'" + name + "'";
                }) +
     "];";
 
