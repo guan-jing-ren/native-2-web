@@ -73,9 +73,9 @@ void serialize_sequence(uint32_t count, J j, I &i) {
 
 template <typename T, typename U, typename I, typename A>
 void serialize_associative(const A &a, I &i) {
-  std::vector<T> v_t;
+  vector<T> v_t;
   v_t.reserve(a.size());
-  std::vector<U> v_u;
+  vector<U> v_u;
   v_u.reserve(a.size());
   transform(cbegin(a), cend(a), back_inserter(v_t),
             [](const pair<T, U> &p) { return p.first; });
@@ -91,7 +91,7 @@ template <typename T, typename I> int serialize_index(const T &t, I &i) {
 }
 
 template <typename I, typename T, size_t... Is>
-void serialize_heterogenous(const T &t, std::index_sequence<Is...>, I &i) {
+void serialize_heterogenous(const T &t, index_sequence<Is...>, I &i) {
   using std::get;
   using n2w::get;
   for (auto rc : {serialize_index(get<Is>(t), i)...})
@@ -148,12 +148,12 @@ template <typename T, size_t N> struct serializer<array<T, N>> {
 };
 template <typename T, typename U> struct serializer<pair<T, U>> {
   template <typename I> static void serialize(const pair<T, U> &t, I &i) {
-    serialize_heterogenous(t, std::make_index_sequence<2>{}, i);
+    serialize_heterogenous(t, make_index_sequence<2>{}, i);
   }
 };
 template <typename T, typename... Ts> struct serializer<tuple<T, Ts...>> {
   template <typename I> static void serialize(const tuple<T, Ts...> &t, I &i) {
-    serialize_heterogenous(t, std::make_index_sequence<sizeof...(Ts) + 1>{}, i);
+    serialize_heterogenous(t, make_index_sequence<sizeof...(Ts) + 1>{}, i);
   }
 };
 template <typename T, typename... Traits>
@@ -252,19 +252,18 @@ struct serializer<unordered_multimap<T, U, Traits...>> {
   }
 };
 template <typename S, typename T, typename... Ts, typename... Bs>
-struct serializer<structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>>> {
+struct serializer<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
   template <typename B, typename I> static int serialize(const B &b, I &i) {
     serializer<B>::serialize(b, i);
     return 0;
   }
   template <typename I>
-  static void
-  serialize(const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &t,
-            I &i) {
-    std::initializer_list<int> rc = {
+  static void serialize(const structure<S, tuple<T, Ts...>, tuple<Bs...>> &t,
+                        I &i) {
+    initializer_list<int> rc = {
         serialize(*static_cast<const Bs *>(t.s_read), i)...};
     (void)rc;
-    serialize_heterogenous(t, std::make_index_sequence<sizeof...(Ts) + 1>{}, i);
+    serialize_heterogenous(t, make_index_sequence<sizeof...(Ts) + 1>{}, i);
   }
 };
 

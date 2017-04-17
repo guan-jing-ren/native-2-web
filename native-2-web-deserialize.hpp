@@ -84,7 +84,7 @@ template <typename T, typename I> int deserialize_index(I &i, T &t) {
 }
 
 template <typename I, typename T, size_t... Is>
-void deserialize_heterogenous(I &i, T &t, std::index_sequence<Is...>) {
+void deserialize_heterogenous(I &i, T &t, index_sequence<Is...>) {
   using std::get;
   using n2w::get;
   for (auto rc : {deserialize_index(i, get<Is>(t))...})
@@ -138,13 +138,12 @@ template <typename T, size_t N> struct deserializer<array<T, N>> {
 };
 template <typename T, typename U> struct deserializer<pair<T, U>> {
   template <typename I> static void deserialize(I &i, pair<T, U> &t) {
-    deserialize_heterogenous(i, t, std::make_index_sequence<2>{});
+    deserialize_heterogenous(i, t, make_index_sequence<2>{});
   }
 };
 template <typename T, typename... Ts> struct deserializer<tuple<T, Ts...>> {
   template <typename I> static void deserialize(I &i, tuple<T, Ts...> &t) {
-    deserialize_heterogenous(i, t,
-                             std::make_index_sequence<sizeof...(Ts) + 1>{});
+    deserialize_heterogenous(i, t, make_index_sequence<sizeof...(Ts) + 1>{});
   }
 };
 template <typename T, typename... Traits>
@@ -240,19 +239,18 @@ struct deserializer<unordered_multimap<T, U, Traits...>> {
   }
 };
 template <typename S, typename T, typename... Ts, typename... Bs>
-struct deserializer<structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>>> {
+struct deserializer<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
   template <typename B, typename I> static int deserialize(I &i, B &b) {
     deserializer<B>::deserialize(i, b);
     return 0;
   }
   template <typename I>
-  static void
-  deserialize(I &i, structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &t) {
-    std::initializer_list<int> rc = {
+  static void deserialize(I &i,
+                          structure<S, tuple<T, Ts...>, tuple<Bs...>> &t) {
+    initializer_list<int> rc = {
         deserialize(i, *static_cast<Bs *>(t.s_write))...};
     (void)rc;
-    deserialize_heterogenous(i, t,
-                             std::make_index_sequence<sizeof...(Ts) + 1>{});
+    deserialize_heterogenous(i, t, make_index_sequence<sizeof...(Ts) + 1>{});
   }
 };
 
