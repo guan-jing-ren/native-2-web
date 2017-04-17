@@ -241,9 +241,16 @@ struct deserializer<unordered_multimap<T, U, Traits...>> {
 };
 template <typename S, typename T, typename... Ts, typename... Bs>
 struct deserializer<structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>>> {
+  template <typename B, typename I> static int deserialize(I &i, B &b) {
+    deserializer<B>::deserialize(i, b);
+    return 0;
+  }
   template <typename I>
   static void
   deserialize(I &i, structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &t) {
+    std::initializer_list<int> rc = {
+        deserialize(i, *static_cast<Bs *>(t.s_write))...};
+    (void)rc;
     deserialize_heterogenous(i, t,
                              std::make_index_sequence<sizeof...(Ts) + 1>{});
   }

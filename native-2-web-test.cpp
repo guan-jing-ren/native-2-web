@@ -12,12 +12,13 @@ void swap_test() noexcept {
   std::cout << s << ' ' << s2 << ' ' << s1 << '\n';
 }
 
-struct test_substructure {
+using string_bool = std::tuple<std::string, bool>;
+struct test_substructure : public string_bool {
   std::pair<int, std::array<std::vector<double>, 0>> c;         // 90*4 + 5*4
   std::tuple<int, float, std::unordered_set<std::u16string>> d; // 90*4+4+4
 };
 
-READ_WRITE_SPEC(test_substructure, (c)(d));
+READ_WRITE_SPEC(test_substructure, (c)(d), string_bool);
 
 struct test_structure {
   std::tuple<int> a;                    // 90*4
@@ -284,6 +285,10 @@ int main(int, char **) {
     structure_fill_test = fillt();
     structure_fill_test = fillt();
     n2w::debug_print(std::cout, structure_fill_test) << '\n';
+
+    std::cout << USING_STRUCTURE(test_substructure, (c)(d),
+                                 string_bool)::base_names[0]
+              << '\n';
   }
 
   return 0;

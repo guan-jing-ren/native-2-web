@@ -253,10 +253,17 @@ struct serializer<unordered_multimap<T, U, Traits...>> {
 };
 template <typename S, typename T, typename... Ts, typename... Bs>
 struct serializer<structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>>> {
+  template <typename B, typename I> static int serialize(const B &b, I &i) {
+    serializer<B>::serialize(b, i);
+    return 0;
+  }
   template <typename I>
   static void
   serialize(const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &t,
             I &i) {
+    std::initializer_list<int> rc = {
+        serialize(*static_cast<const Bs *>(t.s_read), i)...};
+    (void)rc;
     serialize_heterogenous(t, std::make_index_sequence<sizeof...(Ts) + 1>{}, i);
   }
 };
