@@ -3,13 +3,14 @@
 #include <algorithm>
 #include <iostream>
 
-struct test_substructure {
+using string_bool = std::tuple<std::string, bool>;
+struct test_substructure : public string_bool {
   std::pair<int, std::array<std::vector<double>, 0>> c;         // 90*4 + 5*4
   std::tuple<int, float, std::unordered_set<std::u16string>> d; // 90*4+4+4
 };
 
-READ_WRITE_SPEC(test_substructure, (c)(d));
-JS_SPEC(test_substructure, (c)(d));
+READ_WRITE_SPEC(test_substructure, (c)(d), string_bool);
+JS_SPEC(test_substructure, (c)(d), string_bool);
 
 struct test_structure {
   std::tuple<int> a;                    // 90*4

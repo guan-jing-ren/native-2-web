@@ -349,23 +349,60 @@ struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
   static const string base_names;
 
   static string create_reader() {
+    std::string base_readers;
+    for (auto &readers :
+         std::initializer_list<std::string>{to_js<Bs>::create_reader()...})
+      base_readers += readers + (sizeof...(Bs) ? "," : "");
+    if (sizeof...(Bs))
+      base_readers.pop_back();
+    base_readers = "let readers = [" + base_readers + "];\n";
+
     return R"(function (data, offset) {
+  )" + base_names +
+           base_readers +
+           R"(let bases = readers.map(r => {
+    let o;
+    [o, offset] = r(data, offset);
+    return o;
+  }).reduce((p, c, i) => {
+    p[base_names[i]] = c;
+    return p;
+  }, {});
   )" + names +
            R"(
-  return )" +
+  let o;
+  [o, offset] = )" +
            to_js<tuple<T, Ts...>>::create_reader() + R"((data, offset, names);
+  o.__bases = bases;
+  return [o, offset];
 })";
   }
   static string create_writer() {
+    std::string base_writers;
+    for (auto &writers :
+         std::initializer_list<std::string>{to_js<Bs>::create_writer()...})
+      base_writers += writers + (sizeof...(Bs) ? "," : "");
+    if (sizeof...(Bs))
+      base_writers.pop_back();
+    base_writers = "let writers = [" + base_writers + "];\n";
+
     return R"(function (object) {
+  )" + base_names +
+           base_writers +
+           R"(let bases = writers
+  .map((w, i) => w(object.__bases[base_names[i]]))
+  .reduce((p, c) => concat_buffer(p, c), []);
   )" + names +
            R"(
-  return )" +
+  object = )" +
            to_js<tuple<T, Ts...>>::create_writer() + R"((object, names);
+  return concat_buffer(bases, object);
 })";
   }
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
+  )" + base_names +
+           R"(
   )" + names +
            R"(
   return )" +
@@ -393,10 +430,10 @@ const string to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>>::base_names =
                end(structure<S, tuple<T, Ts...>, tuple<Bs...>>::base_names),
                string{},
                [](const auto &names, const auto &name) {
-                 return "base class " + names + (names.empty() ? "" : ",") +
-                        "'" + name + "'";
+                 return "'base class " + names + (names.empty() ? "" : ",") +
+                        "" + name + "'";
                }) +
-    "];";
+    "];\n";
 
 #define JS_SPEC(s, m, ...)                                                     \
   namespace n2w {                                                              \
