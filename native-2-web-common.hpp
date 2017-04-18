@@ -110,6 +110,14 @@ bool memberwise_equality(
     return true;
 
   bool equal = true;
+  for (auto rc : std::initializer_list<bool>{
+           (equal = equal &&
+                    *static_cast<const Bs *>(l.s_read) ==
+                        *static_cast<const Bs *>(r.s_read))...})
+    if (!equal)
+      return equal;
+  return equal;
+
   for (auto rc : {(equal = equal && get<Is>(l) == get<Is>(r))...})
     if (!equal)
       return equal;
@@ -138,6 +146,22 @@ bool memberwise_less(
     return false;
 
   std::pair<bool, bool> lesser_greater = std::make_pair(false, false);
+  for (auto rc : std::initializer_list<decltype(lesser_greater)>{
+           (lesser_greater = std::make_pair(
+                !lesser_greater.second &&
+                    (lesser_greater.first ||
+                     *static_cast<const Bs *>(l.s_read) <
+                         *static_cast<const Bs *>(r.s_read)),
+                !lesser_greater.first &&
+                    (lesser_greater.second ||
+                     *static_cast<const Bs *>(r.s_read) <
+                         *static_cast<const Bs *>(l.s_read))))...}) {
+    if (lesser_greater.first)
+      return true;
+    if (lesser_greater.second)
+      return false;
+  }
+
   for (auto rc :
        {(lesser_greater = std::make_pair(
              !lesser_greater.second &&
