@@ -27,6 +27,11 @@ function read_number(data, offset, type) {
   return [n, offset];
 }
 
+function read_bool(data, offset) {
+  let number = read_number(data, offset, 'getUint8');
+  return [number[0] > 0 ? true : false, number[1]];
+}
+
 function read_numbers_bounded(data, offset, type, size) {
   let numbers = [];
   for (let i = 0; i < size; ++i, offset += sizes[type])
@@ -180,6 +185,10 @@ function write_number(object, type) {
   return data.buffer;
 }
 
+function write_bool(object) {
+  return write_number(object ? true : false, 'setUint8');
+}
+
 function write_numbers_bounded(object, type, size) {
   let data = new DataView(new ArrayBuffer(sizes[type] * size));
   for (let i = 0, offset = 0; i < size; ++i, offset += sizes[type])
@@ -299,6 +308,16 @@ function write_multiarray(object, type, extents) {
 //////////////////////////////
 // Native to HTML generator //
 //////////////////////////////
+
+function html_bool(parent, value, dispatcher) {
+  d3.select(parent).attr('class', null);
+  let node = d3.select(parent)
+                 .append('input')
+                 .attr('type', 'checkbox')
+                 .attr('value', false)
+                 .node();
+  dispatcher.on('gather', () => value(node.checked ? true : false));
+}
 
 function html_number(parent, value, dispatcher) {
   d3.select(parent).attr('class', null);
