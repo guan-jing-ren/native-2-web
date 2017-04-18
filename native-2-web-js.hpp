@@ -116,7 +116,7 @@ template <typename T, typename... Ts> struct to_js<tuple<T, Ts...>> {
 })";
   }
   static string create_html() {
-    return R"(function(parent, value, dispatcher, names) {
+    return R"(function (parent, value, dispatcher, names) {
   return html_structure(parent, value, dispatcher, [)" +
            to_js_heterogenous<T, Ts...>::create_html() + R"(], names);
 })";
@@ -164,7 +164,7 @@ template <typename T, typename... Traits> struct to_js<vector<T, Traits...>> {
   }
 
   static auto create_html() {
-    return R"(function(parent, value, dispatcher) {
+    return R"(function (parent, value, dispatcher) {
   return html_sequence(parent, value, dispatcher, )" +
            to_js<T>::create_html() + R"();
 })";
@@ -329,7 +329,7 @@ struct to_js<map<T, U, Traits...>> {
 })";
   }
   static string create_html() {
-    return R"(function(parent, value, dispatcher) {
+    return R"(function (parent, value, dispatcher) {
   return html_associative(parent, value, dispatcher, )" +
            to_js<T>::create_html() + R"(, )" + to_js<U>::create_html() + R"();
 })";
