@@ -120,6 +120,10 @@ template <typename T> struct deserializer {
     mbstate_t state;
     mbrtowc(&t, s, n, &state);
   }
+  template <typename U = T, typename I>
+  static auto deserialize(I &i, U &t) -> enable_if_t<is_enum<U>{}> {
+    deserialize(i, static_cast<underlying_type_t<U> &>(t));
+  }
 };
 template <typename T, size_t N> struct deserializer<T[N]> {
   template <typename I> static void deserialize(I &i, T (&t)[N]) {

@@ -130,6 +130,10 @@ template <typename T> struct serializer {
     auto c32s = cvter32.from_bytes(cs);
     serialize_number<char32_t>(c32s[0], i);
   }
+  template <typename U = T, typename I>
+  static auto serialize(const U t, I &i) -> enable_if_t<is_enum<U>{}> {
+    serialize(static_cast<underlying_type_t<U>>(t), i);
+  }
 };
 template <typename T, size_t N> struct serializer<T[N]> {
   template <typename I> static void serialize(const T (&t)[N], I &i) {
