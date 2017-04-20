@@ -244,6 +244,16 @@ name(const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &s) {
   return s.names[N + 1];
 }
 
+template <typename E> struct enumeration {
+  auto operator()(E e) const {
+    return std::hash<std::underlying_type_t<E>>{}(
+        static_cast<std::underlying_type_t<E>>(e));
+  }
+  static const std::string type_name;
+  static std::unordered_map<E, std::string, enumeration> e_to_str;
+  static std::unordered_map<std::string, E> str_to_e;
+};
+
 template <size_t I, typename T>
 using element_t = std::remove_cv_t<
     std::remove_reference_t<decltype(get<I>(std::declval<T>()))>>;
@@ -270,6 +280,20 @@ using element_t = std::remove_cv_t<
       MEMBER_NAMES(BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))};
 #define CONSTRUCTOR(s, m, o, ...)                                              \
   USING_STRUCTURE(s, m, __VA_ARGS__) o##_v { &o }
+
+#define E_S_PAIR(r, data, i, elem)                                             \
+  BOOST_PP_COMMA_IF(i) { elem, #elem }
+#define S_E_PAIR(r, data, i, elem)                                             \
+  BOOST_PP_COMMA_IF(i) { #elem, elem }
+#define SPECIALIZE_ENUM(e, m)                                                  \
+  template <> const std::string n2w::enumeration<e>::type_name = #e;           \
+  template <>                                                                  \
+  std::unordered_map<e, std::string, n2w::enumeration<e>>                      \
+      n2w::enumeration<e>::e_to_str = {                                        \
+          BOOST_PP_SEQ_FOR_EACH_I(E_S_PAIR, _, m)};                            \
+  template <>                                                                  \
+  std::unordered_map<std::string, e> n2w::enumeration<e>::str_to_e = {         \
+      BOOST_PP_SEQ_FOR_EACH_I(S_E_PAIR, _, m)};
 }
 
 #endif
