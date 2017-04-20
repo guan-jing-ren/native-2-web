@@ -262,10 +262,11 @@ using element_t = std::remove_cv_t<
   const decltype(MAKE_MEMBER_TUPLE(s, m)) USING_STRUCTURE(                     \
       s, m, __VA_ARGS__)::members = MAKE_MEMBER_TUPLE(s, m);                   \
   template <>                                                                  \
-  const char *USING_STRUCTURE(s, m, __VA_ARGS__)::names[] = {#s,               \
-                                                             MEMBER_NAMES(m)}; \
+  const std::vector<std::string> USING_STRUCTURE(s, m, __VA_ARGS__)::names{    \
+      #s, MEMBER_NAMES(m)};                                                    \
   template <>                                                                  \
-  const char *USING_STRUCTURE(s, m, __VA_ARGS__)::base_names[] = {             \
+  const std::vector<std::string> USING_STRUCTURE(s, m,                         \
+                                                 __VA_ARGS__)::base_names{     \
       MEMBER_NAMES(BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))};
 #define CONSTRUCTOR(s, m, o, ...)                                              \
   USING_STRUCTURE(s, m, __VA_ARGS__) o##_v { &o }
