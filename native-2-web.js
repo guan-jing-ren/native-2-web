@@ -27,6 +27,10 @@ function read_number(data, offset, type) {
   return [n, offset];
 }
 
+function read_enum(data, offset, type) {
+  return read_number(data, offset, type);
+}
+
 function read_bool(data, offset) {
   let number = read_number(data, offset, 'getUint8');
   return [number[0] > 0 ? true : false, number[1]];
@@ -185,6 +189,10 @@ function write_number(object, type) {
   return data.buffer;
 }
 
+function write_enum(object, type) {
+  return write_number(object, type);
+}
+
 function write_bool(object) {
   return write_number(object ? true : false, 'setUint8');
 }
@@ -323,6 +331,10 @@ function html_number(parent, value, dispatcher) {
   d3.select(parent).attr('class', null);
   let node = d3.select(parent).append('input').attr('type', 'number').node();
   dispatcher.on('gather', () => value(node.value || 0));
+}
+
+function html_enum(parent, value, dispatcher) {
+  return html_number(parent, value, dispatcher);
 }
 
 function html_char(parent, value, dispatcher) {
