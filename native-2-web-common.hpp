@@ -76,8 +76,8 @@ struct structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> {
     const S *const volatile s_read;
   };
   static const std::tuple<T S::*, Ts S::*...> members;
-  static const char *names[];
-  static const char *base_names[];
+  static const std::vector<std::string> names;
+  static const std::vector<std::string> base_names;
   structure(S *s) : s_write(s) {}
   structure(const S *s) : s_read(s) {}
   structure(std::nullptr_t) = delete;
@@ -239,7 +239,7 @@ std::string name(const std::array<T, S> &) {
 }
 
 template <size_t N, typename S, typename T, typename... Ts, typename... Bs>
-const char *
+std::string
 name(const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &s) {
   return s.names[N + 1];
 }
