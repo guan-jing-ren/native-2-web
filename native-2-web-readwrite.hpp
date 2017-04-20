@@ -122,6 +122,11 @@ template <typename T> struct printer {
                        I> << mangled<remove_cv_t<remove_reference_t<T>>>()
              << ":='" << t << "'";
   }
+  template <size_t I = 0, typename O>
+  static auto debug_print(O &o, T t) -> enable_if_t<is_enum<T>::value, O &> {
+    return o << indent<typename O::char_type, I> << enumeration<T>::type_name
+             << ":='" << enumeration<T>::e_to_str[t] << "'";
+  }
 };
 template <typename T, size_t N> struct printer<T[N]> {
   template <size_t I = 0, typename O>
