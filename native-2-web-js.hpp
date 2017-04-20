@@ -457,8 +457,8 @@ const string to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>>::base_names =
                end(structure<S, tuple<T, Ts...>, tuple<Bs...>>::base_names),
                string{},
                [](const auto &names, const auto &name) {
-                 return "'base class " + names + (names.empty() ? "" : ",") +
-                        "" + name + "'";
+                 return "" + names + (names.empty() ? "" : ",") +
+                        "'base class " + name + "'";
                }) +
     "];\n";
 
