@@ -3,14 +3,38 @@
 #include <algorithm>
 #include <iostream>
 
+enum class test_enum {
+  zero,
+  one,
+  two,
+  three,
+  four,
+  five,
+  six,
+  seven,
+  eight,
+  nine,
+  ten
+};
+
+SPECIALIZE_ENUM(test_enum, (test_enum::zero)(test_enum::two)(test_enum::five)(
+                               test_enum::eight));
+
+struct struct_enum {
+  test_enum e = test_enum::five;
+};
+
+READ_WRITE_SPEC(struct_enum, (e));
+JS_SPEC(struct_enum, (e));
+
 using string_bool = std::tuple<std::string, bool>;
-struct test_substructure : public string_bool {
+struct test_substructure : public string_bool, public struct_enum {
   std::pair<int, std::array<std::vector<double>, 0>> c;         // 90*4 + 5*4
   std::tuple<int, float, std::unordered_set<std::u16string>> d; // 90*4+4+4
 };
 
-READ_WRITE_SPEC(test_substructure, (c)(d), string_bool);
-JS_SPEC(test_substructure, (c)(d), string_bool);
+READ_WRITE_SPEC(test_substructure, (c)(d), string_bool, struct_enum);
+JS_SPEC(test_substructure, (c)(d), string_bool, struct_enum);
 
 struct test_structure {
   std::tuple<int> a;                    // 90*4
