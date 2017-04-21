@@ -282,9 +282,9 @@ using element_t = std::remove_cv_t<
   USING_STRUCTURE(s, m, __VA_ARGS__) o##_v { &o }
 
 #define E_S_PAIR(r, data, i, elem)                                             \
-  BOOST_PP_COMMA_IF(i) { elem, #elem }
+  BOOST_PP_COMMA_IF(i) { elem, BOOST_PP_STRINGIZE(elem) }
 #define S_E_PAIR(r, data, i, elem)                                             \
-  BOOST_PP_COMMA_IF(i) { #elem, elem }
+  BOOST_PP_COMMA_IF(i) { BOOST_PP_STRINGIZE(elem), elem }
 #define SPECIALIZE_ENUM(e, m)                                                  \
   template <> const std::string n2w::enumeration<e>::type_name = #e;           \
   template <>                                                                  \
