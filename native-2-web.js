@@ -355,10 +355,28 @@ function html_string(parent, value, dispatcher) {
   dispatcher.on('gather', () => value(node.value || ''));
 }
 
-function html_structure(parent, value, dispatcher, html, names) {
+function html_structure(
+    parent, value, dispatcher, html, names, base_html, base_names) {
   let table = d3.select(parent).append('table').node();
   let subvalue = {};
   let subdispatchers = [];
+  let basedispatchers = [];
+
+  let bases = {};
+  if (base_names != undefined && base_names.length > 0) {
+    let base_table = d3.select(table).append('tr').append('td').append('table');
+    let base_row = base_table.append('tr');
+    base_row.append('td').text('__bases:');
+    let base_data = base_row.append('td').append('table');
+    base_html.forEach((h, i) => {
+      let basedispatcher = d3.dispatch('gather');
+      basedispatchers.push(basedispatcher);
+      let row = base_data.append('tr');
+      row.append('td').text(base_names[i]);
+      h(row.append('td').attr('class', 'n2w-html').node(),
+        v => bases[base_names[i]] = v, basedispatcher);
+    });
+  }
 
   if (typeof(html) == "function") html = [html];
 
@@ -373,6 +391,8 @@ function html_structure(parent, value, dispatcher, html, names) {
     });
 
   dispatcher.on('gather', () => {
+    basedispatchers.forEach(b => b.call('gather'));
+    subvalue.__bases = bases;
     subdispatchers.forEach(s => s.call('gather'));
     value(subvalue);
   });

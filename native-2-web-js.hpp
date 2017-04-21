@@ -136,9 +136,10 @@ template <typename T, typename... Ts> struct to_js<tuple<T, Ts...>> {
 })";
   }
   static string create_html() {
-    return R"(function (parent, value, dispatcher, names) {
+    return R"(function (parent, value, dispatcher, names, base_html, base_names) {
   return html_structure(parent, value, dispatcher, [)" +
-           to_js_heterogenous<T, Ts...>::create_html() + R"(], names);
+           to_js_heterogenous<T, Ts...>::create_html() +
+           R"(], names, base_html, base_names);
 })";
   }
 };
@@ -432,39 +433,12 @@ struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
       base_html += html + (sizeof...(Bs) ? "," : "");
     if (sizeof...(Bs))
       base_html.pop_back();
-    base_html = "let html = [" + base_html + "];\n";
+    base_html = "  let base_html = [" + base_html + "];\n";
 
     return R"(function (parent, value, dispatcher) {
   )" + base_names +
-           base_html +
-           R"(
-  let basedispatchers = [];
-  let subdispatcher = d3.dispatch('gather');
-  let object = {};
-  let bases = {};
-  let table = d3.select(parent).append('table');
-  let base_row = table.append('tr');
-  if(base_names.length > 0) {
-    base_row.append('td').text('__bases:');
-    let base_table = base_row.append('td').append('table');
-    html.forEach((h, i) => {
-      let basedispatcher =  d3.dispatch('gather');
-      basedispatchers.push(basedispatcher);
-      let row = base_table.append('tr');
-      row.append('td').text(base_names[i]);
-      h(row.append('td').attr('class', 'n2w-html').node(), v => bases[base_names[i]] = v, basedispatcher);
-    });
-  }
-  )" + names +
-           R"(
-  ()" + to_js<tuple<T, Ts...>>::create_html() +
-           R"()(table.node(), v => object = v, subdispatcher, names);
-  dispatcher.on('gather', () => {
-    basedispatchers.forEach(b => b.call('gather'));
-    subdispatcher.call('gather');
-    object.__bases = bases;
-    value(object);
-  });
+           base_html + names + '(' + to_js<tuple<T, Ts...>>::create_html() +
+           R"()(parent, value, dispatcher, names, base_html, base_names);
 })";
   }
 };
@@ -478,7 +452,7 @@ const string to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>>::names =
                [](const auto &names, const auto &name) {
                  return names + (names.empty() ? "" : ",") + "'" + name + "'";
                }) +
-    "];";
+    "];\n";
 
 template <typename S, typename T, typename... Ts, typename... Bs>
 const string to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>>::base_names =
