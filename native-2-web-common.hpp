@@ -261,7 +261,7 @@ using element_t = std::remove_cv_t<
 #define DECLTYPES(r, data, i, elem) BOOST_PP_COMMA_IF(i) decltype(data::elem)
 #define USING_STRUCTURE(s, m, ...)                                             \
   n2w::structure<s, std::tuple<BOOST_PP_SEQ_FOR_EACH_I(DECLTYPES, s, m)>,      \
-                 std::tuple<__VA_ARGS__>>
+                 std::tuple<BOOST_PP_SEQ_ENUM(__VA_ARGS__)>>
 #define POINTER_TO_MEMBER(r, data, i, elem) BOOST_PP_COMMA_IF(i) & data::elem
 #define MAKE_MEMBER_TUPLE(s, m)                                                \
   std::make_tuple(BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m))
@@ -275,9 +275,8 @@ using element_t = std::remove_cv_t<
   const std::vector<std::string> USING_STRUCTURE(s, m, __VA_ARGS__)::names{    \
       #s, MEMBER_NAMES(m)};                                                    \
   template <>                                                                  \
-  const std::vector<std::string> USING_STRUCTURE(s, m,                         \
-                                                 __VA_ARGS__)::base_names{     \
-      MEMBER_NAMES(BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))};
+  const std::vector<std::string> USING_STRUCTURE(                              \
+      s, m, __VA_ARGS__)::base_names{MEMBER_NAMES(__VA_ARGS__)};
 #define CONSTRUCTOR(s, m, o, ...)                                              \
   USING_STRUCTURE(s, m, __VA_ARGS__) o##_v { &o }
 

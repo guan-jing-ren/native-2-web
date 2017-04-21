@@ -18,7 +18,7 @@ struct test_substructure : public string_bool {
   std::tuple<int, float, std::unordered_set<std::u16string>> d; // 90*4+4+4
 };
 
-READ_WRITE_SPEC(test_substructure, (c)(d), string_bool);
+READ_WRITE_SPEC(test_substructure, (c)(d), (string_bool));
 
 struct test_structure {
   std::tuple<int> a;                    // 90*4
@@ -32,7 +32,7 @@ struct test_structure {
       e; // 4
 };
 
-READ_WRITE_SPEC(test_structure, (a)(b)(b1)(c)(d)(e));
+READ_WRITE_SPEC(test_structure, (a)(b)(b1)(c)(d)(e), ());
 
 test_structure test_function(test_structure &&t) {
   std::cout << "Test function execution test\n";
@@ -287,7 +287,7 @@ int main(int, char **) {
     n2w::debug_print(std::cout, structure_fill_test) << '\n';
 
     std::cout << USING_STRUCTURE(test_substructure, (c)(d),
-                                 string_bool)::base_names[0]
+                                 (string_bool))::base_names[0]
               << '\n';
   }
 

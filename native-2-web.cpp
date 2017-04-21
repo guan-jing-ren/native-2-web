@@ -24,8 +24,8 @@ struct struct_enum {
   test_enum e = test_enum::five;
 };
 
-READ_WRITE_SPEC(struct_enum, (e));
-JS_SPEC(struct_enum, (e));
+READ_WRITE_SPEC(struct_enum, (e), ());
+JS_SPEC(struct_enum, (e), ());
 
 using string_bool = std::tuple<std::string, bool>;
 struct test_substructure : public string_bool, public struct_enum {
@@ -33,8 +33,8 @@ struct test_substructure : public string_bool, public struct_enum {
   std::tuple<int, float, std::unordered_set<std::u16string>> d; // 90*4+4+4
 };
 
-READ_WRITE_SPEC(test_substructure, (c)(d), string_bool, struct_enum);
-JS_SPEC(test_substructure, (c)(d), string_bool, struct_enum);
+READ_WRITE_SPEC(test_substructure, (c)(d), (string_bool)(struct_enum));
+JS_SPEC(test_substructure, (c)(d), (::string_bool)(struct_enum));
 
 struct test_structure {
   std::tuple<int> a;                    // 90*4
@@ -49,8 +49,8 @@ struct test_structure {
   float arrays[3][4][5][2]; // Ignore for now
 };
 
-READ_WRITE_SPEC(test_structure, (a)(b)(b1)(c)(d)(e));
-JS_SPEC(test_structure, (a)(b)(b1)(c)(d)(e));
+READ_WRITE_SPEC(test_structure, (a)(b)(b1)(c)(d)(e), ());
+JS_SPEC(test_structure, (a)(b)(b1)(c)(d)(e), ());
 
 test_structure test_function(test_structure &&t) {
   std::cout << "Test function execution test\n";
