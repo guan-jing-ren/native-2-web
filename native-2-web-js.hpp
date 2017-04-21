@@ -430,7 +430,7 @@ struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
   )" + base_names +
            base_html +
            R"(
-  let basedispatcher = d3.dispatch('gather');
+  let basedispatchers = [];
   let subdispatcher = d3.dispatch('gather');
   let object = {};
   let bases = {};
@@ -440,6 +440,8 @@ struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
     base_row.append('td').text('__bases:');
     let base_table = base_row.append('td').append('table');
     html.forEach((h, i) => {
+      let basedispatcher =  d3.dispatch('gather');
+      basedispatchers.push(basedispatcher);
       let row = base_table.append('tr');
       row.append('td').text(base_names[i]);
       h(row.append('td').attr('class', 'n2w-html').node(), v => bases[base_names[i]] = v, basedispatcher);
@@ -450,7 +452,7 @@ struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
   ()" + to_js<tuple<T, Ts...>>::create_html() +
            R"()(table.node(), v => object = v, subdispatcher, names);
   dispatcher.on('gather', () => {
-    basedispatcher.call('gather');
+    basedispatchers.forEach(b => b.call('gather'));
     subdispatcher.call('gather');
     object.__bases = bases;
     value(object);
