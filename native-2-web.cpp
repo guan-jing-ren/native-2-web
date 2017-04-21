@@ -21,7 +21,7 @@ SPECIALIZE_ENUM(test_enum, (test_enum::zero)(test_enum::two)(test_enum::five)(
                                test_enum::eight));
 
 struct struct_enum {
-  test_enum e = test_enum::five;
+  std::array<test_enum, 7> e;
 };
 
 READ_WRITE_SPEC(struct_enum, (e));

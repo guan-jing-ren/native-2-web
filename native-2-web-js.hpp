@@ -158,7 +158,8 @@ template <typename T, typename... Traits> struct to_js<vector<T, Traits...>> {
   }
 
   template <typename U = T>
-  static auto create_reader() -> enable_if_t<is_class<U>{}, string> {
+  static auto create_reader()
+      -> enable_if_t<is_class<U>{} || is_enum<U>{}, string> {
     return R"(function (data, offset) {
   return read_structures(data, offset, )" +
            to_js<U>::create_reader() + R"();
@@ -174,7 +175,8 @@ template <typename T, typename... Traits> struct to_js<vector<T, Traits...>> {
   }
 
   template <typename U = T>
-  static auto create_writer() -> enable_if_t<is_class<U>{}, string> {
+  static auto create_writer()
+      -> enable_if_t<is_class<U>{} || is_enum<U>{}, string> {
     return R"(function (object) {
   return write_structures(object, )" +
            to_js<U>::create_writer() + R"();
@@ -213,7 +215,8 @@ template <typename T> struct to_js_bounded {
 })";
   }
   template <typename U = T>
-  static auto create_reader() -> enable_if_t<is_class<U>{}, string> {
+  static auto create_reader()
+      -> enable_if_t<is_class<U>{} || is_enum<U>{}, string> {
     return R"(function (data, offset, size) {
   return read_structures_bounded(data, offset, )" +
            to_js<U>::create_reader() + R"(, size);
@@ -228,7 +231,8 @@ template <typename T> struct to_js_bounded {
 })";
   }
   template <typename U = T>
-  static auto create_writer() -> enable_if_t<is_class<U>{}, string> {
+  static auto create_writer()
+      -> enable_if_t<is_class<U>{} || is_enum<U>{}, string> {
     return R"(function (object, size) {
   return write_structures_bounded(object, )" +
            to_js<U>::create_writer() + R"(, size);
@@ -276,7 +280,8 @@ template <typename T, size_t M, size_t N> struct to_js<T[M][N]> {
   }
 
   template <typename U = typename remove_all_extents<T>::type>
-  static auto create_reader() -> enable_if_t<is_class<U>{}, string> {
+  static auto create_reader()
+      -> enable_if_t<is_class<U>{} || is_enum<U>{}, string> {
     return R"(function (data, offset) {
   return read_multiarray(data, offset, )" +
            to_js<U>::create_reader() + R"(, [)" + extent() + R"(]);
@@ -292,7 +297,8 @@ template <typename T, size_t M, size_t N> struct to_js<T[M][N]> {
   }
 
   template <typename U = typename remove_all_extents<T>::type>
-  static auto create_writer() -> enable_if_t<is_class<U>{}, string> {
+  static auto create_writer()
+      -> enable_if_t<is_class<U>{} || is_enum<U>{}, string> {
     return R"(function (object) {
   return write_multiarray(object, )" +
            to_js<U>::create_reader() + R"(, [)" + extent() + R"(]);
