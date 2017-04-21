@@ -99,10 +99,9 @@ function read_string(data, offset) {
 
 function read_structure(data, offset, readers, names) {
   let object = {}, o;
-  if (typeof readers === "function") {
-    [o, offset] = readers(data, offset);
-    object[names ? names[0] : 0] = o;
-  } else if (Array.isArray(readers))
+
+  if (typeof readers === "function") readers = [readers];
+  if (Array.isArray(readers))
     readers.forEach((v, i) => {
       [o, offset] = v(data, offset);
       object[names ? names[i] : i] = o;
@@ -248,9 +247,8 @@ function write_string(object) {
 
 function write_structure(object, writers, names, base_writers, base_names) {
   let buffer;
-  if (typeof writers === "function")
-    buffer = writers(names ? object[names[0]] : object);
-  else if (Array.isArray(writers))
+  if (typeof writers === "function") writers = [writers];
+  if (Array.isArray(writers))
     buffer = writers.map((v, i) => v(object[names ? names[i] : i]))
                  .reduce((p, c) => concat_buffer(p, c));
   if (base_names && base_names.length > 0) {
