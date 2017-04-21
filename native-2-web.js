@@ -246,13 +246,18 @@ function write_string(object) {
   return buffer;
 }
 
-function write_structure(object, writers, names) {
+function write_structure(object, writers, names, base_writers, base_names) {
   let buffer;
   if (typeof writers === "function")
     buffer = writers(names ? object[names[0]] : object);
   else if (Array.isArray(writers))
     buffer = writers.map((v, i) => v(object[names ? names[i] : i]))
                  .reduce((p, c) => concat_buffer(p, c));
+  if (base_names && base_names.length > 0) {
+    let bases = base_writers.map((w, i) => w(object.__bases[base_names[i]]))
+                    .reduce((p, c) => concat_buffer(p, c), []);
+    buffer = concat_buffer(bases, buffer);
+  }
   return buffer;
 }
 
@@ -363,7 +368,7 @@ function html_structure(
   let basedispatchers = [];
 
   let bases = {};
-  if (base_names != undefined && base_names.length > 0) {
+  if (base_names && base_names.length > 0) {
     let base_table = d3.select(table).append('tr').append('td').append('table');
     let base_row = base_table.append('tr');
     base_row.append('td').text('__bases:');

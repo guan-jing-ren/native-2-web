@@ -130,9 +130,10 @@ template <typename T, typename... Ts> struct to_js<tuple<T, Ts...>> {
 })";
   }
   static string create_writer() {
-    return R"(function (object, names) {
+    return R"(function (object, names, base_writers, base_names) {
   return write_structure(object, [)" +
-           to_js_heterogenous<T, Ts...>::create_writer() + R"(], names);
+           to_js_heterogenous<T, Ts...>::create_writer() +
+           R"(], names, base_writers, base_names);
 })";
   }
   static string create_html() {
@@ -411,19 +412,13 @@ struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
       base_writers += writers + (sizeof...(Bs) ? "," : "");
     if (sizeof...(Bs))
       base_writers.pop_back();
-    base_writers = "let writers = [" + base_writers + "];\n";
+    base_writers = "let base_writers = [" + base_writers + "];\n";
 
     return R"(function (object) {
   )" + base_names +
-           base_writers +
-           R"(let bases = writers
-  .map((w, i) => w(object.__bases[base_names[i]]))
-  .reduce((p, c) => concat_buffer(p, c), []);
-  )" + names +
-           R"(
-  object = )" +
-           to_js<tuple<T, Ts...>>::create_writer() + R"((object, names);
-  return concat_buffer(bases, object);
+           base_writers + names +
+           R"(return )" + to_js<tuple<T, Ts...>>::create_writer() +
+           R"((object, names, base_writers, base_names);
 })";
   }
   static string create_html() {
