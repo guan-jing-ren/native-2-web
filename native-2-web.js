@@ -97,7 +97,21 @@ function read_string(data, offset) {
   return [String.fromCodePoint(...u), offset];
 }
 
-function read_structure(data, offset, readers, names) {
+function read_structure(
+    data, offset, readers, names, base_readers, base_names) {
+  let bases = {};
+  if (base_names && base_names.length > 0)
+    base_readers
+        .map(r => {
+          let o;
+          [o, offset] = r(data, offset);
+          return o;
+        })
+        .reduce((p, c, i) => {
+          p[base_names[i]] = c;
+          return p;
+        }, bases);
+
   let object = {}, o;
 
   if (typeof readers === "function") readers = [readers];
@@ -106,6 +120,8 @@ function read_structure(data, offset, readers, names) {
       [o, offset] = v(data, offset);
       object[names ? names[i] : i] = o;
     });
+
+  object.__bases = bases;
   return [object, offset];
 }
 

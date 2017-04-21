@@ -124,9 +124,9 @@ template <typename T, typename U> struct to_js<pair<T, U>> {
 
 template <typename T, typename... Ts> struct to_js<tuple<T, Ts...>> {
   static string create_reader() {
-    return R"(function (data, offset, names) {
+    return R"(function (data, offset, names, base_readers, base_names) {
   return read_structure(data, offset, [)" +
-           to_js_heterogenous<T, Ts...>::create_reader() + R"(], names);
+           to_js_heterogenous<T, Ts...>::create_reader() + R"(], names, base_readers, base_names);
 })";
   }
   static string create_writer() {
@@ -383,26 +383,13 @@ struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
       base_readers += readers + (sizeof...(Bs) ? "," : "");
     if (sizeof...(Bs))
       base_readers.pop_back();
-    base_readers = "let readers = [" + base_readers + "];\n";
+    base_readers = "let base_readers = [" + base_readers + "];\n";
 
     return R"(function (data, offset) {
   )" + base_names +
-           base_readers +
-           R"(let bases = readers.map(r => {
-    let o;
-    [o, offset] = r(data, offset);
-    return o;
-  }).reduce((p, c, i) => {
-    p[base_names[i]] = c;
-    return p;
-  }, {});
-  )" + names +
-           R"(
-  let o;
-  [o, offset] = )" +
-           to_js<tuple<T, Ts...>>::create_reader() + R"((data, offset, names);
-  o.__bases = bases;
-  return [o, offset];
+           base_readers + names +
+           R"(return )" + to_js<tuple<T, Ts...>>::create_reader() +
+           R"((data, offset, names, base_readers, base_names);
 })";
   }
   static string create_writer() {
