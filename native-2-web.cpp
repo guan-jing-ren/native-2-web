@@ -14,11 +14,14 @@ enum class test_enum {
   seven,
   eight,
   nine,
-  ten
+  ten,
+  thirteen = 13,
+  negative_thirteen = -13,
 };
 
-SPECIALIZE_ENUM(test_enum, (test_enum::zero)(test_enum::two)(test_enum::five)(
-                               test_enum::eight));
+SPECIALIZE_ENUM(test_enum, (test_enum::one)(test_enum::thirteen)(
+                               test_enum::negative_thirteen)(test_enum::two)(
+                               test_enum::five)(test_enum::eight));
 
 struct struct_enum {
   std::array<test_enum, 7> e;

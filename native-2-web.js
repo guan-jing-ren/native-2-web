@@ -356,6 +356,7 @@ function html_enum(parent, value, dispatcher, enums) {
   d3.select(parent).attr('class', null);
   let select = d3.select(parent).append('select');
   Object.keys(enums)
+      .filter(k => enums[k].length > 0)
       .map(Number.prototype.constructor)
       .sort()
       .map(k => select.append('option').attr('value', k).text(enums[k]));
