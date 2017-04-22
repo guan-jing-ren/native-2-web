@@ -433,7 +433,11 @@ function html_bounded(parent, value, dispatcher, html, size) {
     let subdispatcher = d3.dispatch('gather');
     subdispatchers.push(subdispatcher);
     html(
-        expand_row.append('td').attr('class', 'n2w-html').node(),
+        d3.select(table)
+            .append('tr')
+            .append('td')
+            .attr('class', 'n2w-html')
+            .node(),
         v => subvalue[i] = v, subdispatcher);
   }
 
