@@ -22,9 +22,9 @@ template <typename T> bool less_unordered(const T &l, const T &r) {
   vector<add_pointer_t<add_const_t<remove_reference_t<decltype(*begin(l))>>>>
       l_v;
   auto r_v = l_v;
-  transform(begin(l), end(l), back_inserter(l_v),
+  transform(cbegin(l), cend(l), back_inserter(l_v),
             [](const auto &l) { return &l; });
-  transform(begin(r), end(r), back_inserter(r_v),
+  transform(cbegin(r), cend(r), back_inserter(r_v),
             [](const auto &r) { return &r; });
   sort(begin(l_v), end(l_v),
        [](const auto &l, const auto &r) { return *l < *r; });

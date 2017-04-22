@@ -111,7 +111,7 @@ int main(int, char **) {
   n2w::debug_print(cerr, strct) << '\n';
 
   cout << "let rval = new DataView(Uint8Array.from(["
-       << accumulate(begin(data), end(data), string{},
+       << accumulate(cbegin(data), cend(data), string{},
                      [](const auto &result, const auto &elem) {
                        return result + (result.empty() ? "" : ",") +
                               to_string((unsigned)elem);

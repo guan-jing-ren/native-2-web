@@ -441,8 +441,8 @@ struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
 template <typename S, typename T, typename... Ts, typename... Bs>
 const string to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>>::names =
     "let names = [" +
-    accumulate(begin(structure<S, tuple<T, Ts...>, tuple<Bs...>>::names) + 1,
-               end(structure<S, tuple<T, Ts...>, tuple<Bs...>>::names),
+    accumulate(cbegin(structure<S, tuple<T, Ts...>, tuple<Bs...>>::names) + 1,
+               cend(structure<S, tuple<T, Ts...>, tuple<Bs...>>::names),
                string{},
                [](const auto &names, const auto &name) {
                  return names + (names.empty() ? "" : ",") + "'" + name + "'";
@@ -452,8 +452,8 @@ const string to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>>::names =
 template <typename S, typename T, typename... Ts, typename... Bs>
 const string to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>>::base_names =
     "let base_names = [" +
-    accumulate(begin(structure<S, tuple<T, Ts...>, tuple<Bs...>>::base_names),
-               end(structure<S, tuple<T, Ts...>, tuple<Bs...>>::base_names),
+    accumulate(cbegin(structure<S, tuple<T, Ts...>, tuple<Bs...>>::base_names),
+               cend(structure<S, tuple<T, Ts...>, tuple<Bs...>>::base_names),
                string{},
                [](const auto &names, const auto &name) {
                  return "" + names + (names.empty() ? "" : ",") +
