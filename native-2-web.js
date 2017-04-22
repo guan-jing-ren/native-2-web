@@ -357,10 +357,10 @@ function html_enum(parent, value, dispatcher, enums) {
   let select = d3.select(parent).append('select');
   Object.keys(enums)
       .filter(k => enums[k].length > 0)
-      .map(Number.prototype.constructor)
-      .sort()
+      .map(k => +k)
+      .sort((l, r) => l - r)
       .map(k => select.append('option').attr('value', k).text(enums[k]));
-  dispatcher.on('gather', () => value(select.node().value));
+  dispatcher.on('gather', () => value(+select.node().value));
 }
 
 function html_char(parent, value, dispatcher) {
