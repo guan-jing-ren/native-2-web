@@ -62,13 +62,12 @@ template <typename T> struct to_js {
   static auto create_html() -> enable_if_t<is_enum<U>{}, string> {
     return R"(function (parent, value, dispatcher) {
   return html_enum(parent, value, dispatcher, { )" +
-           std::accumulate(
+           accumulate(
                cbegin(enumeration<U>::e_to_str), cend(enumeration<U>::e_to_str),
-               std::string{},
+               string{},
                [](const auto &enums, const auto &en) {
                  return enums + (enums.empty() ? "" : ", ") + "'" +
-                        std::to_string(
-                            static_cast<std::underlying_type_t<U>>(en.first)) +
+                        to_string(static_cast<underlying_type_t<U>>(en.first)) +
                         "': '" + en.second + "'";
                }) +
            R"( });
@@ -390,9 +389,9 @@ struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
   static const string base_names;
 
   static string create_reader() {
-    std::string base_readers;
+    string base_readers;
     for (auto &readers :
-         std::initializer_list<std::string>{to_js<Bs>::create_reader()...})
+         initializer_list<string>{to_js<Bs>::create_reader()...})
       base_readers += readers + (sizeof...(Bs) ? "," : "");
     if (sizeof...(Bs))
       base_readers.pop_back();
@@ -406,9 +405,9 @@ struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
 })";
   }
   static string create_writer() {
-    std::string base_writers;
+    string base_writers;
     for (auto &writers :
-         std::initializer_list<std::string>{to_js<Bs>::create_writer()...})
+         initializer_list<string>{to_js<Bs>::create_writer()...})
       base_writers += writers + (sizeof...(Bs) ? "," : "");
     if (sizeof...(Bs))
       base_writers.pop_back();
@@ -422,9 +421,8 @@ struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
 })";
   }
   static string create_html() {
-    std::string base_html;
-    for (auto &html :
-         std::initializer_list<std::string>{to_js<Bs>::create_html()...})
+    string base_html;
+    for (auto &html : initializer_list<string>{to_js<Bs>::create_html()...})
       base_html += html + (sizeof...(Bs) ? "," : "");
     if (sizeof...(Bs))
       base_html.pop_back();
