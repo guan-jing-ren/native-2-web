@@ -271,11 +271,11 @@ struct serializer<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
   }
 };
 
-#define SERIALIZE_SPEC(s, m, ...)                                              \
+#define N2W__SERIALIZE_SPEC(s, m, ...)                                         \
   namespace n2w {                                                              \
   template <> struct serializer<s> {                                           \
     template <typename I> static void serialize(const s &_s, I &i) {           \
-      CONSTRUCTOR(s, m, _s, __VA_ARGS__);                                      \
+      N2W__CONSTRUCTOR(s, m, _s, __VA_ARGS__);                                 \
       serializer<decltype(_s_v)>::serialize(_s_v, i);                          \
     }                                                                          \
   };                                                                           \

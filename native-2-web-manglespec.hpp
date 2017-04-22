@@ -128,10 +128,10 @@ template <typename S, typename T, typename... Ts, typename... Bs>
 const auto mangle<structure<S, tuple<T, Ts...>, tuple<Bs...>>> =
     mangle_prefix<structure<S, tuple<T, Ts...>, tuple<Bs...>>> + string{} + '}';
 
-#define MANGLE_SPEC(s, m, ...)                                                 \
+#define N2W__MANGLE_SPEC(s, m, ...)                                            \
   namespace n2w {                                                              \
   template <>                                                                  \
-  const string mangle<s> = mangle<USING_STRUCTURE(s, m, __VA_ARGS__)>;         \
+  const string mangle<s> = mangle<N2W__USING_STRUCTURE(s, m, __VA_ARGS__)>;    \
   }
 
 template <bool e = __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__>

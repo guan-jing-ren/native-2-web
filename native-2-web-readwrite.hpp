@@ -5,13 +5,13 @@
 #include "native-2-web-serialize.hpp"
 #include <locale>
 
-#define READ_WRITE_SPEC(s, m, ...)                                             \
-  MANGLE_SPEC(s, m, __VA_ARGS__);                                              \
-  SPECIALIZE_STRUCTURE(s, m, __VA_ARGS__);                                     \
-  SERIALIZE_SPEC(s, m, __VA_ARGS__);                                           \
-  DESERIALIZE_SPEC(s, m, __VA_ARGS__);                                         \
-  EQUALITY_SPEC(s, m, __VA_ARGS__);                                            \
-  DEBUG_SPEC(s, m, __VA_ARGS__);
+#define N2W__READ_WRITE_SPEC(s, m, ...)                                        \
+  N2W__MANGLE_SPEC(s, m, __VA_ARGS__);                                         \
+  N2W__SPECIALIZE_STRUCTURE(s, m, __VA_ARGS__);                                \
+  N2W__SERIALIZE_SPEC(s, m, __VA_ARGS__);                                      \
+  N2W__DESERIALIZE_SPEC(s, m, __VA_ARGS__);                                    \
+  N2W__EQUALITY_SPEC(s, m, __VA_ARGS__);                                       \
+  N2W__DEBUG_SPEC(s, m, __VA_ARGS__);
 
 namespace n2w {
 using namespace std;
@@ -431,35 +431,35 @@ template <typename T, size_t V = 5> struct filler {
   T operator()() { return next(t); }
 };
 
-#define EQUALITY_SPEC(s, m, ...)                                               \
+#define N2W__EQUALITY_SPEC(s, m, ...)                                          \
   bool operator==(const s &l, const s &r) {                                    \
-    return USING_STRUCTURE(s, m, __VA_ARGS__){&l} ==                           \
-           USING_STRUCTURE(s, m, __VA_ARGS__){&r};                             \
+    return N2W__USING_STRUCTURE(s, m, __VA_ARGS__){&l} ==                      \
+           N2W__USING_STRUCTURE(s, m, __VA_ARGS__){&r};                        \
   }                                                                            \
   bool operator!=(const s &l, const s &r) { return !(l == r); }                \
   bool operator<(const s &l, const s &r) {                                     \
-    return USING_STRUCTURE(s, m, __VA_ARGS__){&l} <                            \
-           USING_STRUCTURE(s, m, __VA_ARGS__){&r};                             \
+    return N2W__USING_STRUCTURE(s, m, __VA_ARGS__){&l} <                       \
+           N2W__USING_STRUCTURE(s, m, __VA_ARGS__){&r};                        \
   }                                                                            \
   bool operator>(const s &l, const s &r) {                                     \
-    return USING_STRUCTURE(s, m, __VA_ARGS__){&l} >                            \
-           USING_STRUCTURE(s, m, __VA_ARGS__){&r};                             \
+    return N2W__USING_STRUCTURE(s, m, __VA_ARGS__){&l} >                       \
+           N2W__USING_STRUCTURE(s, m, __VA_ARGS__){&r};                        \
   }                                                                            \
   bool operator<=(const s &l, const s &r) {                                    \
-    return USING_STRUCTURE(s, m, __VA_ARGS__){&l} <=                           \
-           USING_STRUCTURE(s, m, __VA_ARGS__){&r};                             \
+    return N2W__USING_STRUCTURE(s, m, __VA_ARGS__){&l} <=                      \
+           N2W__USING_STRUCTURE(s, m, __VA_ARGS__){&r};                        \
   }                                                                            \
   bool operator>=(const s &l, const s &r) {                                    \
-    return USING_STRUCTURE(s, m, __VA_ARGS__){&l} >=                           \
-           USING_STRUCTURE(s, m, __VA_ARGS__){&r};                             \
+    return N2W__USING_STRUCTURE(s, m, __VA_ARGS__){&l} >=                      \
+           N2W__USING_STRUCTURE(s, m, __VA_ARGS__){&r};                        \
   }
 
-#define DEBUG_SPEC(s, m, ...)                                                  \
+#define N2W__DEBUG_SPEC(s, m, ...)                                             \
   namespace n2w {                                                              \
   template <> struct printer<s> {                                              \
     template <size_t I = 0, typename O>                                        \
     static O &debug_print(O &o, const s &_s) {                                 \
-      CONSTRUCTOR(s, m, _s, __VA_ARGS__);                                      \
+      N2W__CONSTRUCTOR(s, m, _s, __VA_ARGS__);                                 \
       return printer<decltype(_s_v)>::template debug_print<I>(o, _s_v);        \
     }                                                                          \
   };                                                                           \
@@ -471,17 +471,17 @@ template <typename T, size_t V = 5> struct filler {
     template <typename... Ts> void sink(Ts &&...) {}                           \
                                                                                \
     template <size_t... Is>                                                    \
-    s construct(USING_STRUCTURE(s, m, __VA_ARGS__) & d,                        \
-                tuple<BOOST_PP_SEQ_FOR_EACH_I(DECLTYPES, s, m)> &&t,           \
+    s construct(N2W__USING_STRUCTURE(s, m, __VA_ARGS__) & d,                   \
+                tuple<BOOST_PP_SEQ_FOR_EACH_I(N2W__DECLTYPES, s, m)> &&t,      \
                 index_sequence<Is...>) {                                       \
       sink((get<Is>(d) = get<Is>(t))...);                                      \
       return *d.s_write;                                                       \
     }                                                                          \
                                                                                \
     filler() {                                                                 \
-      filler<tuple<BOOST_PP_SEQ_FOR_EACH_I(DECLTYPES, s, m)>, V> fill;         \
+      filler<tuple<BOOST_PP_SEQ_FOR_EACH_I(N2W__DECLTYPES, s, m)>, V> fill;    \
       generate_n(back_inserter(alphabet), V, [this, &fill]() {                 \
-        CONSTRUCTOR(s, m, t, __VA_ARGS__);                                     \
+        N2W__CONSTRUCTOR(s, m, t, __VA_ARGS__);                                \
         return construct(                                                      \
             t_v, fill(),                                                       \
             make_index_sequence<tuple_size<decltype(fill.t)>{}>{});            \

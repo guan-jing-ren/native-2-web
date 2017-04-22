@@ -258,45 +258,48 @@ template <size_t I, typename T>
 using element_t = std::remove_cv_t<
     std::remove_reference_t<decltype(get<I>(std::declval<T>()))>>;
 
-#define MEMBERS BOOST_PP_VARIADIC_TO_SEQ
-#define BASES(...) __VA_ARGS__
-#define DECLTYPES(r, data, i, elem) BOOST_PP_COMMA_IF(i) decltype(data::elem)
-#define USING_STRUCTURE(s, m, ...)                                             \
-  n2w::structure<s, std::tuple<BOOST_PP_SEQ_FOR_EACH_I(DECLTYPES, s, m)>,      \
+#define N2W__MEMBERS BOOST_PP_VARIADIC_TO_SEQ
+#define N2W__BASES(...) __VA_ARGS__
+#define N2W__DECLTYPES(r, data, i, elem)                                       \
+  BOOST_PP_COMMA_IF(i) decltype(data::elem)
+#define N2W__USING_STRUCTURE(s, m, ...)                                        \
+  n2w::structure<s, std::tuple<BOOST_PP_SEQ_FOR_EACH_I(N2W__DECLTYPES, s, m)>, \
                  std::tuple<__VA_ARGS__>>
-#define POINTER_TO_MEMBER(r, data, i, elem) BOOST_PP_COMMA_IF(i) & data::elem
-#define MAKE_MEMBER_TUPLE(s, m)                                                \
-  std::make_tuple(BOOST_PP_SEQ_FOR_EACH_I(POINTER_TO_MEMBER, s, m))
-#define MEM_NAME(r, data, i, elem) BOOST_PP_COMMA_IF(i) BOOST_PP_STRINGIZE(elem)
-#define MEMBER_NAMES(m) BOOST_PP_SEQ_FOR_EACH_I(MEM_NAME, _, m)
-#define SPECIALIZE_STRUCTURE(s, m, ...)                                        \
+#define N2W__POINTER_TO_MEMBER(r, data, i, elem)                               \
+  BOOST_PP_COMMA_IF(i) & data::elem
+#define N2W__MAKE_MEMBER_TUPLE(s, m)                                           \
+  std::make_tuple(BOOST_PP_SEQ_FOR_EACH_I(N2W__POINTER_TO_MEMBER, s, m))
+#define N2W__MEM_NAME(r, data, i, elem)                                        \
+  BOOST_PP_COMMA_IF(i) BOOST_PP_STRINGIZE(elem)
+#define N2W__MEMBER_NAMES(m) BOOST_PP_SEQ_FOR_EACH_I(N2W__MEM_NAME, _, m)
+#define N2W__SPECIALIZE_STRUCTURE(s, m, ...)                                   \
   template <>                                                                  \
-  const decltype(MAKE_MEMBER_TUPLE(s, m)) USING_STRUCTURE(                     \
-      s, m, __VA_ARGS__)::members = MAKE_MEMBER_TUPLE(s, m);                   \
+  const decltype(N2W__MAKE_MEMBER_TUPLE(s, m)) N2W__USING_STRUCTURE(           \
+      s, m, __VA_ARGS__)::members = N2W__MAKE_MEMBER_TUPLE(s, m);              \
   template <>                                                                  \
-  const std::vector<std::string> USING_STRUCTURE(s, m, __VA_ARGS__)::names{    \
-      #s, MEMBER_NAMES(m)};                                                    \
+  const std::vector<std::string> N2W__USING_STRUCTURE(                         \
+      s, m, __VA_ARGS__)::names{#s, N2W__MEMBER_NAMES(m)};                     \
   template <>                                                                  \
-  const std::vector<std::string> USING_STRUCTURE(s, m,                         \
-                                                 __VA_ARGS__)::base_names{     \
-      MEMBER_NAMES(BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))};
-#define CONSTRUCTOR(s, m, o, ...)                                              \
-  USING_STRUCTURE(s, m, __VA_ARGS__) o##_v { &o }
+  const std::vector<std::string> N2W__USING_STRUCTURE(                         \
+      s, m, __VA_ARGS__)::base_names{                                          \
+      N2W__MEMBER_NAMES(BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))};
+#define N2W__CONSTRUCTOR(s, m, o, ...)                                         \
+  N2W__USING_STRUCTURE(s, m, __VA_ARGS__) o##_v { &o }
 
-#define E_S_PAIR(r, data, i, elem)                                             \
+#define N2W__E_S_PAIR(r, data, i, elem)                                        \
   BOOST_PP_COMMA_IF(i) { elem, BOOST_PP_STRINGIZE(elem) }
-#define S_E_PAIR(r, data, i, elem)                                             \
+#define N2W__S_E_PAIR(r, data, i, elem)                                        \
   BOOST_PP_COMMA_IF(i) { BOOST_PP_STRINGIZE(elem), elem }
-#define ENUM_TO_STRING(m) BOOST_PP_SEQ_FOR_EACH_I(E_S_PAIR, _, m)
-#define STRING_TO_ENUM(m) BOOST_PP_SEQ_FOR_EACH_I(S_E_PAIR, _, m)
-#define SPECIALIZE_ENUM(e, m)                                                  \
+#define N2W__ENUM_TO_STRING(m) BOOST_PP_SEQ_FOR_EACH_I(N2W__E_S_PAIR, _, m)
+#define N2W__STRING_TO_ENUM(m) BOOST_PP_SEQ_FOR_EACH_I(N2W__S_E_PAIR, _, m)
+#define N2W__SPECIALIZE_ENUM(e, m)                                             \
   template <> const std::string n2w::enumeration<e>::type_name = #e;           \
   template <>                                                                  \
   std::unordered_map<e, std::string, n2w::enumeration<e>>                      \
-      n2w::enumeration<e>::e_to_str = {ENUM_TO_STRING(m)};                     \
+      n2w::enumeration<e>::e_to_str = {N2W__ENUM_TO_STRING(m)};                \
   template <>                                                                  \
   std::unordered_map<std::string, e> n2w::enumeration<e>::str_to_e = {         \
-      STRING_TO_ENUM(m)};
+      N2W__STRING_TO_ENUM(m)};
 }
 
 #endif

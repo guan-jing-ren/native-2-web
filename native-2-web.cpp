@@ -19,16 +19,18 @@ enum class test_enum {
   negative_thirteen = -13,
 };
 
-SPECIALIZE_ENUM(test_enum, MEMBERS(test_enum::one, test_enum::thirteen,
-                                   test_enum::negative_thirteen, test_enum::two,
-                                   test_enum::five, test_enum::eight));
+N2W__SPECIALIZE_ENUM(test_enum,
+                     N2W__MEMBERS(test_enum::one, test_enum::thirteen,
+                                  test_enum::negative_thirteen, test_enum::two,
+                                  test_enum::five, test_enum::eight));
 
 struct struct_enum {
   std::array<test_enum, 7> e;
+  std::vector<std::vector<std::vector<std::string>>> nested;
 };
 
-READ_WRITE_SPEC(struct_enum, (e));
-JS_SPEC(struct_enum, (e));
+N2W__READ_WRITE_SPEC(struct_enum, (e)(nested));
+N2W__JS_SPEC(struct_enum, (e)(nested));
 
 using string_bool = std::tuple<std::string, bool>;
 struct test_substructure : public string_bool, public struct_enum {
@@ -36,9 +38,9 @@ struct test_substructure : public string_bool, public struct_enum {
   std::tuple<int, float, std::unordered_set<std::u16string>> d; // 90*4+4+4
 };
 
-READ_WRITE_SPEC(test_substructure, MEMBERS(c, d),
-                BASES(string_bool, struct_enum));
-JS_SPEC(test_substructure, MEMBERS(c, d), string_bool, struct_enum);
+N2W__READ_WRITE_SPEC(test_substructure, N2W__MEMBERS(c, d),
+                     N2W__BASES(string_bool, struct_enum));
+N2W__JS_SPEC(test_substructure, N2W__MEMBERS(c, d), string_bool, struct_enum);
 
 struct test_structure {
   std::tuple<int> a;                    // 90*4
@@ -53,8 +55,8 @@ struct test_structure {
   float arrays[3][4][5][2]; // Ignore for now
 };
 
-READ_WRITE_SPEC(test_structure, MEMBERS(a, b, b1, c, d, e));
-JS_SPEC(test_structure, MEMBERS(a, b, b1, c, d, e), BASES());
+N2W__READ_WRITE_SPEC(test_structure, N2W__MEMBERS(a, b, b1, c, d, e));
+N2W__JS_SPEC(test_structure, N2W__MEMBERS(a, b, b1, c, d, e), N2W__BASES());
 
 test_structure test_function(test_structure &&t) {
   std::cout << "Test function execution test\n";
