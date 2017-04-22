@@ -121,7 +121,7 @@ function read_structure(
       object[names ? names[i] : i] = o;
     });
 
-  object.__bases = bases;
+  if (base_names && base_names.length > 0) object.__bases = bases;
   return [object, offset];
 }
 
@@ -411,7 +411,7 @@ function html_structure(
 
   dispatcher.on('gather', () => {
     basedispatchers.forEach(b => b.call('gather'));
-    subvalue.__bases = bases;
+    if (base_names && base_names.length > 0) subvalue.__bases = bases;
     subdispatchers.forEach(s => s.call('gather'));
     value(subvalue);
   });
