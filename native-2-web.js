@@ -389,8 +389,7 @@ function html_structure(
 
   let bases = {};
   if (base_names && base_names.length > 0) {
-    let base_table = d3.select(table).append('tr').append('td').append('table');
-    let base_row = base_table.append('tr');
+    let base_row = d3.select(table).append('tr');
     base_row.append('td').text('__bases:');
     let base_data = base_row.append('td').append('table');
     base_html.forEach((h, i) => {
