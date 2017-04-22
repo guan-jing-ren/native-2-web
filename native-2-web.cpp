@@ -19,9 +19,9 @@ enum class test_enum {
   negative_thirteen = -13,
 };
 
-SPECIALIZE_ENUM(test_enum, (test_enum::one)(test_enum::thirteen)(
-                               test_enum::negative_thirteen)(test_enum::two)(
-                               test_enum::five)(test_enum::eight));
+SPECIALIZE_ENUM(test_enum, MEMBERS(test_enum::one, test_enum::thirteen,
+                                   test_enum::negative_thirteen, test_enum::two,
+                                   test_enum::five, test_enum::eight));
 
 struct struct_enum {
   std::array<test_enum, 7> e;
@@ -36,8 +36,8 @@ struct test_substructure : public string_bool, public struct_enum {
   std::tuple<int, float, std::unordered_set<std::u16string>> d; // 90*4+4+4
 };
 
-READ_WRITE_SPEC(test_substructure, (c)(d), string_bool, struct_enum);
-JS_SPEC(test_substructure, (c)(d), string_bool, struct_enum);
+READ_WRITE_SPEC(test_substructure, MEMBERS(c, d), string_bool, struct_enum);
+JS_SPEC(test_substructure, MEMBERS(c, d), string_bool, struct_enum);
 
 struct test_structure {
   std::tuple<int> a;                    // 90*4
@@ -52,8 +52,8 @@ struct test_structure {
   float arrays[3][4][5][2]; // Ignore for now
 };
 
-READ_WRITE_SPEC(test_structure, (a)(b)(b1)(c)(d)(e));
-JS_SPEC(test_structure, (a)(b)(b1)(c)(d)(e));
+READ_WRITE_SPEC(test_structure, MEMBERS(a, b, b1, c, d, e));
+JS_SPEC(test_structure, MEMBERS(a, b, b1, c, d, e));
 
 test_structure test_function(test_structure &&t) {
   std::cout << "Test function execution test\n";
