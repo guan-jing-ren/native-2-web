@@ -259,6 +259,7 @@ using element_t = std::remove_cv_t<
     std::remove_reference_t<decltype(get<I>(std::declval<T>()))>>;
 
 #define MEMBERS BOOST_PP_VARIADIC_TO_SEQ
+#define BASES(...) __VA_ARGS__
 #define DECLTYPES(r, data, i, elem) BOOST_PP_COMMA_IF(i) decltype(data::elem)
 #define USING_STRUCTURE(s, m, ...)                                             \
   n2w::structure<s, std::tuple<BOOST_PP_SEQ_FOR_EACH_I(DECLTYPES, s, m)>,      \

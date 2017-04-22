@@ -36,7 +36,8 @@ struct test_substructure : public string_bool, public struct_enum {
   std::tuple<int, float, std::unordered_set<std::u16string>> d; // 90*4+4+4
 };
 
-READ_WRITE_SPEC(test_substructure, MEMBERS(c, d), string_bool, struct_enum);
+READ_WRITE_SPEC(test_substructure, MEMBERS(c, d),
+                BASES(string_bool, struct_enum));
 JS_SPEC(test_substructure, MEMBERS(c, d), string_bool, struct_enum);
 
 struct test_structure {
@@ -53,7 +54,7 @@ struct test_structure {
 };
 
 READ_WRITE_SPEC(test_structure, MEMBERS(a, b, b1, c, d, e));
-JS_SPEC(test_structure, MEMBERS(a, b, b1, c, d, e));
+JS_SPEC(test_structure, MEMBERS(a, b, b1, c, d, e), BASES());
 
 test_structure test_function(test_structure &&t) {
   std::cout << "Test function execution test\n";
