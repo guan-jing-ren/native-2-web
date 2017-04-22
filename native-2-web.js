@@ -352,8 +352,14 @@ function html_number(parent, value, dispatcher) {
   dispatcher.on('gather', () => value(node.value || 0));
 }
 
-function html_enum(parent, value, dispatcher) {
-  return html_number(parent, value, dispatcher);
+function html_enum(parent, value, dispatcher, enums) {
+  d3.select(parent).attr('class', null);
+  let select = d3.select(parent).append('select');
+  Object.keys(enums)
+      .map(Number.prototype.constructor)
+      .sort()
+      .map(k => select.append('option').attr('value', k).text(enums[k]));
+  dispatcher.on('gather', () => value(select.node().value));
 }
 
 function html_char(parent, value, dispatcher) {

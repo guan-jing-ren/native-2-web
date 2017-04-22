@@ -285,15 +285,16 @@ using element_t = std::remove_cv_t<
   BOOST_PP_COMMA_IF(i) { elem, BOOST_PP_STRINGIZE(elem) }
 #define S_E_PAIR(r, data, i, elem)                                             \
   BOOST_PP_COMMA_IF(i) { BOOST_PP_STRINGIZE(elem), elem }
+#define ENUM_TO_STRING(m) BOOST_PP_SEQ_FOR_EACH_I(E_S_PAIR, _, m)
+#define STRING_TO_ENUM(m) BOOST_PP_SEQ_FOR_EACH_I(S_E_PAIR, _, m)
 #define SPECIALIZE_ENUM(e, m)                                                  \
   template <> const std::string n2w::enumeration<e>::type_name = #e;           \
   template <>                                                                  \
   std::unordered_map<e, std::string, n2w::enumeration<e>>                      \
-      n2w::enumeration<e>::e_to_str = {                                        \
-          BOOST_PP_SEQ_FOR_EACH_I(E_S_PAIR, _, m)};                            \
+      n2w::enumeration<e>::e_to_str = {ENUM_TO_STRING(m)};                     \
   template <>                                                                  \
   std::unordered_map<std::string, e> n2w::enumeration<e>::str_to_e = {         \
-      BOOST_PP_SEQ_FOR_EACH_I(S_E_PAIR, _, m)};
+      STRING_TO_ENUM(m)};
 }
 
 #endif

@@ -60,7 +60,19 @@ template <typename T> struct to_js {
   }
   template <typename U = T>
   static auto create_html() -> enable_if_t<is_enum<U>{}, string> {
-    return R"(html_enum)";
+    return R"(function (parent, value, dispatcher) {
+  return html_enum(parent, value, dispatcher, { )" +
+           std::accumulate(
+               cbegin(enumeration<U>::e_to_str), cend(enumeration<U>::e_to_str),
+               std::string{},
+               [](const auto &enums, const auto &en) {
+                 return enums + (enums.empty() ? "" : ", ") + "'" +
+                        std::to_string(
+                            static_cast<std::underlying_type_t<U>>(en.first)) +
+                        "': '" + en.second + "'";
+               }) +
+           R"( });
+})";
   }
 };
 
@@ -126,7 +138,8 @@ template <typename T, typename... Ts> struct to_js<tuple<T, Ts...>> {
   static string create_reader() {
     return R"(function (data, offset, names, base_readers, base_names) {
   return read_structure(data, offset, [)" +
-           to_js_heterogenous<T, Ts...>::create_reader() + R"(], names, base_readers, base_names);
+           to_js_heterogenous<T, Ts...>::create_reader() +
+           R"(], names, base_readers, base_names);
 })";
   }
   static string create_writer() {
