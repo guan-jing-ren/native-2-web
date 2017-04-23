@@ -7,11 +7,13 @@ inline bool operator!=(boost::system::error_code ec, int i) { return ec != i; }
 #include <beast/websocket.hpp>
 #include <boost/asio.hpp>
 
+#include <experimental/filesystem>
 #include <future>
 #include <iostream>
 #include <memory>
 
 using namespace std;
+using namespace std::experimental;
 using namespace boost::asio;
 using namespace beast;
 
@@ -85,8 +87,12 @@ int main() {
   acceptor.listen();
 
   struct http_handler {
+    const filesystem::path web_root = filesystem::current_path();
+
     http::response<http::string_body>
     operator()(const http::request<http::string_body> &request) {
+        clog << "Thread: " << this_thread::get_id() << "; Root directory: " << web_root.string() << '\n';
+
       http::response<http::string_body> response;
       response.version = request.version;
       response.status = 200;
