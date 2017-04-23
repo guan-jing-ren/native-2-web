@@ -26,9 +26,6 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
   template <typename> friend void accept(io_service &, ip::tcp::acceptor &);
 
-public:
-  n2w_connection(io_service &service) : socket{service}, strand{service} {}
-
   void respond() {
     auto response = handler(request);
     prepare(response);
@@ -60,6 +57,9 @@ public:
           });
         });
   }
+
+public:
+  n2w_connection(io_service &service) : socket{service}, strand{service} {}
 };
 
 template <typename Handler>
