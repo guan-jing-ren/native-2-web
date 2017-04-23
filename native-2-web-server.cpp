@@ -15,64 +15,56 @@ using namespace std;
 using namespace boost::asio;
 using namespace beast;
 
-struct n2w_connection {
+template <typename Handler>
+class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   ip::tcp::socket socket;
   io_service::strand strand;
   boost::asio::streambuf buf;
   http::request<http::string_body> request;
-  http::response<http::string_body> response;
 
+  Handler handler;
+
+  template <typename> friend void accept(io_service &, ip::tcp::acceptor &);
+
+public:
   n2w_connection(io_service &service) : socket{service}, strand{service} {}
+
+  void respond() {
+    auto response = handler(request);
+    prepare(response);
+    clog << response;
+    beast::http::async_write(
+        socket, response, [self = this->shared_from_this()](auto ec) mutable {
+          clog << "Thread: " << this_thread::get_id()
+               << "; Written response:" << ec << ".\n";
+          if (ec)
+            return;
+          auto &strand_ref = self->strand;
+          strand_ref.dispatch([self = move(self)]() mutable { self->serve(); });
+        });
+  }
+
+  void serve() {
+    request = decltype(request)();
+    beast::http::async_read(
+        socket, buf, request,
+        [self = this->shared_from_this()](auto ec) mutable {
+          clog << "Thread: " << this_thread::get_id()
+               << "; Received request: " << ec << ".\n";
+          if (ec)
+            return;
+          clog << self->request;
+          auto &strand_ref = self->strand;
+          strand_ref.dispatch([self = move(self)]() mutable {
+            self->respond();
+          });
+        });
+  }
 };
 
-void serve(shared_ptr<n2w_connection> connection);
-
-void respond(shared_ptr<n2w_connection> connection) {
-  auto &strand_ref = connection->strand;
-  auto &socket_ref = connection->socket;
-  auto &response_ref = connection->response;
-  response_ref = decltype(connection->response)();
-  response_ref.version = connection->request.version;
-  response_ref.status = 200;
-  response_ref.reason = "OK";
-  prepare(response_ref);
-  beast::http::async_write(
-      socket_ref, response_ref, [connection = move(connection)](auto ec) {
-        clog << "Thread: " << this_thread::get_id()
-             << "; Written response:" << ec << ".\n";
-        if (ec)
-          return;
-        clog << connection->response;
-        auto &strand_ref = connection->strand;
-        strand_ref.dispatch([connection = move(connection)]() {
-          serve(move(connection));
-        });
-      });
-}
-
-void serve(shared_ptr<n2w_connection> connection) {
-  auto &strand_ref = connection->strand;
-  auto &socket_ref = connection->socket;
-  auto &buf_ref = connection->buf;
-  auto &request_ref = connection->request;
-  request_ref = decltype(connection->request)();
-  beast::http::async_read(
-      socket_ref, buf_ref, request_ref,
-      [connection = move(connection)](auto ec) {
-        clog << "Thread: " << this_thread::get_id()
-             << "; Received request: " << ec << ".\n";
-        if (ec)
-          return;
-        clog << connection->request;
-        auto &strand_ref = connection->strand;
-        strand_ref.dispatch([connection = move(connection)]() {
-          respond(move(connection));
-        });
-      });
-}
-
+template <typename Handler>
 void accept(io_service &service, ip::tcp::acceptor &acceptor) {
-  auto connection = make_shared<n2w_connection>(service);
+  auto connection = make_shared<n2w_connection<Handler>>(service);
   auto &socket_ref = connection->socket;
   acceptor.async_accept(
       socket_ref,
@@ -81,8 +73,8 @@ void accept(io_service &service, ip::tcp::acceptor &acceptor) {
              << "; Accepted connection: " << ec << '\n';
         if (ec)
           return;
-        accept(service, acceptor);
-        serve(move(connection));
+        accept<Handler>(service, acceptor);
+        connection->serve();
       });
 }
 
@@ -92,7 +84,18 @@ int main() {
   ip::tcp::acceptor acceptor{service, endpoint, true};
   acceptor.listen();
 
-  accept(service, acceptor);
+  struct http_handler {
+    http::response<http::string_body>
+    operator()(const http::request<http::string_body> &request) {
+      http::response<http::string_body> response;
+      response.version = request.version;
+      response.status = 200;
+      response.reason = "OK";
+      return response;
+    }
+  };
+
+  accept<http_handler>(service, acceptor);
 
   vector<future<void>> threadpool;
   for (auto i = 0; i < 10; ++i)
