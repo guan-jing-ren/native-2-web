@@ -7,10 +7,12 @@ inline bool operator!=(boost::system::error_code ec, int i) { return ec != i; }
 #include <beast/websocket.hpp>
 #include <boost/asio.hpp>
 
+#include <algorithm>
 #include <experimental/filesystem>
 #include <future>
 #include <iostream>
 #include <memory>
+#include <regex>
 
 using namespace std;
 using namespace std::experimental;
@@ -79,6 +81,57 @@ void accept(io_service &service, ip::tcp::acceptor &acceptor) {
         connection->serve();
       });
 }
+
+struct normalized_uri {
+  filesystem::path path;
+  string query;
+  string fragment;
+
+  normalized_uri(string uri) {
+    regex fragment_rx{R"((.*?)#(.*))"};
+    regex query_rx{R"((.*?)\?(.*))"};
+    regex scheme_rx{R"((.*?)://(.*?)/(.*))"};
+    smatch match;
+    string scheme;
+    string host;
+    if (regex_match(uri, match, scheme_rx)) {
+      uri = match[3];
+      scheme = match[1];
+      host = match[2];
+    }
+    if (regex_match(uri, match, fragment_rx)) {
+      fragment = match[2];
+      query = match[1];
+    }
+    if (regex_match(query.empty() ? uri : query, match, query_rx)) {
+      query = match[2];
+      uri = match[1];
+    }
+
+    path = uri;
+    if (path.has_relative_path())
+      path = path.relative_path();
+    auto segments =
+        accumulate(find_if_not(begin(path), end(path),
+                               [](const auto &node) { return node == ".."; }),
+                   end(path), vector<filesystem::path>{},
+                   [](auto &v, const auto &p) {
+                     if (p != ".") {
+                       if (p != "..") {
+                         v.push_back(p);
+                       } else if (!v.empty()) {
+                         v.pop_back();
+                       }
+                     }
+
+                     return v;
+                   });
+    auto path = accumulate(begin(segments), end(segments), filesystem::path{},
+                           divides<>{});
+  }
+
+  normalized_uri(const char *uri) : normalized_uri(string(uri)) {}
+};
 
 int main() {
   io_service service;
