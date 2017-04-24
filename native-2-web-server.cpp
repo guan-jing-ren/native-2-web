@@ -144,12 +144,39 @@ int main() {
 
     http::response<http::string_body>
     operator()(const http::request<http::string_body> &request) {
-        clog << "Thread: " << this_thread::get_id() << "; Root directory: " << web_root.string() << '\n';
+      normalized_uri uri{request.url};
+      auto path = web_root / uri.path;
+      clog << "Thread: " << this_thread::get_id()
+           << "; Root directory: " << web_root << ", URI: " << request.url
+           << ", Path: " << path << '\n';
+      if (path == web_root)
+        path /= "index.html";
 
       http::response<http::string_body> response;
       response.version = request.version;
       response.status = 200;
       response.reason = "OK";
+
+      std::error_code ec;
+      if (!filesystem::exists(path, ec)) {
+        response.status = 404;
+        response.reason = "Not Found";
+        response.body = ec.message();
+      } else if (!filesystem::is_regular_file(path, ec)) {
+        response.status = 403;
+        response.reason = "Forbidden";
+        response.body = ec ? ec.message() : "Path is not a regular file";
+      } else {
+        auto extension = path.extension();
+        if (extension != ".html" && extension != ".htm" && extension != ".js" &&
+            extension != ".css") {
+          response.status = 406;
+          response.reason = "Not Acceptable";
+          response.body = "Only htm[l], javascript and cascasding style sheet "
+                          "files acceptable";
+        }
+      }
+
       return response;
     }
   };
