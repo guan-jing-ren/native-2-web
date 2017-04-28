@@ -9,6 +9,7 @@ inline bool operator!=(boost::system::error_code ec, int i) { return ec != i; }
 
 #include <algorithm>
 #include <experimental/filesystem>
+#include <fstream>
 #include <future>
 #include <iostream>
 #include <memory>
@@ -149,15 +150,15 @@ int main() {
       clog << "Thread: " << this_thread::get_id()
            << "; Root directory: " << web_root << ", URI: " << request.url
            << ", Path: " << path << '\n';
-      if (path == web_root)
-        path /= "index.html";
+      std::error_code ec;
+      if (equivalent(path, web_root, ec))
+        path /= "test.html";
 
       http::response<http::string_body> response;
       response.version = request.version;
       response.status = 200;
       response.reason = "OK";
 
-      std::error_code ec;
       if (!filesystem::exists(path, ec)) {
         response.status = 404;
         response.reason = "Not Found";
@@ -174,6 +175,21 @@ int main() {
           response.reason = "Not Acceptable";
           response.body = "Only htm[l], javascript and cascasding style sheet "
                           "files acceptable";
+        } else {
+          ifstream requested{path};
+          requested >> noskipws;
+          copy(istream_iterator<char>(requested), {},
+               back_inserter(response.body));
+          string type = "text/";
+          if (extension == ".html" || extension == ".htm")
+            type += "html";
+          else if (extension == ".css")
+            type += "css";
+          else if (extension == ".js")
+            type += "javascript";
+          else
+            type += "plain";
+          response.fields.insert("Content-Type", type);
         }
       }
 
