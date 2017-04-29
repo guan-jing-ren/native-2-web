@@ -30,12 +30,39 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   websocket::opcode op;
   istream stream;
 
+  static auto websocket_support(...) -> false_type;
+  template <typename T = Handler>
+  static auto websocket_support(T *) -> typename T::websocket_handler_type;
   Handler handler;
+  static constexpr bool supports_websocket =
+      !is_same<decltype(websocket_support(static_cast<Handler *>(nullptr))),
+               false_type>::value;
 
   template <typename> friend void accept(io_service &, ip::tcp::acceptor &);
 
   void respond() {
-    auto response = handler(request);
+    http::response<http::string_body> response;
+    if (http::is_upgrade(request)) {
+      if (supports_websocket) {
+        ws.set_option(websocket::message_type{websocket::opcode::binary});
+        ws.async_accept(
+            request, [self = this->shared_from_this()](auto ec) mutable {
+              clog << "Accepted websocket connection: " << ec << '\n';
+              if (ec)
+                return;
+              self->stream >> noskipws;
+              self->ws_serve();
+            });
+        return;
+      } else {
+        response.version = request.version;
+        response.status = 501;
+        response.reason = "Not Implemented";
+        response.body = "n2w server does implement websocket handling";
+      }
+    } else
+      response = handler(request);
+
     prepare(response);
     clog << response;
     http::async_write(
@@ -59,22 +86,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
         return;
       clog << self->request;
       auto &strand_ref = self->strand;
+      strand_ref.dispatch([self = move(self)]() mutable { self->respond(); });
 
-      auto &self_ref = *self;
-      if (!http::is_upgrade(self_ref.request))
-        strand_ref.dispatch([self = move(self)]() mutable { self->respond(); });
-      else {
-        self_ref.ws.set_option(
-            websocket::message_type{websocket::opcode::binary});
-        self_ref.ws.async_accept(
-            self_ref.request, [self = move(self)](auto ec) mutable {
-              clog << "Accepted websocket connection: " << ec << '\n';
-              if (ec)
-                return;
-              self->stream >> noskipws;
-              self->ws_serve();
-            });
-      }
     });
   }
 
@@ -179,6 +192,8 @@ int main() {
   acceptor.listen();
 
   struct http_handler {
+    using websocket_handler_type = struct websocket_handler;
+
     const filesystem::path web_root = filesystem::current_path();
 
     http::response<http::string_body>
@@ -234,6 +249,8 @@ int main() {
       return response;
     }
   };
+
+  struct websocket_handler {};
 
   accept<http_handler>(service, acceptor);
 
