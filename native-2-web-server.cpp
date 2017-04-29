@@ -34,9 +34,11 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   template <typename T = Handler>
   static auto websocket_support(T *) -> typename T::websocket_handler_type;
   Handler handler;
+  using websocket_handler_type =
+      decltype(websocket_support(static_cast<Handler *>(nullptr)));
   static constexpr bool supports_websocket =
-      !is_same<decltype(websocket_support(static_cast<Handler *>(nullptr))),
-               false_type>::value;
+      !is_same<websocket_handler_type, false_type>::value;
+  websocket_handler_type websocket_handler;
 
   template <typename> friend void accept(io_service &, ip::tcp::acceptor &);
 
@@ -91,6 +93,11 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
     });
   }
 
+  template <typename T> void handle_websocket(false_type, T &&) {}
+  template <typename H, typename T> void handle_websocket(H &&, T &&t) {
+    websocket_handler(move(t));
+  }
+
   void ws_serve() {
     ws.async_read(op, buf, [self = this->shared_from_this()](auto ec) {
       clog << "Read something from websocket: " << ec << '\n';
@@ -103,10 +110,16 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
              << '\n';
         break;
       case websocket::opcode::text: {
-        clog << "Text message received: ";
-        copy(istream_iterator<char>(self->stream), {},
-             ostream_iterator<char>(clog));
-        clog << '\n';
+        string message;
+        copy(istream_iterator<char>(self->stream), {}, back_inserter(message));
+        clog << "Text message received: " << message << '\n';
+        self->handle_websocket(self->websocket_handler, move(message));
+      } break;
+      case websocket::opcode::binary: {
+        vector<uint8_t> message;
+        copy(istream_iterator<char>(self->stream), {}, back_inserter(message));
+        clog << "Binary message received\n";
+        self->handle_websocket(self->websocket_handler, move(message));
       } break;
       }
       self->ws_serve();
@@ -191,8 +204,13 @@ int main() {
   ip::tcp::acceptor acceptor{service, endpoint, true};
   acceptor.listen();
 
+  struct websocket_handler {
+    void operator()(string message) {}
+    void operator()(vector<uint8_t> message) {}
+  };
+
   struct http_handler {
-    using websocket_handler_type = struct websocket_handler;
+    using websocket_handler_type = websocket_handler;
 
     const filesystem::path web_root = filesystem::current_path();
 
@@ -249,8 +267,6 @@ int main() {
       return response;
     }
   };
-
-  struct websocket_handler {};
 
   accept<http_handler>(service, acceptor);
 
