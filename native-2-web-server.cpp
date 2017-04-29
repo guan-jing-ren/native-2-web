@@ -23,9 +23,12 @@ using namespace beast;
 template <typename Handler>
 class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   ip::tcp::socket socket;
+  websocket::stream<ip::tcp::socket &> ws;
   io_service::strand strand;
   boost::asio::streambuf buf;
   http::request<http::string_body> request;
+  websocket::opcode op;
+  istream stream;
 
   Handler handler;
 
@@ -35,7 +38,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
     auto response = handler(request);
     prepare(response);
     clog << response;
-    beast::http::async_write(
+    http::async_write(
         socket, response, [self = this->shared_from_this()](auto ec) mutable {
           clog << "Thread: " << this_thread::get_id()
                << "; Written response:" << ec << ".\n";
@@ -48,23 +51,57 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
   void serve() {
     request = decltype(request)();
-    beast::http::async_read(
-        socket, buf, request,
-        [self = this->shared_from_this()](auto ec) mutable {
-          clog << "Thread: " << this_thread::get_id()
-               << "; Received request: " << ec << ".\n";
-          if (ec)
-            return;
-          clog << self->request;
-          auto &strand_ref = self->strand;
-          strand_ref.dispatch([self = move(self)]() mutable {
-            self->respond();
-          });
-        });
+    http::async_read(socket, buf, request, [self = this->shared_from_this()](
+                                               auto ec) mutable {
+      clog << "Thread: " << this_thread::get_id()
+           << "; Received request: " << ec << ".\n";
+      if (ec)
+        return;
+      clog << self->request;
+      auto &strand_ref = self->strand;
+
+      auto &self_ref = *self;
+      if (!http::is_upgrade(self_ref.request))
+        strand_ref.dispatch([self = move(self)]() mutable { self->respond(); });
+      else {
+        self_ref.ws.set_option(
+            websocket::message_type{websocket::opcode::binary});
+        self_ref.ws.async_accept(
+            self_ref.request, [self = move(self)](auto ec) mutable {
+              clog << "Accepted websocket connection: " << ec << '\n';
+              if (ec)
+                return;
+              self->stream >> noskipws;
+              self->ws_serve();
+            });
+      }
+    });
+  }
+
+  void ws_serve() {
+    ws.async_read(op, buf, [self = this->shared_from_this()](auto ec) {
+      clog << "Read something from websocket: " << ec << '\n';
+      if (ec)
+        return;
+      switch (self->op) {
+      default:
+        clog << "Unsupported WebSocket opcode: "
+             << static_cast<underlying_type_t<decltype(self->op)>>(self->op)
+             << '\n';
+        break;
+      case websocket::opcode::text: {
+        string message;
+        copy(istream_iterator<char>(self->stream), {}, back_inserter(message));
+        clog << "Text message received: " << message << '\n';
+      } break;
+      }
+      self->ws_serve();
+    });
   }
 
 public:
-  n2w_connection(io_service &service) : socket{service}, strand{service} {}
+  n2w_connection(io_service &service)
+      : socket{service}, ws{socket}, strand{service}, stream{&buf} {}
 };
 
 template <typename Handler>
