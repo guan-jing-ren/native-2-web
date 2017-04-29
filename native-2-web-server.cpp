@@ -90,9 +90,10 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
              << '\n';
         break;
       case websocket::opcode::text: {
-        string message;
-        copy(istream_iterator<char>(self->stream), {}, back_inserter(message));
-        clog << "Text message received: " << message << '\n';
+        clog << "Text message received: ";
+        copy(istream_iterator<char>(self->stream), {},
+             ostream_iterator<char>(clog));
+        clog << '\n';
       } break;
       }
       self->ws_serve();
