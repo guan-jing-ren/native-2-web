@@ -13,6 +13,7 @@ inline bool operator!=(boost::system::error_code ec, int i) { return ec != i; }
 #include <future>
 #include <iostream>
 #include <memory>
+#include <queue>
 #include <regex>
 
 using namespace std;
@@ -25,6 +26,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   ip::tcp::socket socket;
   websocket::stream<ip::tcp::socket &> ws;
   io_service::strand strand;
+  queue<shared_future<function<void()>>> write_queue;
+
   boost::asio::streambuf buf;
   http::request<http::string_body> request;
   websocket::opcode op;
@@ -42,55 +45,89 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
   template <typename> friend void accept(io_service &, ip::tcp::acceptor &);
 
-  void respond() {
-    http::response<http::string_body> response;
-    if (http::is_upgrade(request)) {
-      if (supports_websocket) {
-        ws.set_option(websocket::message_type{websocket::opcode::binary});
-        ws.async_accept(
-            request, [self = this->shared_from_this()](auto ec) mutable {
-              clog << "Accepted websocket connection: " << ec << '\n';
-              if (ec)
-                return;
-              self->stream >> noskipws;
-              self->ws_serve();
-            });
+  void push_next_reply() {
+    strand.dispatch([self = this->shared_from_this()]() {
+      if (self->write_queue.empty())
         return;
-      } else {
-        response.version = request.version;
-        response.status = 501;
-        response.reason = "Not Implemented";
-        response.body = "n2w server does implement websocket handling";
+      if (!self->write_queue.front().valid()) {
+        self->push_next_reply();
+        return;
       }
-    } else
-      response = handler(request);
+      auto reply = move(self->write_queue.front());
+      self->write_queue.pop();
+      reply.get()();
+    });
+  }
 
-    prepare(response);
-    clog << response;
-    http::async_write(
-        socket, response, [self = this->shared_from_this()](auto ec) mutable {
-          clog << "Thread: " << this_thread::get_id()
-               << "; Written response:" << ec << ".\n";
-          if (ec)
-            return;
-          auto &strand_ref = self->strand;
-          strand_ref.dispatch([self = move(self)]() mutable { self->serve(); });
-        });
+  void respond() {
+    auto reply_future =
+        async(launch::deferred,
+              [self = this->shared_from_this()]()->function<void()> {
+                http::response<http::string_body> response;
+                if (http::is_upgrade(self->request)) {
+                  if (supports_websocket) {
+                    self->ws.set_option(
+                        websocket::message_type{websocket::opcode::binary});
+                    self->ws.async_accept(self->request, [self = move(self)](
+                                                             auto ec) mutable {
+                      clog << "Accepted websocket connection: " << ec << '\n';
+                      if (ec)
+                        return;
+                      self->stream >> noskipws;
+                      self->ws_serve();
+                    });
+                    return []() {};
+                  } else {
+                    response.version = self->request.version;
+                    response.status = 501;
+                    response.reason = "Not Implemented";
+                    response.body =
+                        "n2w server does implement websocket handling";
+                  }
+                } else
+                  response = self->handler(self->request);
+
+                prepare(response);
+                clog << response;
+
+                return [ self = move(self), response = move(response) ]() {
+                  http::async_write(self->socket, response,
+                                    [self = move(self)](auto ec) mutable {
+                                      clog
+                                          << "Thread: " << this_thread::get_id()
+                                          << "; Written response:" << ec
+                                          << ".\n";
+                                      self->push_next_reply();
+                                      if (ec)
+                                        return;
+                                    });
+                };
+              })
+            .share();
+
+    strand.dispatch([ self = this->shared_from_this(), reply_future ]() {
+      self->write_queue.push(move(reply_future));
+      if (self->write_queue.size() == 1)
+        self->push_next_reply();
+    });
+
+    socket.get_io_service().post([reply_future]() { reply_future.get(); });
+
+    if (!supports_websocket || !http::is_upgrade(request))
+      serve();
   }
 
   void serve() {
     request = decltype(request)();
-    http::async_read(socket, buf, request, [self = this->shared_from_this()](
-                                               auto ec) mutable {
-      clog << "Thread: " << this_thread::get_id()
-           << "; Received request: " << ec << ".\n";
-      if (ec)
-        return;
-      clog << self->request;
-      auto &strand_ref = self->strand;
-      strand_ref.dispatch([self = move(self)]() mutable { self->respond(); });
-
-    });
+    http::async_read(socket, buf, request,
+                     [self = this->shared_from_this()](auto ec) mutable {
+                       clog << "Thread: " << this_thread::get_id()
+                            << "; Received request: " << ec << ".\n";
+                       if (ec)
+                         return;
+                       clog << self->request;
+                       self->respond();
+                     });
   }
 
   template <typename T> void handle_websocket(false_type, T &&) {}
