@@ -300,8 +300,10 @@ int main() {
   acceptor.listen();
 
   struct websocket_handler {
-    void operator()(string message) {}
-    void operator()(vector<uint8_t> message) {}
+    vector<uint8_t> operator()(string message) { return {3, 1, 4, 1, 5}; }
+    string operator()(vector<uint8_t> message) {
+      return "Don't understand message\n";
+    }
   };
 
   struct http_handler {
