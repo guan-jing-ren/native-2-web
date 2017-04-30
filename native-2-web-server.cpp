@@ -30,6 +30,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
   boost::asio::streambuf buf;
   http::request<http::string_body> request;
+  http::response<http::string_body> response;
   websocket::opcode op;
   istream stream;
 
@@ -73,7 +74,6 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
     auto reply_future =
         async(launch::deferred,
               [self = this->shared_from_this()]()->function<void()> {
-                http::response<http::string_body> response;
                 if (http::is_upgrade(self->request)) {
                   if (supports_websocket) {
                     self->ws.set_option(
@@ -86,22 +86,23 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                       self->stream >> noskipws;
                       self->ws_serve();
                     });
-                    return []() { self->push_next_reply(); };
+                    return [self = move(self)]() { self->push_next_reply(); };
                   } else {
-                    response.version = self->request.version;
-                    response.status = 501;
-                    response.reason = "Not Implemented";
-                    response.body =
+                    self->response = http::response<http::string_body>{};
+                    self->response.version = self->request.version;
+                    self->response.status = 501;
+                    self->response.reason = "Not Implemented";
+                    self->response.body =
                         "n2w server does implement websocket handling";
                   }
                 } else
-                  response = self->handler(self->request);
+                  self->response = move(self->handler(self->request));
 
-                prepare(response);
-                clog << response;
+                prepare(self->response);
+                clog << self->response;
 
-                return [ self = move(self), response = move(response) ]() {
-                  http::async_write(self->socket, response,
+                return [self = move(self)]() {
+                  http::async_write(self->socket, self->response,
                                     [self = move(self)](auto ec) mutable {
                                       clog
                                           << "Thread: " << this_thread::get_id()
