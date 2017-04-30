@@ -21,7 +21,9 @@
     <script src='test_readers.js' type='text/javascript'></script>
     <script type='text/javascript'>
         let ws = new WebSocket('ws://localhost:9001');
-        ws.addEventListener('open', (sk, ev) => { ws.send("Hello world!"); ws.send(new ArrayBuffer(20)); }, true);
+        ws.addEventListener('open', (ev) => { ws.send("Hello world!"); ws.send(new ArrayBuffer(20)); }, true);
+        let ws2 = new WebSocket('ws://localhost:9002');
+        ws2.addEventListener('message', (ev) => console.log(ev.data));
     </script>
 </body>
 

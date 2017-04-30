@@ -62,6 +62,22 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                    static_cast<Handler *>(nullptr))),
                false_type>::value;
 
+  template <typename> static auto websocket_pushes(...) -> false_type;
+  template <typename V, typename T = Handler>
+  static auto websocket_pushes(T *)
+      -> decltype(async(launch::deferred, typename T::websocket_handler_type{},
+                        function<void(V)>{}));
+  static constexpr bool websocket_pushes_text =
+      supports_websocket &&
+      !is_same<decltype(
+                   websocket_pushes<string>(static_cast<Handler *>(nullptr))),
+               false_type>::value;
+  static constexpr bool websocket_pushes_binary =
+      supports_websocket &&
+      !is_same<decltype(websocket_pushes<vector<uint8_t>>(
+                   static_cast<Handler *>(nullptr))),
+               false_type>::value;
+
   template <typename> friend void accept(io_service &, ip::tcp::acceptor &);
 
   void push_next_reply() {
@@ -260,6 +276,37 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
     });
   }
 
+  template <bool B = websocket_pushes_text || websocket_pushes_binary>
+  auto register_websocket_pusher() -> enable_if_t<!B> {}
+  template <bool B = websocket_pushes_text || websocket_pushes_binary>
+  auto register_websocket_pusher() -> enable_if_t<B> {
+    register_websocket_pusher_text();
+    register_websocket_pusher_binary();
+  }
+
+  template <bool B = websocket_pushes_text>
+  auto register_websocket_pusher_text() -> enable_if_t<!B> {}
+  template <bool B = websocket_pushes_text>
+  auto register_websocket_pusher_text() -> enable_if_t<B> {
+    websocket_handler([self = this->shared_from_this()](string message) {
+      promise<string> p;
+      p.set_value(move(message));
+      self->defer_response(p.get_future());
+    });
+  }
+
+  template <bool B = websocket_pushes_binary>
+  auto register_websocket_pusher_binary() -> enable_if_t<!B> {}
+  template <bool B = websocket_pushes_binary>
+  auto register_websocket_pusher_binary() -> enable_if_t<B> {
+    websocket_handler([self =
+                           this->shared_from_this()](vector<uint8_t> message) {
+      promise<vector<uint8_t>> p;
+      p.set_value(move(message));
+      self->defer_response(p.get_future());
+    });
+  }
+
 public:
   n2w_connection(io_service &service)
       : socket{service}, ws{socket}, strand{service}, stream{&buf} {}
@@ -278,6 +325,7 @@ void accept(io_service &service, ip::tcp::acceptor &acceptor) {
           return;
         accept<Handler>(service, acceptor);
         connection->serve();
+        connection->register_websocket_pusher();
       });
 }
 
