@@ -68,6 +68,46 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
     socket.get_io_service().post([reply_future]() { reply_future.get(); });
   }
 
+  void defer_response(shared_future<string> &&reply_future) {
+    defer_response(async(launch::deferred, [
+      self = this->shared_from_this(), reply_future = move(reply_future)
+    ]()->function<void()> {
+      self->ws.set_option(websocket::message_type{websocket::opcode::text});
+      self->text_response = move(reply_future.get());
+
+      return [self = move(self)]() {
+        self->ws.async_write(
+            buffer(self->text_response), [self = move(self)](auto ec) {
+              clog << "Thread: " << this_thread::get_id()
+                   << "; Written text response:" << ec << ".\n";
+              if (ec)
+                return;
+              self->push_next_reply();
+            });
+      };
+    }));
+  }
+
+  void defer_response(shared_future<vector<uint8_t>> &&reply_future) {
+    defer_response(async(launch::deferred, [
+      self = this->shared_from_this(), reply_future = move(reply_future)
+    ]()->function<void()> {
+      self->ws.set_option(websocket::message_type{websocket::opcode::binary});
+      self->binary_response = move(reply_future.get());
+
+      return [self = move(self)]() {
+        self->ws.async_write(
+            buffer(self->binary_response), [self = move(self)](auto ec) {
+              clog << "Thread: " << this_thread::get_id()
+                   << "; Written binary response:" << ec << ".\n";
+              if (ec)
+                return;
+              self->push_next_reply();
+            });
+      };
+    }));
+  }
+
   void defer_response(shared_future<function<void()>> &&reply_future) {
     strand.dispatch([ self = this->shared_from_this(), reply_future ]() {
       self->write_queue.push(move(reply_future));
