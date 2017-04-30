@@ -211,6 +211,22 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
         .share();
   }
 
+  template <typename H, bool B = websocket_handles_text>
+  auto do_if_websocket_handles_text(H &&, string &&message) -> enable_if_t<!B> {
+  }
+  template <typename H, bool B = websocket_handles_text>
+  auto do_if_websocket_handles_text(H &&, string &&message) -> enable_if_t<B> {
+    defer_response(handle_websocket_request(websocket_handler, move(message)));
+  }
+  template <typename H, bool B = websocket_handles_binary>
+  auto do_if_websocket_handles_binary(H &&, vector<uint8_t> &&message)
+      -> enable_if_t<!B> {}
+  template <typename H, bool B = websocket_handles_binary>
+  auto do_if_websocket_handles_binary(H &&, vector<uint8_t> &&message)
+      -> enable_if_t<B> {
+    defer_response(handle_websocket_request(websocket_handler, move(message)));
+  }
+
   void ws_serve() {
     ws.async_read(op, buf, [self = this->shared_from_this()](auto ec) {
       clog << "Read something from websocket: " << ec << '\n';
@@ -228,15 +244,15 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
         string message;
         copy(istream_iterator<char>(self->stream), {}, back_inserter(message));
         clog << "Text message received: " << message << '\n';
-        self->defer_response(self->handle_websocket_request(
-            self->websocket_handler, move(message)));
+        self->do_if_websocket_handles_text(self->websocket_handler,
+                                           move(message));
       } break;
       case websocket::opcode::binary: {
         vector<uint8_t> message;
         copy(istream_iterator<char>(self->stream), {}, back_inserter(message));
         clog << "Binary message received\n";
-        self->defer_response(self->handle_websocket_request(
-            self->websocket_handler, move(message)));
+        self->do_if_websocket_handles_binary(self->websocket_handler,
+                                             move(message));
       } break;
       }
 
@@ -389,6 +405,24 @@ int main() {
   };
 
   accept<http_handler>(service, acceptor);
+
+  struct ws_only_handler {
+    struct websocket_handler_type {
+      function<void(string)> string_pusher;
+      void operator()(function<void(string)> &&pusher) {
+        string_pusher = move(pusher);
+      }
+    };
+    http::response<http::string_body>
+    operator()(const http::request<http::string_body> &) {
+      return {};
+    }
+  };
+
+  ip::tcp::endpoint wsendpoint{ip::address_v4::from_string("0.0.0.0"), 9002};
+  ip::tcp::acceptor wsacceptor{service, wsendpoint, true};
+  wsacceptor.listen();
+  accept<ws_only_handler>(service, wsacceptor);
 
   vector<future<void>> threadpool;
   for (auto i = 0; i < 10; ++i)
