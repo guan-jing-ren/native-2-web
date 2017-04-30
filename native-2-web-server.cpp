@@ -463,6 +463,16 @@ int main() {
       function<void(string)> string_pusher;
       void operator()(function<void(string)> &&pusher) {
         string_pusher = move(pusher);
+        thread t([ this, i = 0 ]() mutable {
+          while (string_pusher) {
+            string_pusher(
+                to_string(i++) + ' ' +
+                to_string(
+                    chrono::system_clock::now().time_since_epoch().count()));
+            this_thread::sleep_for(chrono::milliseconds{500});
+          }
+        });
+        t.detach();
       }
     };
     http::response<http::string_body>
