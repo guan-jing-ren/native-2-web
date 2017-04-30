@@ -62,6 +62,10 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
     });
   }
 
+  void defer_response(shared_future<void> &&reply_future) {
+    socket.get_io_service().post([reply_future]() { reply_future.get(); });
+  }
+
   void defer_response(shared_future<function<void()>> &&reply_future) {
     strand.dispatch([ self = this->shared_from_this(), reply_future ]() {
       self->write_queue.push(move(reply_future));
