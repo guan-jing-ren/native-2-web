@@ -131,18 +131,18 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
   void serve() {
     request = decltype(request)();
-    http::async_read(socket, buf, request,
-                     [self = this->shared_from_this()](auto ec) mutable {
-                       clog << "Thread: " << this_thread::get_id()
-                            << "; Received request: " << ec << ".\n";
-                       if (ec)
-                         return;
-                       clog << self->request;
-                       self->respond();
+    http::async_read(socket, buf, request, [self = this->shared_from_this()](
+                                               auto ec) mutable {
+      clog << "Thread: " << this_thread::get_id()
+           << "; Received request: " << ec << ".\n";
+      if (ec)
+        return;
+      clog << self->request;
+      self->respond();
 
-                       if (!supports_websocket || !http::is_upgrade(request))
-                         serve();
-                     });
+      if (!supports_websocket || !http::is_upgrade(self->request))
+        self->serve();
+    });
   }
 
   template <typename T> void handle_websocket_request(false_type, T &&) {}
