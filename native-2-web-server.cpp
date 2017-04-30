@@ -46,6 +46,22 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
       !is_same<websocket_handler_type, false_type>::value;
   websocket_handler_type websocket_handler;
 
+  template <typename> static auto websocket_handles(...) -> false_type;
+  template <typename V, typename T = Handler>
+  static auto websocket_handles(T *)
+      -> decltype(async(launch::deferred, typename T::websocket_handler_type{},
+                        V{}));
+  static constexpr bool websocket_handles_text =
+      supports_websocket &&
+      !is_same<decltype(
+                   websocket_handles<string>(static_cast<Handler *>(nullptr))),
+               false_type>::value;
+  static constexpr bool websocket_handles_binary =
+      supports_websocket &&
+      !is_same<decltype(websocket_handles<vector<uint8_t>>(
+                   static_cast<Handler *>(nullptr))),
+               false_type>::value;
+
   template <typename> friend void accept(io_service &, ip::tcp::acceptor &);
 
   void push_next_reply() {
