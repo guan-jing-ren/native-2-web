@@ -143,9 +143,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
   template <typename T> void handle_websocket_request(false_type, T &&) {}
   template <typename H, typename T> void handle_websocket_request(H &&, T &&t) {
-    auto reply_future =
-        async(launch::deferred, websocket_handler, move(t)).share();
-    defer_response(move(reply_future));
+    defer_response(async(launch::deferred, websocket_handler, move(t)).share());
   }
 
   void ws_serve() {
