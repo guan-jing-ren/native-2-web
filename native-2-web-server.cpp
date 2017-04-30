@@ -86,7 +86,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                       self->stream >> noskipws;
                       self->ws_serve();
                     });
-                    return []() {};
+                    return []() { self->push_next_reply(); };
                   } else {
                     response.version = self->request.version;
                     response.status = 501;
