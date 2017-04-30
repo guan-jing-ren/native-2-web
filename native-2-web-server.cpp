@@ -88,8 +88,6 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
               [self = this->shared_from_this()]()->function<void()> {
                 if (http::is_upgrade(self->request)) {
                   if (supports_websocket) {
-                    self->ws.set_option(
-                        websocket::message_type{websocket::opcode::binary});
                     self->ws.async_accept(self->request, [self = move(self)](
                                                              auto ec) mutable {
                       clog << "Accepted websocket connection: " << ec << '\n';
