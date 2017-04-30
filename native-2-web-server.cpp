@@ -186,8 +186,13 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   }
 
   template <typename T> void handle_websocket_request(false_type, T &&) {}
-  template <typename H, typename T> void handle_websocket_request(H &&, T &&t) {
-    defer_response(async(launch::deferred, websocket_handler, move(t)).share());
+  template <typename H, typename T> auto handle_websocket_request(H &&, T &&t) {
+    return async(launch::deferred,
+                 [self = this->shared_from_this()](T && t) {
+                   return self->websocket_handler(t);
+                 },
+                 move(t))
+        .share();
   }
 
   void ws_serve() {
@@ -207,13 +212,15 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
         string message;
         copy(istream_iterator<char>(self->stream), {}, back_inserter(message));
         clog << "Text message received: " << message << '\n';
-        self->handle_websocket_request(self->websocket_handler, move(message));
+        self->defer_response(self->handle_websocket_request(
+            self->websocket_handler, move(message)));
       } break;
       case websocket::opcode::binary: {
         vector<uint8_t> message;
         copy(istream_iterator<char>(self->stream), {}, back_inserter(message));
         clog << "Binary message received\n";
-        self->handle_websocket_request(self->websocket_handler, move(message));
+        self->defer_response(self->handle_websocket_request(
+            self->websocket_handler, move(message)));
       } break;
       }
 
