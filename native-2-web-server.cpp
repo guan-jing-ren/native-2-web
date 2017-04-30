@@ -49,9 +49,11 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   void push_next_reply() {
     strand.dispatch([self = this->shared_from_this()]() {
       if (self->write_queue.empty())
-        return;
+        return; // No need to keep watching. A new async_write submitted to an
+                // empty queue will kick this off.
       if (!self->write_queue.front().valid()) {
-        self->push_next_reply();
+        self->push_next_reply(); // Keep watching periodically to check up on
+                                 // current response.
         return;
       }
       auto reply = move(self->write_queue.front());
@@ -64,7 +66,11 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
     strand.dispatch([ self = this->shared_from_this(), reply_future ]() {
       self->write_queue.push(move(reply_future));
       if (self->write_queue.size() == 1)
-        self->push_next_reply();
+        self->push_next_reply(); // This starts the ball rolling. async_write
+                                 // completion handlers runs the next write job,
+                                 // but the first one submitted to an empty
+                                 // queue does not have an async_write
+                                 // previously to kick it off.
     });
 
     socket.get_io_service().post([reply_future]() { reply_future.get(); });
