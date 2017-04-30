@@ -59,6 +59,16 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
     });
   }
 
+  void defer_response(shared_future<function<void()>> &&reply_future) {
+    strand.dispatch([ self = this->shared_from_this(), reply_future ]() {
+      self->write_queue.push(move(reply_future));
+      if (self->write_queue.size() == 1)
+        self->push_next_reply();
+    });
+
+    socket.get_io_service().post([reply_future]() { reply_future.get(); });
+  }
+
   void respond() {
     auto reply_future =
         async(launch::deferred,
@@ -105,16 +115,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
               })
             .share();
 
-    strand.dispatch([ self = this->shared_from_this(), reply_future ]() {
-      self->write_queue.push(move(reply_future));
-      if (self->write_queue.size() == 1)
-        self->push_next_reply();
-    });
-
-    socket.get_io_service().post([reply_future]() { reply_future.get(); });
-
-    if (!supports_websocket || !http::is_upgrade(request))
-      serve();
+    defer_response(move(reply_future));
   }
 
   void serve() {
@@ -132,7 +133,9 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
   template <typename T> void handle_websocket(false_type, T &&) {}
   template <typename H, typename T> void handle_websocket(H &&, T &&t) {
-    websocket_handler(move(t));
+    auto reply_future =
+        async(launch::deferred, websocket_handler, move(t)).share();
+    defer_response(move(reply_future));
   }
 
   void ws_serve() {
