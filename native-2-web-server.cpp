@@ -107,9 +107,9 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                                           << "Thread: " << this_thread::get_id()
                                           << "; Written response:" << ec
                                           << ".\n";
-                                      self->push_next_reply();
                                       if (ec)
                                         return;
+                                      self->push_next_reply();
                                     });
                 };
               })
@@ -128,6 +128,9 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                          return;
                        clog << self->request;
                        self->respond();
+
+                       if (!supports_websocket || !http::is_upgrade(request))
+                         serve();
                      });
   }
 
@@ -144,6 +147,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
       if (ec)
         return;
       switch (self->op) {
+      case websocket::opcode::close:
+        return;
       default:
         clog << "Unsupported WebSocket opcode: "
              << static_cast<underlying_type_t<decltype(self->op)>>(self->op)
