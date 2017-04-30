@@ -112,8 +112,10 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
             buffer(self->text_response), [self = move(self)](auto ec) {
               clog << "Thread: " << this_thread::get_id()
                    << "; Written text response:" << ec << ".\n";
-              if (ec)
+              if (ec) {
+                self->websocket_handler = websocket_handler_type{};
                 return;
+              }
               self->push_next_reply();
             });
       };
@@ -132,8 +134,10 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
             buffer(self->binary_response), [self = move(self)](auto ec) {
               clog << "Thread: " << this_thread::get_id()
                    << "; Written binary response:" << ec << ".\n";
-              if (ec)
+              if (ec) {
+                self->websocket_handler = websocket_handler_type{};
                 return;
+              }
               self->push_next_reply();
             });
       };
@@ -166,6 +170,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                       if (ec)
                         return;
                       self->stream >> noskipws;
+                      self->register_websocket_pusher();
                       self->ws_serve();
                     });
                     return [self = move(self)]() { self->push_next_reply(); };
@@ -325,7 +330,6 @@ void accept(io_service &service, ip::tcp::acceptor &acceptor) {
           return;
         accept<Handler>(service, acceptor);
         connection->serve();
-        connection->register_websocket_pusher();
       });
 }
 
