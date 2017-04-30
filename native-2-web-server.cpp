@@ -33,6 +33,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   http::response<http::string_body> response;
   websocket::opcode op;
   istream stream;
+  string text_response;
+  vector<uint8_t> binary_response;
 
   static auto websocket_support(...) -> false_type;
   template <typename T = Handler>
