@@ -36,10 +36,30 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   string text_response;
   vector<uint8_t> binary_response;
 
+  struct NullHandler {
+    http::response<http::string_body>
+    operator()(const http::request<http::string_body> &request) {
+      auto response = http::response<http::string_body>{};
+      response.version = request.version;
+      response.status = 501;
+      response.reason = "Not Implemented";
+      response.body = "n2w server does implement websocket handling";
+      return response;
+    }
+  };
+
+  static auto http_support(...) -> false_type;
+  template <typename T = Handler>
+  static auto http_support(T *)
+      -> decltype(T{}(http::request<http::string_body>{}));
+  static constexpr bool supports_http =
+      !is_same<decltype(http_support(static_cast<Handler *>(nullptr))),
+               false_type>::value;
+  conditional_t<supports_http, Handler, NullHandler> handler;
+
   static auto websocket_support(...) -> false_type;
   template <typename T = Handler>
   static auto websocket_support(T *) -> typename T::websocket_handler_type;
-  Handler handler;
   using websocket_handler_type =
       decltype(websocket_support(static_cast<Handler *>(nullptr)));
   static constexpr bool supports_websocket =
@@ -182,14 +202,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                       self->ws_serve();
                     });
                     return [self = move(self)]() { self->push_next_reply(); };
-                  } else {
-                    self->response = http::response<http::string_body>{};
-                    self->response.version = self->request.version;
-                    self->response.status = 501;
-                    self->response.reason = "Not Implemented";
-                    self->response.body =
-                        "n2w server does implement websocket handling";
-                  }
+                  } else
+                    self->response = move(NullHandler{}(self->request));
                 } else
                   self->response = move(self->handler(self->request));
 
@@ -473,10 +487,6 @@ int main() {
         t.detach();
       }
     };
-    http::response<http::string_body>
-    operator()(const http::request<http::string_body> &) {
-      return {};
-    }
   };
 
   ip::tcp::endpoint wsendpoint{ip::address_v4::from_string("0.0.0.0"), 9002};
