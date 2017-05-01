@@ -160,6 +160,10 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                        uintmax_t tkt) {
     socket.get_io_service().post(
         [ self = this->shared_from_this(), reply_future, ticket = tkt ]() {
+          clog << "Waiting for ticket: " << ticket
+               << ", currently serving: " << self->serving
+               << ", has future: " << boolalpha << reply_future.valid()
+               << noboolalpha << '\n';
           if (!reply_future.valid() || self->serving != ticket) {
             self->push_next_reply(move(reply_future), ticket);
             return;
