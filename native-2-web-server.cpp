@@ -323,8 +323,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
 public:
   n2w_connection(io_service &service)
-      : socket{service}, ws{socket}, ws_stuff(&buf) {
-  }
+      : socket{service}, ws{socket}, ws_stuff(&buf) {}
 };
 
 template <typename Handler>
