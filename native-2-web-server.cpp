@@ -156,11 +156,12 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
     };
   }
 
-  void push_next_reply(shared_future<function<void()>> reply_future) {
-        [ self = this->shared_from_this(), reply_future, ticket = ticket++ ]() {
+  void push_next_reply(shared_future<function<void()>> reply_future,
+                       uintmax_t tkt) {
     socket.get_io_service().post(
+        [ self = this->shared_from_this(), reply_future, ticket = tkt ]() {
           if (!reply_future.valid() || self->serving != ticket) {
-            self->push_next_reply(move(reply_future));
+            self->push_next_reply(move(reply_future), ticket);
             return;
           }
           reply_future.get()();
@@ -168,7 +169,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   }
 
   void defer_response(shared_future<function<void()>> &&reply_future) {
-    push_next_reply(reply_future);
+    push_next_reply(reply_future, ticket++);
     socket.get_io_service().post([reply_future]() { reply_future.get(); });
   }
 
