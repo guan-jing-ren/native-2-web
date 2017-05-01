@@ -139,6 +139,19 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
     }));
   }
 
+  auto create_writer(const http::response<http::string_body> &response) {
+    return [self = this->shared_from_this()]() {
+      http::async_write(self->socket, self->response,
+                        [self = move(self)](auto ec) mutable {
+                          clog << "Thread: " << this_thread::get_id()
+                               << "; Written HTTP response:" << ec << ".\n";
+                          if (ec)
+                            return;
+                          self->push_next_reply();
+                        });
+    };
+  }
+
   void defer_response(shared_future<function<void()>> &&reply_future) {
     strand.dispatch([ self = this->shared_from_this(), reply_future ]() {
       self->write_queue.push(move(reply_future));
@@ -183,18 +196,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                 prepare(self->response);
                 clog << self->response;
 
-                return [self = move(self)]() {
-                  http::async_write(self->socket, self->response,
-                                    [self = move(self)](auto ec) mutable {
-                                      clog
-                                          << "Thread: " << this_thread::get_id()
-                                          << "; Written response:" << ec
-                                          << ".\n";
-                                      if (ec)
-                                        return;
-                                      self->push_next_reply();
-                                    });
-                };
+                return self->create_writer(self->response);
               })
             .share();
 
