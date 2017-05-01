@@ -25,7 +25,6 @@ template <typename Handler>
 class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   ip::tcp::socket socket;
   websocket::stream<ip::tcp::socket &> ws;
-  io_service::strand strand;
   atomic_uintmax_t ticket{0};
   atomic_uintmax_t serving{0};
 
@@ -158,8 +157,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   }
 
   void push_next_reply(shared_future<function<void()>> reply_future) {
-    strand.post(
         [ self = this->shared_from_this(), reply_future, ticket = ticket++ ]() {
+    socket.get_io_service().post(
           if (!reply_future.valid() || self->serving != ticket) {
             self->push_next_reply(move(reply_future));
             return;
