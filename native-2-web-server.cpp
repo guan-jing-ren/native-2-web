@@ -26,7 +26,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   ip::tcp::socket socket;
   websocket::stream<ip::tcp::socket &> ws;
   io_service::strand strand;
-  queue<shared_future<function<void()>>> write_queue;
+  atomic_uintmax_t ticket{0};
+  atomic_uintmax_t serving{0};
 
   boost::asio::streambuf buf;
   http::request<http::string_body> request;
@@ -104,22 +105,6 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
   template <typename> friend void accept(io_service &, ip::tcp::acceptor &);
 
-  void push_next_reply() {
-    strand.dispatch([self = this->shared_from_this()]() {
-      if (self->write_queue.empty())
-        return; // No need to keep watching. A new async_write submitted to an
-                // empty queue will kick this off.
-      if (!self->write_queue.front().valid()) {
-        self->push_next_reply(); // Keep watching periodically to check up on
-                                 // current response.
-        return;
-      }
-      auto reply = move(self->write_queue.front());
-      self->write_queue.pop();
-      reply.get()();
-    });
-  }
-
   void defer_response(shared_future<void> &&reply_future) {
     socket.get_io_service().post([reply_future]() { reply_future.get(); });
   }
@@ -135,12 +120,10 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
       self->ws.set_option(message_type);
       self->ws.async_write(buffer(response), [self = move(self)](auto ec) {
         clog << "Thread: " << this_thread::get_id() << "; Written "
-             << response_type << "websocket response:" << ec << ".\n";
-        if (ec) {
+             << response_type << " websocket response:" << ec << ".\n";
+        ++self->serving;
+        if (ec)
           self->ws_stuff.websocket_handler = websocket_handler_type{};
-          return;
-        }
-        self->push_next_reply();
       });
     };
   }
@@ -169,24 +152,24 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                         [self = move(self)](auto ec) mutable {
                           clog << "Thread: " << this_thread::get_id()
                                << "; Written HTTP response:" << ec << ".\n";
-                          if (ec)
-                            return;
-                          self->push_next_reply();
+                          ++self->serving;
                         });
     };
   }
 
-  void defer_response(shared_future<function<void()>> &&reply_future) {
-    strand.dispatch([ self = this->shared_from_this(), reply_future ]() {
-      self->write_queue.push(move(reply_future));
-      if (self->write_queue.size() == 1)
-        self->push_next_reply(); // This starts the ball rolling. async_write
-                                 // completion handlers runs the next write job,
-                                 // but the first one submitted to an empty
-                                 // queue does not have an async_write
-                                 // previously to kick it off.
-    });
+  void push_next_reply(shared_future<function<void()>> reply_future) {
+    strand.post(
+        [ self = this->shared_from_this(), reply_future, ticket = ticket++ ]() {
+          if (!reply_future.valid() || self->serving != ticket) {
+            self->push_next_reply(move(reply_future));
+            return;
+          }
+          reply_future.get()();
+        });
+  }
 
+  void defer_response(shared_future<function<void()>> &&reply_future) {
+    push_next_reply(reply_future);
     socket.get_io_service().post([reply_future]() { reply_future.get(); });
   }
 
@@ -204,24 +187,23 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   }
 
   void respond() {
-    auto reply_future =
-        async(launch::deferred,
-              [self = this->shared_from_this()]()->function<void()> {
-                if (http::is_upgrade(self->request)) {
-                  if (supports_websocket) {
-                    self->accept_ws();
-                    return [self = move(self)]() { self->push_next_reply(); };
-                  } else
-                    self->response = move(NullHandler{}(self->request));
-                } else
-                  self->response = move(self->handler(self->request));
+    auto reply_future = async(launch::deferred, [
+                          self = this->shared_from_this(), request = request
+                        ]()->function<void()> {
+                          if (http::is_upgrade(request)) {
+                            if (supports_websocket) {
+                              self->accept_ws();
+                              return [self = move(self)]() { ++self->serving; };
+                            } else
+                              self->response = move(NullHandler{}(request));
+                          } else
+                            self->response = move(self->handler(request));
 
-                prepare(self->response);
-                clog << self->response;
+                          prepare(self->response);
+                          clog << self->response;
 
-                return self->create_writer(self->response);
-              })
-            .share();
+                          return self->create_writer(self->response);
+                        }).share();
 
     defer_response(move(reply_future));
   }
@@ -341,7 +323,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
 public:
   n2w_connection(io_service &service)
-      : socket{service}, ws{socket}, strand{service}, stream{&buf} {}
+      : socket{service}, ws{socket}, strand{service}, ws_stuff(&buf) {
+  }
 };
 
 template <typename Handler>
