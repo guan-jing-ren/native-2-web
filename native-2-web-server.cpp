@@ -461,12 +461,13 @@ int main() {
       void operator()(function<void(string)> &&pusher) {
         string_pusher = move(pusher);
         thread t([ this, i = 0 ]() mutable {
-          while (string_pusher) {
-            string_pusher(
-                to_string(i++) + ' ' +
-                to_string(
-                    chrono::system_clock::now().time_since_epoch().count()));
+          auto pusher = string_pusher;
+          while (pusher) {
+            pusher(to_string(i++) + ' ' +
+                   to_string(
+                       chrono::system_clock::now().time_since_epoch().count()));
             this_thread::sleep_for(chrono::milliseconds{500});
+            pusher = string_pusher;
           }
         });
         t.detach();
