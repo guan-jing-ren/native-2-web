@@ -100,25 +100,33 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
     socket.get_io_service().post([reply_future]() { reply_future.get(); });
   }
 
+  template <typename R> auto create_writer(const R &response) {
+    static constexpr const auto response_type =
+        is_same<string, R>::value ? "text" : "binary";
+    static const auto message_type = websocket::message_type{
+        is_same<string, R>::value ? websocket::opcode::text
+                                  : websocket::opcode::binary};
+
+    return [ self = this->shared_from_this(), &response ]() {
+      self->ws.set_option(message_type);
+      self->ws.async_write(buffer(response), [self = move(self)](auto ec) {
+        clog << "Thread: " << this_thread::get_id() << "; Written "
+             << response_type << "websocket response:" << ec << ".\n";
+        if (ec) {
+          self->websocket_handler = websocket_handler_type{};
+          return;
+        }
+        self->push_next_reply();
+      });
+    };
+  }
+
   void defer_response(shared_future<string> &&reply_future) {
     defer_response(async(launch::deferred, [
       self = this->shared_from_this(), reply_future = move(reply_future)
     ]()->function<void()> {
-      self->ws.set_option(websocket::message_type{websocket::opcode::text});
-      self->text_response = move(reply_future.get());
-
-      return [self = move(self)]() {
-        self->ws.async_write(
-            buffer(self->text_response), [self = move(self)](auto ec) {
-              clog << "Thread: " << this_thread::get_id()
-                   << "; Written text response:" << ec << ".\n";
-              if (ec) {
-                self->websocket_handler = websocket_handler_type{};
-                return;
-              }
-              self->push_next_reply();
-            });
-      };
+      return self->create_writer(self->text_response =
+                                     move(reply_future.get()));
     }));
   }
 
@@ -126,21 +134,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
     defer_response(async(launch::deferred, [
       self = this->shared_from_this(), reply_future = move(reply_future)
     ]()->function<void()> {
-      self->ws.set_option(websocket::message_type{websocket::opcode::binary});
-      self->binary_response = move(reply_future.get());
-
-      return [self = move(self)]() {
-        self->ws.async_write(
-            buffer(self->binary_response), [self = move(self)](auto ec) {
-              clog << "Thread: " << this_thread::get_id()
-                   << "; Written binary response:" << ec << ".\n";
-              if (ec) {
-                self->websocket_handler = websocket_handler_type{};
-                return;
-              }
-              self->push_next_reply();
-            });
-      };
+      return self->create_writer(self->binary_response =
+                                     move(reply_future.get()));
     }));
   }
 
