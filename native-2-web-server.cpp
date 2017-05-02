@@ -105,7 +105,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   template <typename> friend void accept(io_service &, ip::tcp::acceptor &);
 
   void defer_response(shared_future<void> &&reply_future) {
-    socket.get_io_service().post([reply_future]() { reply_future.get(); });
+    socket.get_io_service().post(
+        [reply_future]() mutable { reply_future.get(); });
   }
 
   template <typename R> auto create_writer(const R &response) {
@@ -115,22 +116,23 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
         is_same<string, R>::value ? websocket::opcode::text
                                   : websocket::opcode::binary};
 
-    return [ self = this->shared_from_this(), &response ]() {
+    return [ self = this->shared_from_this(), &response ]() mutable {
       self->ws.set_option(message_type);
-      self->ws.async_write(buffer(response), [self = move(self)](auto ec) {
-        clog << "Thread: " << this_thread::get_id() << "; Written "
-             << response_type << " websocket response:" << ec << ".\n";
-        ++self->serving;
-        if (ec)
-          self->ws_stuff.websocket_handler = websocket_handler_type{};
-      });
+      self->ws.async_write(
+          buffer(response), [self = move(self)](auto ec) mutable {
+            clog << "Thread: " << this_thread::get_id() << "; Written "
+                 << response_type << " websocket response:" << ec << ".\n";
+            ++self->serving;
+            if (ec)
+              self->ws_stuff.websocket_handler = websocket_handler_type{};
+          });
     };
   }
 
   void defer_response(shared_future<string> &&reply_future) {
     defer_response(async(launch::deferred, [
       self = this->shared_from_this(), reply_future = move(reply_future)
-    ]()->function<void()> {
+    ]() mutable->function<void()> {
       return self->create_writer(self->ws_stuff.text_response =
                                      move(reply_future.get()));
     }));
@@ -139,14 +141,14 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   void defer_response(shared_future<vector<uint8_t>> &&reply_future) {
     defer_response(async(launch::deferred, [
       self = this->shared_from_this(), reply_future = move(reply_future)
-    ]()->function<void()> {
+    ]() mutable->function<void()> {
       return self->create_writer(self->ws_stuff.binary_response =
                                      move(reply_future.get()));
     }));
   }
 
   auto create_writer(const http::response<http::string_body> &response) {
-    return [self = this->shared_from_this()]() {
+    return [self = this->shared_from_this()]() mutable {
       http::async_write(self->socket, self->response,
                         [self = move(self)](auto ec) mutable {
                           clog << "Thread: " << this_thread::get_id()
@@ -158,23 +160,25 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
   void push_next_reply(shared_future<function<void()>> reply_future,
                        uintmax_t tkt) {
-    socket.get_io_service().post(
-        [ self = this->shared_from_this(), reply_future, ticket = tkt ]() {
-          clog << "Waiting for ticket: " << ticket
-               << ", currently serving: " << self->serving
-               << ", has future: " << boolalpha << reply_future.valid()
-               << noboolalpha << '\n';
-          if (!reply_future.valid() || self->serving != ticket) {
-            self->push_next_reply(move(reply_future), ticket);
-            return;
-          }
-          reply_future.get()();
-        });
+    socket.get_io_service().post([
+      self = this->shared_from_this(), reply_future, ticket = tkt
+    ]() mutable {
+      clog << "Waiting for ticket: " << ticket
+           << ", currently serving: " << self->serving
+           << ", has future: " << boolalpha << reply_future.valid()
+           << noboolalpha << '\n';
+      if (!reply_future.valid() || self->serving != ticket) {
+        self->push_next_reply(move(reply_future), ticket);
+        return;
+      }
+      reply_future.get()();
+    });
   }
 
   void defer_response(shared_future<function<void()>> &&reply_future) {
     push_next_reply(reply_future, ticket++);
-    socket.get_io_service().post([reply_future]() { reply_future.get(); });
+    socket.get_io_service().post(
+        [reply_future]() mutable { reply_future.get(); });
   }
 
   template <bool B = supports_websocket> auto accept_ws() -> enable_if_t<!B> {}
@@ -193,11 +197,13 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   void respond() {
     auto reply_future = async(launch::deferred, [
                           self = this->shared_from_this(), request = request
-                        ]()->function<void()> {
+                        ]() mutable->function<void()> {
                           if (http::is_upgrade(request)) {
                             if (supports_websocket) {
                               self->accept_ws();
-                              return [self = move(self)]() { ++self->serving; };
+                              return [self = move(self)]() mutable {
+                                ++self->serving;
+                              };
                             } else
                               self->response = move(NullHandler{}(request));
                           } else
@@ -231,7 +237,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   template <typename T> void handle_websocket_request(false_type, T &&) {}
   template <typename H, typename T> auto handle_websocket_request(H &&, T &&t) {
     return async(launch::deferred,
-                 [self = this->shared_from_this()](T && t) {
+                 [self = this->shared_from_this()](T && t) mutable {
                    return self->ws_stuff.websocket_handler(t);
                  },
                  move(t))
@@ -258,39 +264,40 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
   template <bool B = supports_websocket> auto ws_serve() -> enable_if_t<!B> {}
   template <bool B = supports_websocket> auto ws_serve() -> enable_if_t<B> {
-    ws.async_read(ws_stuff.op, buf, [self = this->shared_from_this()](auto ec) {
-      clog << "Read something from websocket: " << ec << '\n';
-      if (ec)
-        return;
-      switch (self->ws_stuff.op) {
-      case websocket::opcode::close:
-        return;
-      default:
-        clog << "Unsupported WebSocket opcode: "
-             << static_cast<underlying_type_t<decltype(self->ws_stuff.op)>>(
-                    self->ws_stuff.op)
-             << '\n';
-        break;
-      case websocket::opcode::text: {
-        string message;
-        copy(istream_iterator<char>(self->ws_stuff.stream), {},
-             back_inserter(message));
-        clog << "Text message received: " << message << '\n';
-        self->do_if_websocket_handles_text(self->ws_stuff.websocket_handler,
-                                           move(message));
-      } break;
-      case websocket::opcode::binary: {
-        vector<uint8_t> message;
-        copy(istream_iterator<char>(self->ws_stuff.stream), {},
-             back_inserter(message));
-        clog << "Binary message received\n";
-        self->do_if_websocket_handles_binary(self->ws_stuff.websocket_handler,
-                                             move(message));
-      } break;
-      }
+    ws.async_read(
+        ws_stuff.op, buf, [self = this->shared_from_this()](auto ec) mutable {
+          clog << "Read something from websocket: " << ec << '\n';
+          if (ec)
+            return;
+          switch (self->ws_stuff.op) {
+          case websocket::opcode::close:
+            return;
+          default:
+            clog << "Unsupported WebSocket opcode: "
+                 << static_cast<underlying_type_t<decltype(self->ws_stuff.op)>>(
+                        self->ws_stuff.op)
+                 << '\n';
+            break;
+          case websocket::opcode::text: {
+            string message;
+            copy(istream_iterator<char>(self->ws_stuff.stream), {},
+                 back_inserter(message));
+            clog << "Text message received: " << message << '\n';
+            self->do_if_websocket_handles_text(self->ws_stuff.websocket_handler,
+                                               move(message));
+          } break;
+          case websocket::opcode::binary: {
+            vector<uint8_t> message;
+            copy(istream_iterator<char>(self->ws_stuff.stream), {},
+                 back_inserter(message));
+            clog << "Binary message received\n";
+            self->do_if_websocket_handles_binary(
+                self->ws_stuff.websocket_handler, move(message));
+          } break;
+          }
 
-      self->ws_serve();
-    });
+          self->ws_serve();
+        });
   }
 
   template <bool B = websocket_pushes_text || websocket_pushes_binary>
@@ -305,8 +312,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   auto register_websocket_pusher_text() -> enable_if_t<!B> {}
   template <bool B = websocket_pushes_text>
   auto register_websocket_pusher_text() -> enable_if_t<B> {
-    ws_stuff.websocket_handler([self =
-                                    this->shared_from_this()](string message) {
+    ws_stuff.websocket_handler([self = this->shared_from_this()](
+        string message) mutable {
       promise<string> p;
       p.set_value(move(message));
       self->defer_response(p.get_future());
@@ -317,8 +324,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   auto register_websocket_pusher_binary() -> enable_if_t<!B> {}
   template <bool B = websocket_pushes_binary>
   auto register_websocket_pusher_binary() -> enable_if_t<B> {
-    websocket_handler([self =
-                           this->shared_from_this()](vector<uint8_t> message) {
+    websocket_handler([self = this->shared_from_this()](
+        vector<uint8_t> message) mutable {
       promise<vector<uint8_t>> p;
       p.set_value(move(message));
       self->defer_response(p.get_future());
@@ -499,7 +506,7 @@ int main() {
   vector<future<void>> threadpool;
   for (auto i = 0; i < 10; ++i)
     threadpool.emplace_back(
-        async(launch::async, [&service]() { service.run(); }));
+        async(launch::async, [&service]() mutable { service.run(); }));
 
   return 0;
 }
