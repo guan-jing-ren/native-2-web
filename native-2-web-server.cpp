@@ -338,6 +338,29 @@ public:
 };
 
 template <typename Handler>
+void check_use_count(io_service &service,
+                     weak_ptr<n2w_connection<Handler>> conn,
+                     uintptr_t conn_id) {
+  static basic_waitable_timer<chrono::system_clock> timer{service};
+  timer.expires_from_now(chrono::seconds{1});
+
+  service.post([
+    &service, conn = weak_ptr<n2w_connection<Handler>>(conn), conn_id
+  ]() mutable {
+    clog << "Connection " << conn_id << " use count: " << conn.use_count()
+         << '\n';
+    if (conn.expired())
+      return;
+
+    timer.async_wait([&service, conn = move(conn), conn_id ](auto ec) mutable {
+      if (ec == error::operation_aborted)
+        return;
+      check_use_count(service, move(conn), conn_id);
+    });
+  });
+}
+
+template <typename Handler>
 void accept(io_service &service, ip::tcp::acceptor &acceptor) {
   auto connection = make_shared<n2w_connection<Handler>>(service);
   auto &socket_ref = connection->socket;
@@ -350,6 +373,8 @@ void accept(io_service &service, ip::tcp::acceptor &acceptor) {
           return;
         accept<Handler>(service, acceptor);
         connection->serve();
+        check_use_count<Handler>(service, connection,
+                                 reinterpret_cast<uintptr_t>(connection.get()));
       });
 }
 
