@@ -16,6 +16,8 @@ inline bool operator!=(boost::system::error_code ec, int i) { return ec != i; }
 #include <queue>
 #include <regex>
 
+#include "native-2-web-plugin.hpp"
+
 using namespace std;
 using namespace std::experimental;
 using namespace boost::asio;
