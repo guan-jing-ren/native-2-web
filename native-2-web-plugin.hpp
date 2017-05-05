@@ -12,7 +12,8 @@
 #include <utility>
 #include <vector>
 
-class n2w_plugin : basic_plugin {
+namespace n2w {
+class plugin : basic_plugin {
   using buf_type = std::vector<uint8_t>;
 
   template <typename Reader, typename Writer, typename R, typename... Args,
@@ -77,5 +78,6 @@ public:
   // TODO: Register push notifier.
   // TODO: Register kaonashi.
 };
+}
 
 #endif
