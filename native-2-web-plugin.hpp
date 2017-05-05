@@ -71,6 +71,10 @@ class plugin : basic_plugin {
     pointer_to_function[pointer] = caller;
   }
 
+  std::unordered_set<std::string> services;
+  std::unordered_set<std::string> pusher_notifiers;
+  std::unordered_set<std::string> kaonashis;
+
 public:
   n2w_plugin() : basic_plugin(nullptr) {}
 
