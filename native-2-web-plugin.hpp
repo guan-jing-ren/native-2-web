@@ -81,6 +81,45 @@ public:
   // TODO: Register service.
   // TODO: Register push notifier.
   // TODO: Register kaonashi.
+
+  template <typename R, typename... Args>
+  void register_service(const char *name, R (*callback)(Args...),
+                        const char *description) {
+    register_api(name, callback, description);
+    services.emplace(function_address(callback));
+    n2w::to_js<std::tuple<Args...>>::create_writer();
+    n2w::to_js<R>::create_reader();
+  }
+  template <typename R, typename... Args>
+  void register_push_notifier(const char *name, R (*callback)(Args...),
+                              const char *description) {
+    register_api(name, callback, description);
+    pusher_notifiers.emplace(function_address(callback));
+    n2w::to_js<std::tuple<Args...>>::create_writer();
+    n2w::to_js<R>::create_reader();
+  }
+  template <typename R, typename... Args>
+  void register_kaonashi(const char *name, R (*callback)(Args...),
+                         const char *description) {
+    register_api(name, callback, description);
+    kaonashis.emplace(function_address(callback));
+    n2w::to_js<std::tuple<Args...>>::create_writer();
+  }
+
+  std::vector<std::string> get_services() {
+    return std::vector<std::string>{cbegin(services), cend(services)};
+  }
+  std::vector<std::string> get_push_notifiers() {
+    return std::vector<std::string>{cbegin(pusher_notifiers),
+                                    cend(pusher_notifiers)};
+  }
+  std::vector<std::string> get_kaonashis() {
+    return std::vector<std::string>{cbegin(kaonashis), cend(kaonashis)};
+  }
+
+  std::string get_javascript(std::string pointer) {
+    return pointer_to_javascript[pointer];
+  }
 };
 }
 
