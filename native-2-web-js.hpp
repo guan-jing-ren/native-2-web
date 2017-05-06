@@ -24,8 +24,7 @@ template <> const string js_constructor<double> = "Float64";
 template <typename T> struct to_js {
   template <typename U = T>
   static auto create_reader() -> enable_if_t<is_arithmetic<U>{}, string> {
-    return is_same<U, bool>{} ? R"(read_bool)"
-                              :
+    return is_same<U, bool>{} ? R"(read_bool)" :
                               R"(function (data, offset) {
   return read_number(data, offset, 'get)" +
                                   js_constructor<U> + R"(');
@@ -33,8 +32,7 @@ template <typename T> struct to_js {
   }
   template <typename U = T>
   static auto create_writer() -> enable_if_t<is_arithmetic<U>{}, string> {
-    return is_same<U, bool>{} ? R"(write_bool)"
-                              :
+    return is_same<U, bool>{} ? R"(write_bool)" :
                               R"(function (object) {
   return write_number(object, 'set)" +
                                   js_constructor<U> + R"(');
@@ -96,24 +94,24 @@ template <> struct to_js<char16_t> : to_js<char32_t> {};
 template <> struct to_js<wchar_t> : to_js<char32_t> {};
 
 template <typename T, typename... Ts> struct to_js_heterogenous {
-  template static string create_reader() {
+  static string create_reader() {
     return to_js<T>::create_reader() + ",\n" +
            to_js_heterogenous<Ts...>::create_reader();
   }
-  template static string create_writer() {
+  static string create_writer() {
     return to_js<T>::create_writer() + ",\n" +
            to_js_heterogenous<Ts...>::create_writer();
   }
-  template static string create_html() {
+  static string create_html() {
     return to_js<T>::create_html() + ",\n" +
            to_js_heterogenous<Ts...>::create_html();
   }
 };
 
 template <typename T> struct to_js_heterogenous<T> {
-  template static string create_reader() { return to_js<T>::create_reader(); }
-  template static string create_writer() { return to_js<T>::create_writer(); }
-  template static string create_html() { return to_js<T>::create_html(); }
+  static string create_reader() { return to_js<T>::create_reader(); }
+  static string create_writer() { return to_js<T>::create_writer(); }
+  static string create_html() { return to_js<T>::create_html(); }
 };
 
 template <typename T, typename U> struct to_js<pair<T, U>> {
