@@ -125,6 +125,9 @@ template <typename T> struct deserializer {
     deserialize(i, static_cast<underlying_type_t<U> &>(t));
   }
 };
+template <> struct deserializer<void *> {
+  template <typename I> static auto deserialize(I &i, void *) {}
+};
 template <typename T, size_t N> struct deserializer<T[N]> {
   template <typename I> static void deserialize(I &i, T (&t)[N]) {
     deserialize_sequence<T>(N, i, t, is_arithmetic<T>{});

@@ -5,6 +5,7 @@
 #include "native-2-web-js.hpp"
 #include "native-2-web-readwrite.hpp"
 
+#include <boost/preprocessor.hpp>
 #include <experimental/filesystem>
 #include <string>
 #include <tuple>
@@ -13,22 +14,24 @@
 #include <vector>
 
 namespace n2w {
+
 class plugin : basic_plugin {
   using buf_type = std::vector<uint8_t>;
+  template <typename... Args>
+  using args_t =
+      std::conditional_t<sizeof...(Args), std::tuple<Args...>, void *>;
 
-  template <typename Reader, typename Writer, typename R, typename... Args,
-            std::size_t... Is>
+  template <typename R, typename... Args, std::size_t... Is>
   auto create_caller(R (*callback)(Args...), std::index_sequence<Is...>) {
-    using namespace std;
-    using args_type = tuple<Args...>;
+    using args_type = args_t<Args...>;
     auto reader = [](const buf_type &in) -> args_type {
       args_type args;
-      n2w::deserialize<args_type>(cbegin(in), args);
+      deserialize(cbegin(in), args);
       return args;
     };
     auto writer = [](const R &return_val) -> buf_type {
       buf_type buf;
-      n2w::serialize<R>(return_val, back_inserter(buf));
+      serialize(return_val, back_inserter(buf));
       return buf;
     };
     auto caller = [reader, writer, callback](const buf_type &in) -> buf_type {
@@ -76,7 +79,7 @@ class plugin : basic_plugin {
   std::unordered_set<std::string> kaonashis;
 
 public:
-  n2w_plugin() : basic_plugin(nullptr) {}
+  plugin() : basic_plugin(nullptr) {}
 
   // TODO: Register service.
   // TODO: Register push notifier.
@@ -87,23 +90,23 @@ public:
                         const char *description) {
     register_api(name, callback, description);
     services.emplace(function_address(callback));
-    n2w::to_js<std::tuple<Args...>>::create_writer();
-    n2w::to_js<R>::create_reader();
+    to_js<args_t<Args...>>::create_writer();
+    to_js<R>::create_reader();
   }
   template <typename R, typename... Args>
   void register_push_notifier(const char *name, R (*callback)(Args...),
                               const char *description) {
     register_api(name, callback, description);
     pusher_notifiers.emplace(function_address(callback));
-    n2w::to_js<std::tuple<Args...>>::create_writer();
-    n2w::to_js<R>::create_reader();
+    to_js<args_t<Args...>>::create_writer();
+    to_js<R>::create_reader();
   }
   template <typename R, typename... Args>
   void register_kaonashi(const char *name, R (*callback)(Args...),
                          const char *description) {
     register_api(name, callback, description);
     kaonashis.emplace(function_address(callback));
-    n2w::to_js<std::tuple<Args...>>::create_writer();
+    to_js<args_t<Args...>>::create_writer();
   }
 
   std::vector<std::string> get_services() {
@@ -122,5 +125,7 @@ public:
   }
 };
 }
+
+#define DECLARE_API(x) #x, x
 
 #endif

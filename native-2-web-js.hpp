@@ -75,6 +75,12 @@ template <typename T> struct to_js {
   }
 };
 
+template <> struct to_js<void *> {
+  static string create_reader() { return "function (){}"; }
+  static string create_writer() { return "function (){}"; }
+  static string create_html() { return "function (){}"; }
+};
+
 template <> struct to_js<char> {
   static string create_reader() { return R"(read_char)"; }
   static string create_writer() { return R"(write_char)"; }

@@ -135,6 +135,7 @@ template <typename T> struct serializer {
     serialize(static_cast<underlying_type_t<U>>(t), i);
   }
 };
+template <> struct serializer<void> {};
 template <typename T, size_t N> struct serializer<T[N]> {
   template <typename I> static void serialize(const T (&t)[N], I &i) {
     serialize_sequence_bounded<T>(N, t, i);
