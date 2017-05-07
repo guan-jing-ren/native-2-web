@@ -14,12 +14,28 @@
 #include <vector>
 
 namespace n2w {
-
-class plugin : basic_plugin {
+namespace detail {
+class plugin_impl {
+protected:
   using buf_type = std::vector<uint8_t>;
   template <typename... Args>
   using args_t =
       std::conditional_t<sizeof...(Args), std::tuple<Args...>, void *>;
+
+  std::unordered_map<std::string, std::string> pointer_to_name;
+  std::unordered_map<std::string, std::string> name_to_readable;
+  std::unordered_map<std::string, std::string> pointer_to_description;
+  std::unordered_map<std::string, std::function<buf_type(const buf_type &)>>
+      pointer_to_function;
+  std::unordered_map<std::string, std::string> pointer_to_javascript;
+
+  std::unordered_set<std::string> services;
+  std::unordered_set<std::string> push_notifiers;
+  std::unordered_set<std::string> kaonashis;
+};
+}
+
+class plugin : private basic_plugin, public detail::plugin_impl {
 
   template <typename R, typename... Args, std::size_t... Is>
   auto create_caller(R (*callback)(Args...), std::index_sequence<Is...>) {
@@ -53,13 +69,6 @@ class plugin : basic_plugin {
   // Suggest next character to quickly differentiate.
   // Case insensitive.
 
-  std::unordered_map<std::string, std::string> pointer_to_name;
-  std::unordered_map<std::string, std::string> name_to_readable;
-  std::unordered_map<std::string, std::string> pointer_to_description;
-  std::unordered_map<std::string, std::function<buf_type(const buf_type &)>>
-      pointer_to_function;
-  std::unordered_map<std::string, std::string> pointer_to_javascript;
-
   // TODO: Push notifications on same websocket requires all services to
   // generate request ids to differentiate between requests and notifications.
 
@@ -73,10 +82,6 @@ class plugin : basic_plugin {
         create_caller(callback, std::make_index_sequence<sizeof...(Args)>{});
     pointer_to_function[pointer] = caller;
   }
-
-  std::unordered_set<std::string> services;
-  std::unordered_set<std::string> pusher_notifiers;
-  std::unordered_set<std::string> kaonashis;
 
 public:
   plugin() : basic_plugin(nullptr) {}
@@ -97,7 +102,7 @@ public:
   void register_push_notifier(const char *name, R (*callback)(Args...),
                               const char *description) {
     register_api(name, callback, description);
-    pusher_notifiers.emplace(function_address(callback));
+    push_notifiers.emplace(function_address(callback));
     to_js<args_t<Args...>>::create_writer();
     to_js<R>::create_reader();
   }
@@ -113,8 +118,8 @@ public:
     return std::vector<std::string>{cbegin(services), cend(services)};
   }
   std::vector<std::string> get_push_notifiers() {
-    return std::vector<std::string>{cbegin(pusher_notifiers),
-                                    cend(pusher_notifiers)};
+    return std::vector<std::string>{cbegin(push_notifiers),
+                                    cend(push_notifiers)};
   }
   std::vector<std::string> get_kaonashis() {
     return std::vector<std::string>{cbegin(kaonashis), cend(kaonashis)};
@@ -123,9 +128,12 @@ public:
   std::string get_javascript(std::string pointer) {
     return pointer_to_javascript[pointer];
   }
+
+  plugin(const char *dll)
+      : basic_plugin(dll),
+        plugin_impl(static_cast<plugin_impl &>(sym<plugin>("plugin"))) {}
 };
-}
 
 #define DECLARE_API(x) #x, x
-
+}
 #endif
