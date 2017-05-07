@@ -38,7 +38,8 @@ protected:
 class plugin : private basic_plugin, public detail::plugin_impl {
 
   template <typename R, typename... Args, std::size_t... Is>
-  auto create_caller(R (*callback)(Args...), std::index_sequence<Is...>) {
+  static auto create_caller(R (*callback)(Args...),
+                            std::index_sequence<Is...>) {
     using args_type = args_t<Args...>;
     auto reader = [](const buf_type &in) -> args_type {
       args_type args;
@@ -114,14 +115,14 @@ public:
     to_js<args_t<Args...>>::create_writer();
   }
 
-  std::vector<std::string> get_services() {
+  std::vector<std::string> get_services() const {
     return std::vector<std::string>{cbegin(services), cend(services)};
   }
-  std::vector<std::string> get_push_notifiers() {
+  std::vector<std::string> get_push_notifiers() const {
     return std::vector<std::string>{cbegin(push_notifiers),
                                     cend(push_notifiers)};
   }
-  std::vector<std::string> get_kaonashis() {
+  std::vector<std::string> get_kaonashis() const {
     return std::vector<std::string>{cbegin(kaonashis), cend(kaonashis)};
   }
 
