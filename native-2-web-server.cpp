@@ -353,7 +353,7 @@ void check_use_count(io_service &service,
   ]() mutable {
     clog << "Connection " << conn_id << " use count: " << conn.use_count()
          << '\n';
-    if (conn.expired())
+    if (conn.expired() || conn.use_count() < 2)
       return;
 
     timer.async_wait([&service, conn = move(conn), conn_id ](auto ec) mutable {
