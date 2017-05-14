@@ -284,6 +284,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
             string message;
             copy(istream_iterator<char>(self->ws_stuff.stream), {},
                  back_inserter(message));
+            self->ws_stuff.stream.clear();
             clog << "Text message received: " << message << '\n';
             self->do_if_websocket_handles_text(self->ws_stuff.websocket_handler,
                                                move(message));
@@ -292,6 +293,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
             vector<uint8_t> message;
             copy(istream_iterator<char>(self->ws_stuff.stream), {},
                  back_inserter(message));
+            self->ws_stuff.stream.clear();
             clog << "Binary message received\n";
             self->do_if_websocket_handles_binary(
                 self->ws_stuff.websocket_handler, move(message));
