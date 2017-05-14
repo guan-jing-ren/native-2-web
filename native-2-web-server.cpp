@@ -439,6 +439,11 @@ int main() {
   ip::tcp::acceptor acceptor{service, endpoint, true};
   acceptor.listen();
 
+  static auto n2w_fs = []() -> n2w::plugin & {
+    static n2w::plugin n2w_fs{"./libn2w-fs.so"};
+    return n2w_fs;
+  };
+
   struct websocket_handler {
     vector<uint8_t> operator()(string message) { return {3, 1, 4, 1, 5}; }
     string operator()(vector<uint8_t> message) {
@@ -467,7 +472,18 @@ int main() {
       response.status = 200;
       response.reason = "OK";
 
-      if (!filesystem::exists(path, ec)) {
+      if (path == web_root / "modules.js") {
+        response.fields.insert("Content-Type", "javascript");
+        auto services = n2w_fs().get_services();
+        transform(cbegin(services), cend(services), begin(services),
+                  [this](const auto &s) {
+                    return n2w_fs().get_javascript(s) + "\n\n";
+                  });
+        response.body = R"(var fs = (function () {)" +
+                        accumulate(cbegin(services), cend(services), string{}) +
+                        R"(return this;})();)";
+        cerr << response.body;
+      } else if (!filesystem::exists(path, ec)) {
         response.status = 404;
         response.reason = "Not Found";
         response.body = ec.message();

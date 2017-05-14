@@ -26,6 +26,8 @@
         let count = 0;
         ws2.addEventListener('message', (ev) => { console.log(ev.data); if (count++ > 20) ws2.close(); });
     </script>
+    <script src='modules.js' type='text/javascript'></script>
+    <button onclick='fs.current_working_directory(ws)'></button>
 </body>
 
 </html>
