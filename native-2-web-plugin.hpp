@@ -7,6 +7,7 @@
 
 #include <boost/preprocessor.hpp>
 #include <experimental/filesystem>
+#include <regex>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -96,8 +97,11 @@ public:
                         const char *description) {
     register_api(name, callback, description);
     services.emplace(function_address(callback));
-    to_js<args_t<Args...>>::create_writer();
-    to_js<R>::create_reader();
+    pointer_to_javascript[function_address(callback)] =
+        R"(this.)" + string{name} + R"( = create_service(')" +
+        std::regex_replace(function_address(callback), regex{"'"}, R"(\')") +
+        R"(', )" + to_js<args_t<Args...>>::create_writer() + R"(, )" +
+        to_js<R>::create_reader() + R"();)";
   }
   template <typename R, typename... Args>
   void register_push_notifier(const char *name, R (*callback)(Args...),
