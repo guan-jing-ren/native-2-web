@@ -512,3 +512,36 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
     value(subvalue);
   });
 }
+
+/////////////////////////////////////////////////
+// WebSocket management for native to web APIs //
+/////////////////////////////////////////////////
+
+function create_service(pointer, writer, reader) {
+  return function(ws) {
+    let listener = function(e) {
+      ws.removeEventListener('message', listener);
+      this.callback(reader(e.data)[0]);
+    };
+    listener.bind(this);
+
+    let args = [...arguments];
+    args.shift();
+    ws.addEventListener('message', listener);
+    ws.send(pointer);
+    args = writer(...args);
+    if (args) ws.send();
+
+    this.then = function(handler) {
+      this.callback = handler;
+      return this;
+    };
+  };
+}
+function create_push_notifier(pointer, writer, reader) {}
+function create_kaonashi(pointer, writer) {
+  return function(ws) {
+    ws.send(pointer);
+    ws.send(writer(...arguments));
+  };
+}
