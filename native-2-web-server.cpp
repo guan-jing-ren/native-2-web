@@ -444,10 +444,18 @@ int main() {
     return n2w_fs;
   };
 
+  static function<vector<uint8_t>(const vector<uint8_t> &)> null_ref;
   struct websocket_handler {
-    vector<uint8_t> operator()(string message) { return {3, 1, 4, 1, 5}; }
-    string operator()(vector<uint8_t> message) {
-      return "Don't understand message\n";
+    reference_wrapper<const function<vector<uint8_t>(const vector<uint8_t> &)>>
+        service = null_ref;
+
+    void operator()(string message) {
+      service = n2w_fs().get_function(message);
+    }
+    vector<uint8_t> operator()(vector<uint8_t> message) {
+      if (!service.get())
+        return {};
+      return service(message);
     }
   };
 

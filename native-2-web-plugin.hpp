@@ -134,6 +134,11 @@ public:
     return pointer_to_javascript[pointer];
   }
 
+  std::reference_wrapper<const std::function<buf_type(const buf_type &)>>
+  get_function(const std::string &pointer) {
+    return std::cref(pointer_to_function[pointer]);
+  }
+
   plugin(const char *dll)
       : basic_plugin(dll),
         plugin_impl(static_cast<plugin_impl &>(sym<plugin>("plugin"))) {}
