@@ -521,21 +521,22 @@ function create_service(pointer, writer, reader) {
   return function(ws) {
     let listener = function(e) {
       ws.removeEventListener('message', listener);
-      this.callback(reader(e.data)[0]);
-    };
-    listener.bind(this);
+      this.callback(reader(new DataView(e.data), 0)[0]);
+    }.bind(this);
+    ws.binaryType = "arraybuffer";
 
     let args = [...arguments];
     args.shift();
-    ws.addEventListener('message', listener);
-    ws.send(pointer);
-    args = writer(...args);
-    if (args) ws.send();
 
     this.then = function(handler) {
       this.callback = handler;
-      return this;
-    };
+      ws.addEventListener('message', listener);
+      ws.send(pointer);
+      args = writer(...args) || new ArrayBuffer();
+      ws.send(args);
+    }.bind(this);
+
+    return this;
   };
 }
 function create_push_notifier(pointer, writer, reader) {}
