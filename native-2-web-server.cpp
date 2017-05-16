@@ -462,10 +462,9 @@ int main() {
   struct http_handler {
     using websocket_handler_type = websocket_handler;
 
-    const filesystem::path web_root = filesystem::current_path();
-
     http::response<http::string_body>
     operator()(const http::request<http::string_body> &request) {
+      static const filesystem::path web_root = filesystem::current_path();
       normalized_uri uri{request.url};
       auto path = web_root / uri.path;
       clog << "Thread: " << this_thread::get_id()
