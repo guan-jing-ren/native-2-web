@@ -521,7 +521,11 @@ function create_service(pointer, writer, reader) {
   return function(ws) {
     let listener = function(e) {
       ws.removeEventListener('message', listener);
-      this.callback(reader(new DataView(e.data), 0)[0]);
+      let ret = reader(new DataView(e.data), 0);
+      if (ret)
+        this.callback(ret[0]);
+      else
+        this.callback();
     }.bind(this);
     ws.binaryType = "arraybuffer";
 
@@ -532,7 +536,7 @@ function create_service(pointer, writer, reader) {
       this.callback = handler;
       ws.addEventListener('message', listener);
       ws.send(pointer);
-      args = writer(...args) || new ArrayBuffer();
+      args = writer(args) || new ArrayBuffer();
       ws.send(args);
     }.bind(this);
 
