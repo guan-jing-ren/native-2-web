@@ -294,7 +294,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
             copy(istream_iterator<char>(self->ws_stuff.stream), {},
                  back_inserter(message));
             self->ws_stuff.stream.clear();
-            clog << "Binary message received\n";
+            clog << "Binary message received, size: " << message.size() << '\n';
             self->do_if_websocket_handles_binary(
                 self->ws_stuff.websocket_handler, move(message));
           } break;
