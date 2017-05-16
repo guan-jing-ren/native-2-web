@@ -22,6 +22,8 @@ protected:
   template <typename... Args>
   using args_t =
       std::conditional_t<sizeof...(Args), std::tuple<Args...>, void *>;
+  template <typename Ret>
+  using ret_t = std::conditional_t<std::is_void<Ret>{}, void *, Ret>;
 
   std::unordered_map<std::string, std::string> pointer_to_name;
   std::unordered_map<std::string, std::string> name_to_readable;
@@ -37,25 +39,36 @@ protected:
 }
 
 class plugin : private basic_plugin, public detail::plugin_impl {
-
+  template <std::size_t... Is, typename R, typename W, typename C>
+  static auto generic_caller(R &&reader, W &&writer, C &&callback) {
+    return [reader, writer, callback](const buf_type &in) -> buf_type {
+      return writer(callback(get<Is>(reader(in))...));
+    };
+  }
+  template <std::size_t... Is, typename R, typename W, typename... Args>
+  static auto generic_caller(R &&reader, W &&writer,
+                             void (*callback)(Args...)) {
+    return [reader, writer, callback](const buf_type &in) -> buf_type {
+      callback(get<Is>(reader(in))...);
+      return writer(nullptr);
+    };
+  }
   template <typename R, typename... Args, std::size_t... Is>
   static auto create_caller(R (*callback)(Args...),
                             std::index_sequence<Is...>) {
     using args_type = args_t<Args...>;
+    using ret_type = ret_t<R>;
     auto reader = [](const buf_type &in) -> args_type {
       args_type args;
       deserialize(cbegin(in), args);
       return args;
     };
-    auto writer = [](const R &return_val) -> buf_type {
+    auto writer = [](const ret_t<R> &return_val) -> buf_type {
       buf_type buf;
       serialize(return_val, back_inserter(buf));
       return buf;
     };
-    auto caller = [reader, writer, callback](const buf_type &in) -> buf_type {
-      return writer(callback(get<Is>(reader(in))...));
-    };
-    return caller;
+    return generic_caller<Is...>(reader, writer, callback);
   }
 
   // cd, search through names, then descriptions, using the following strategy:
@@ -101,7 +114,7 @@ public:
         R"(this.)" + string{name} + R"( = create_service(')" +
         std::regex_replace(function_address(callback), regex{"'"}, R"(\')") +
         R"(', )" + to_js<args_t<Args...>>::create_writer() + R"(, )" +
-        to_js<R>::create_reader() + R"();)";
+        to_js<ret_t<R>>::create_reader() + R"();)";
   }
   template <typename R, typename... Args>
   void register_push_notifier(const char *name, R (*callback)(Args...),
@@ -109,7 +122,7 @@ public:
     register_api(name, callback, description);
     push_notifiers.emplace(function_address(callback));
     to_js<args_t<Args...>>::create_writer();
-    to_js<R>::create_reader();
+    to_js<ret_t<R>>::create_reader();
   }
   template <typename R, typename... Args>
   void register_kaonashi(const char *name, R (*callback)(Args...),
