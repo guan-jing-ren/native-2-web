@@ -433,7 +433,49 @@ struct normalized_uri {
   normalized_uri(const char *uri) : normalized_uri(string(uri)) {}
 };
 
+vector<pair<vector<string>, n2w::plugin>> plugins;
+
+void reload_plugins(const filesystem::path &root) {
+  const regex lib_rx{"libn2w-.+"};
+  plugins.clear();
+  filesystem::recursive_directory_iterator it{
+      root, filesystem::directory_options::skip_permission_denied};
+  for (const auto &entry : it) {
+    auto path = entry.path();
+    auto name = path.filename().generic_u8string();
+    if (!regex_match(name, lib_rx)) {
+      it.disable_recursion_pending();
+      continue;
+    }
+    if (filesystem::is_directory(path))
+      continue;
+    if (path.extension() != ".so")
+      continue;
+    auto modfile = path.generic_u8string();
+    vector<string> hierarchy;
+    auto first = begin(path);
+    advance(first, distance(cbegin(root), cend(root)));
+    path.replace_extension("");
+    transform(first, end(path), back_inserter(hierarchy),
+              mem_fn(&filesystem::path::generic_u8string));
+    transform(cbegin(hierarchy), cend(hierarchy), begin(hierarchy),
+              [offset = strlen("libn2w-")](const auto &module) {
+                return module.substr(offset);
+              });
+    plugins.emplace_back(hierarchy, modfile.c_str());
+  }
+  sort(begin(plugins), end(plugins),
+       [](const auto &l, const auto &r) { return l.first < r.first; });
+  for (const auto &p : plugins) {
+    for (const auto &mod : p.first)
+      cerr << mod << '.';
+    cerr << '\n';
+  }
+}
+
 int main() {
+  reload_plugins(filesystem::current_path());
+
   io_service service;
   ip::tcp::endpoint endpoint{ip::address_v4::from_string("0.0.0.0"), 9001};
   ip::tcp::acceptor acceptor{service, endpoint, true};
