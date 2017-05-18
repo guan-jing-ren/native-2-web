@@ -27,7 +27,7 @@
         ws2.addEventListener('message', (ev) => { console.log(ev.data); if (count++ > 20) ws2.close(); });
     </script>
     <script src='modules.js' type='text/javascript'></script>
-    <button onclick='fs.current_working_directory(ws).then(data => {console.log(data); fs.set_current_working_directory(ws, "/home/kykwan/").then(data => fs.current_working_directory(ws).then(console.log));})'></button>
+    <button onclick='n2w.fs.current_working_directory(ws).then(data => {console.log(data); n2w.fs.set_current_working_directory(ws, "/home/kykwan/").then(data => n2w.sys.fs.current_working_directory(ws).then(console.log));})'></button>
 </body>
 
 </html>
