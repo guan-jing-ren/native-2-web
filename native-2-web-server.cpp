@@ -433,7 +433,7 @@ struct normalized_uri {
   normalized_uri(const char *uri) : normalized_uri(string(uri)) {}
 };
 
-vector<pair<vector<string>, n2w::plugin>> plugins;
+map<vector<string>, n2w::plugin> plugins;
 
 void reload_plugins(const filesystem::path &root) {
   const regex lib_rx{"libn2w-.+"};
@@ -462,19 +462,12 @@ void reload_plugins(const filesystem::path &root) {
               [offset = strlen("libn2w-")](const auto &module) {
                 return module.substr(offset);
               });
-    plugins.emplace_back(hierarchy, modfile.c_str());
-  }
-  sort(begin(plugins), end(plugins),
-       [](const auto &l, const auto &r) { return l.first < r.first; });
-  for (const auto &p : plugins) {
-    for (const auto &mod : p.first)
-      cerr << mod << '.';
-    cerr << '\n';
+    plugins.emplace(hierarchy, modfile.c_str());
   }
 }
 
-string create_modules() {
-  reload_plugins(filesystem::current_path());
+string create_modules(const filesystem::path &path) {
+  reload_plugins(path);
   string modules = "var n2w = (function () {\n";
   for (auto &p : plugins) {
     string module;
@@ -506,18 +499,17 @@ int main() {
   ip::tcp::acceptor acceptor{service, endpoint, true};
   acceptor.listen();
 
-  static auto n2w_fs = []() -> n2w::plugin & {
-    static n2w::plugin n2w_fs{"./libn2w-fs.so"};
-    return n2w_fs;
-  };
-
   static function<vector<uint8_t>(const vector<uint8_t> &)> null_ref;
   struct websocket_handler {
     reference_wrapper<const function<vector<uint8_t>(const vector<uint8_t> &)>>
         service = null_ref;
 
     void operator()(string message) {
-      service = n2w_fs().get_function(message);
+      for (auto &plugin : plugins) {
+        service = cref(plugin.second.get_function(message));
+        if (service.get())
+          return;
+      }
     }
     vector<uint8_t> operator()(vector<uint8_t> message) {
       if (!service.get())
@@ -548,12 +540,7 @@ int main() {
 
       if (path == web_root / "modules.js") {
         response.fields.insert("Content-Type", "javascript");
-        auto services = n2w_fs().get_services();
-        transform(cbegin(services), cend(services), begin(services),
-                  [this](const auto &s) {
-                    return n2w_fs().get_javascript(s) + "\n\n";
-                  });
-        response.body = create_modules();
+        response.body = create_modules(web_root);
         cerr << response.body;
       } else if (!filesystem::exists(path, ec)) {
         response.status = 404;
