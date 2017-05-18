@@ -111,10 +111,10 @@ public:
     register_api(name, callback, description);
     services.emplace(function_address(callback));
     pointer_to_javascript[function_address(callback)] =
-        R"(this.)" + string{name} + R"( = create_service(')" +
+        R"(create_service(')" +
         std::regex_replace(function_address(callback), regex{"'"}, R"(\')") +
         R"(', )" + to_js<args_t<Args...>>::create_writer() + R"(, )" +
-        to_js<ret_t<R>>::create_reader() + R"();)";
+        to_js<ret_t<R>>::create_reader() + R"())";
   }
   template <typename R, typename... Args>
   void register_push_notifier(const char *name, R (*callback)(Args...),
@@ -142,6 +142,8 @@ public:
   std::vector<std::string> get_kaonashis() const {
     return std::vector<std::string>{cbegin(kaonashis), cend(kaonashis)};
   }
+
+  std::string get_name(std::string pointer) { return pointer_to_name[pointer]; }
 
   std::string get_javascript(std::string pointer) {
     return pointer_to_javascript[pointer];
