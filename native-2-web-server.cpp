@@ -473,9 +473,34 @@ void reload_plugins(const filesystem::path &root) {
   }
 }
 
-int main() {
+string create_modules() {
   reload_plugins(filesystem::current_path());
+  string modules = "var n2w = (function () {\n";
+  for (auto &p : plugins) {
+    string module;
+    for (auto first = cbegin(p.first), last = min(first + 1, cend(p.first));
+         last != cend(p.first); ++last) {
+      module = accumulate(first, last, string{},
+                          [](auto mods, const auto &mod) {
+                            return mods + "[\"" + mod + "\"]";
+                          });
+      modules += "this" + module + " = this" + module + " || {};\n";
+    }
+    module = accumulate(
+        cbegin(p.first), cend(p.first), string{},
+        [](auto mods, const auto &mod) { return mods + "[\"" + mod + "\"]"; });
+    modules += "this" + module + " = this" + module + " || {};\n";
 
+    for (auto &s : p.second.get_services()) {
+      modules += "this" + module + '.' + p.second.get_name(s) + " = " +
+                 p.second.get_javascript(s) + ";\n";
+    }
+  }
+  modules += "return this;\n})();\n";
+  return modules;
+}
+
+int main() {
   io_service service;
   ip::tcp::endpoint endpoint{ip::address_v4::from_string("0.0.0.0"), 9001};
   ip::tcp::acceptor acceptor{service, endpoint, true};
@@ -528,9 +553,7 @@ int main() {
                   [this](const auto &s) {
                     return n2w_fs().get_javascript(s) + "\n\n";
                   });
-        response.body = R"(var fs = (function () {)" +
-                        accumulate(cbegin(services), cend(services), string{}) +
-                        R"(return this;})();)";
+        response.body = create_modules();
         cerr << response.body;
       } else if (!filesystem::exists(path, ec)) {
         response.status = 404;
