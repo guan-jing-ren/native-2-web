@@ -283,5 +283,14 @@ struct serializer<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
     }                                                                          \
   };                                                                           \
   }
+
+#define N2W__SERIALIZE_FROM(s, c)                                              \
+  namespace n2w {                                                              \
+  template <> struct serializer<s> {                                           \
+    template <typename I> static void serialize(const s &_s, I &i) {           \
+      serializer<decltype(c(_s))>::serialize(c(_s), i);                        \
+    }                                                                          \
+  };                                                                           \
+  }
 }
 #endif

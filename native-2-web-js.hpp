@@ -468,6 +468,11 @@ const string to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>>::base_names =
   template <>                                                                  \
   struct to_js<s> : to_js<N2W__USING_STRUCTURE(s, m, __VA_ARGS__)> {};         \
   }
+
+#define N2W__JS_FROM(s, c)                                                     \
+  namespace n2w {                                                              \
+  template <> struct to_js<s> : to_js<decltype(c(s{}))> {};                    \
+  }
 }
 
 #endif
