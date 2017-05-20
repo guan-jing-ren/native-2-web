@@ -9,16 +9,17 @@ using namespace std;
 using namespace std::experimental;
 using namespace n2w;
 
-auto current_working_directory() { return filesystem::current_path(); }
+N2W__JS_CONV(filesystem::path, string)
 N2W__SERIALIZE_FROM(filesystem::path,
                     mem_fn(&filesystem::path::generic_u8string))
-N2W__JS_FROM(filesystem::path, mem_fn(&filesystem::path::generic_u8string))
+N2W__DESERIALIZE_TO(string, filesystem::path);
+
+auto current_working_directory() { return filesystem::current_path(); }
 
 auto set_current_working_directory(const filesystem::path &path) {
   cerr << "Setting current path: " << path << '\n';
   filesystem::current_path(path);
 }
-N2W__DESERIALIZE_TO(string, filesystem::path);
 
 plugin plugin = []() {
   n2w::plugin plugin;
