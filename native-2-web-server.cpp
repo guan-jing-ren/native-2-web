@@ -467,22 +467,33 @@ void reload_plugins() {
   }
 }
 
-string create_modules(const filesystem::path &path) {
-  reload_plugins(path);
+n2w::plugin server = []() {
+  n2w::plugin server;
+  server.register_service(DECLARE_API(reload_plugins), "");
+  return server;
+}();
+
+string create_modules() {
+  reload_plugins();
   string modules = "var n2w = (function () {\n";
+  modules += "this['$server'] = {};\n";
+  for (auto &s : server.get_services()) {
+    modules += "this.$server." + server.get_name(s) + " = " +
+               server.get_javascript(s) + ";\n";
+  }
+
   for (auto &p : plugins) {
     string module;
     for (auto first = cbegin(p.first), last = min(first + 1, cend(p.first));
          last != cend(p.first); ++last) {
-      module = accumulate(first, last, string{},
-                          [](auto mods, const auto &mod) {
-                            return mods + "[\"" + mod + "\"]";
-                          });
+      module = accumulate(
+          first, last, string{},
+          [](auto mods, const auto &mod) { return mods + "['" + mod + "']"; });
       modules += "this" + module + " = this" + module + " || {};\n";
     }
     module = accumulate(
         cbegin(p.first), cend(p.first), string{},
-        [](auto mods, const auto &mod) { return mods + "[\"" + mod + "\"]"; });
+        [](auto mods, const auto &mod) { return mods + "['" + mod + "']"; });
     modules += "this" + module + " = this" + module + " || {};\n";
 
     for (auto &s : p.second.get_services()) {
