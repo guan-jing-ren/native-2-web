@@ -21,7 +21,7 @@ protected:
   using buf_type = std::vector<uint8_t>;
   template <typename... Args>
   using args_t =
-      std::conditional_t<sizeof...(Args), std::tuple<Args...>, void *>;
+      std::conditional_t<sizeof...(Args), std::tuple<decay_t<Args>...>, void *>;
   template <typename Ret>
   using ret_t = std::conditional_t<std::is_void<Ret>{}, void *, Ret>;
 
