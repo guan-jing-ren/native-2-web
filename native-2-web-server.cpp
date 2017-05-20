@@ -433,13 +433,14 @@ struct normalized_uri {
   normalized_uri(const char *uri) : normalized_uri(string(uri)) {}
 };
 
+const filesystem::path web_root = filesystem::current_path();
 map<vector<string>, n2w::plugin> plugins;
 
-void reload_plugins(const filesystem::path &root) {
+void reload_plugins() {
   const regex lib_rx{"libn2w-.+"};
   plugins.clear();
   filesystem::recursive_directory_iterator it{
-      root, filesystem::directory_options::skip_permission_denied};
+      web_root, filesystem::directory_options::skip_permission_denied};
   for (const auto &entry : it) {
     auto path = entry.path();
     auto name = path.filename().generic_u8string();
@@ -454,7 +455,7 @@ void reload_plugins(const filesystem::path &root) {
     auto modfile = path.generic_u8string();
     vector<string> hierarchy;
     auto first = begin(path);
-    advance(first, distance(cbegin(root), cend(root)));
+    advance(first, distance(cbegin(web_root), cend(web_root)));
     path.replace_extension("");
     transform(first, end(path), back_inserter(hierarchy),
               mem_fn(&filesystem::path::generic_u8string));
@@ -523,7 +524,6 @@ int main() {
 
     http::response<http::string_body>
     operator()(const http::request<http::string_body> &request) {
-      static const filesystem::path web_root = filesystem::current_path();
       normalized_uri uri{request.url};
       auto path = web_root / uri.path;
       clog << "Thread: " << this_thread::get_id()
@@ -540,7 +540,7 @@ int main() {
 
       if (path == web_root / "modules.js") {
         response.fields.insert("Content-Type", "javascript");
-        response.body = create_modules(web_root);
+        response.body = create_modules();
         cerr << response.body;
       } else if (!filesystem::exists(path, ec)) {
         response.status = 404;
