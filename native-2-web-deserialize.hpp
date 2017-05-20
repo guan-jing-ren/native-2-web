@@ -270,5 +270,17 @@ struct deserializer<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
     }                                                                          \
   };                                                                           \
   }
+
+#define N2W__DESERIALIZE_TO(s, c)                                              \
+  namespace n2w {                                                              \
+  template <> struct deserializer<decltype(c(s{}))> {                          \
+    template <typename I>                                                      \
+    static void deserialize(I &i, decltype(c(s{})) &_c) {                      \
+      s _s;                                                                    \
+      deserializer<s>::deserialize(i, _s);                                     \
+      _c = c(_s);                                                              \
+    }                                                                          \
+  };                                                                           \
+  }
 }
 #endif

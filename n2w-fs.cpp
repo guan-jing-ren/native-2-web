@@ -14,10 +14,11 @@ N2W__SERIALIZE_FROM(filesystem::path,
                     mem_fn(&filesystem::path::generic_u8string))
 N2W__JS_FROM(filesystem::path, mem_fn(&filesystem::path::generic_u8string))
 
-auto set_current_working_directory(string path) {
+auto set_current_working_directory(const filesystem::path &path) {
   cerr << "Setting current path: " << path << '\n';
   filesystem::current_path(path);
 }
+N2W__DESERIALIZE_TO(string, filesystem::path);
 
 plugin plugin = []() {
   n2w::plugin plugin;
