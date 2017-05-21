@@ -336,49 +336,88 @@ function write_multiarray(object, type, extents) {
 // Native to HTML generator //
 //////////////////////////////
 
-function html_bool(parent, value, dispatcher) {
-  d3.select(parent).attr('class', null);
+function persona_bool(parent) {
   let node = d3.select(parent)
                  .append('input')
+                 .classed('n2w-persona-bool', true)
                  .attr('type', 'checkbox')
                  .attr('value', false)
                  .node();
-  dispatcher.on('gather', () => value(node.checked ? true : false));
+  return () => node.checked ? true : false;
 }
 
-function html_number(parent, value, dispatcher) {
-  d3.select(parent).attr('class', null);
-  let node = d3.select(parent).append('input').attr('type', 'number').node();
-  dispatcher.on('gather', () => value(node.value || 0));
+function persona_number(parent) {
+  let node = d3.select(parent)
+                 .append('input')
+                 .classed('n2w-persona-number', true)
+                 .attr('type', 'number')
+                 .node();
+  return () => node.value || 0;
 }
 
-function html_enum(parent, value, dispatcher, enums) {
-  d3.select(parent).attr('class', null);
-  let select = d3.select(parent).append('select');
+function persona_enum(parent, enums) {
+  let select =
+      d3.select(parent).append('select').classed('n2w-persona-enum', true);
   Object.keys(enums)
       .filter(k => enums[k].length > 0)
       .map(k => +k)
       .sort((l, r) => l - r)
       .map(k => select.append('option').attr('value', k).text(enums[k]));
-  dispatcher.on('gather', () => value(+select.node().value));
+  return () => +select.node().value;
+}
+
+function persona_char(parent, persona) {
+  let node = d3.select(parent)
+                 .append('input')
+                 .classed(persona, true)
+                 .attr('type', 'text')
+                 .node();
+  return () => node.value[0] || '\0';
+}
+
+function persona_string(parent) {
+  let node = d3.select(parent)
+                 .append('input')
+                 .classed('n2w-persona-string', true)
+                 .attr('type', 'text')
+                 .node();
+  return () => node.value || '';
+}
+
+function html_bool(parent, value, dispatcher) {
+  d3.select(parent).classed('n2w-terminal', true);
+  let value_getter = persona_bool(parent);
+  dispatcher.on('gather', () => value(value_getter()));
+}
+
+function html_number(parent, value, dispatcher) {
+  d3.select(parent).classed('n2w-terminal', true);
+  let value_getter = persona_number(parent);
+  dispatcher.on('gather', () => value(value_getter()));
+}
+
+function html_enum(parent, value, dispatcher, enums) {
+  d3.select(parent).classed('n2w-terminal', true);
+  let value_getter = persona_enum(parent, enums);
+  dispatcher.on('gather', () => value(value_getter()));
 }
 
 function html_char(parent, value, dispatcher) {
-  d3.select(parent).attr('class', null);
-  let node = d3.select(parent).append('input').attr('type', 'text').node();
-  dispatcher.on('gather', () => value(node.value[0] || '\0'));
+  d3.select(parent).classed('n2w-terminal', true);
+  let value_getter = persona_char(parent, 'n2w-persona-char');
+  dispatcher.on('gather', () => value(value_getter()));
 }
 
 function html_char32(parent, value, dispatcher) {
-  d3.select(parent).attr('class', null);
-  let node = d3.select(parent).append('input').attr('type', 'text').node();
-  dispatcher.on('gather', () => value(node.value[0] || '\0'));
+  d3.select(parent).classed('n2w-terminal', true);
+  let value_getter = persona_char(parent, 'n2w-persona-char32');
+  dispatcher.on('gather', () => value(value_getter()));
 }
 
 function html_string(parent, value, dispatcher) {
-  d3.select(parent).attr('class', null);
-  let node = d3.select(parent).append('input').attr('type', 'text').node();
-  dispatcher.on('gather', () => value(node.value || ''));
+  d3.select(parent).classed('n2w-terminal', true);
+  let value_getter = persona_string(parent);
+  dispatcher.on('gather', () => value(value_getter()));
 }
 
 function html_structure(
