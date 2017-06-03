@@ -359,6 +359,15 @@ function persona_number(parent) {
   return () => node.value || 0;
 }
 
+function persona_enum_option(parent, value, name) {
+  return d3.select(parent)
+      .append('option')
+      .classed('n2w-persona-enum-option', true)
+      .attr('value', value)
+      .text(name)
+      .node();
+}
+
 function persona_enum(parent, enums) {
   let select =
       d3.select(parent).append('select').classed('n2w-persona-enum', true);
@@ -366,7 +375,7 @@ function persona_enum(parent, enums) {
       .filter(k => enums[k].length > 0)
       .map(k => +k)
       .sort((l, r) => l - r)
-      .map(k => select.append('option').attr('value', k).text(enums[k]));
+      .forEach(k => persona_enum_option(select.node(), k, enums[k]));
   return () => +select.node().value;
 }
 
