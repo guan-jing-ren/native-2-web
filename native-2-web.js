@@ -414,10 +414,10 @@ function persona_structure_bases(parent) {
 }
 
 function persona_structure_baseholder(parent) {
-  let base_row = d3.select(parent).append('tr').classed(
-      'n2w-persona-structure-baseholder', true);
-  persona_structure_baselabel(base_row.node());
-  return persona_structure_bases(base_row.node());
+  return d3.select(parent)
+      .append('tr')
+      .classed('n2w-persona-structure-baseholder', true)
+      .node();
 }
 
 function persona_structure(parent) {
@@ -534,7 +534,9 @@ function html_structure(
 
   let bases = {};
   if (base_names && base_names.length > 0) {
-    let base_data = persona_structure_baseholder(table);
+    let base_holder = persona_structure_baseholder(table);
+    persona_structure_baselabel(base_holder);
+    let base_data = persona_structure_bases(base_holder);
     base_html.forEach((h, i) => {
       let basedispatcher = create_gatherer();
       basedispatchers.push(basedispatcher);
