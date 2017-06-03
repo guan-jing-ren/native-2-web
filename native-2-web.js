@@ -568,36 +568,36 @@ function html_structure(
   });
 }
 
-function html_bounded(parent, value, dispatcher, html, size) {
+function html_container(parent, value, dispatcher, html, size) {
   let table = persona_container(parent);
   let subvalue = [];
   let subdispatchers = [];
 
-  for (let i = 0; i < size; ++i) {
-    let subdispatcher = create_gatherer();
-    subdispatchers.push(subdispatcher);
-    html(persona_container_element(table), v => subvalue[i] = v, subdispatcher);
+  if (size !== undefined)
+    for (let i = 0; i < size; ++i) {
+      let subdispatcher = create_gatherer();
+      subdispatchers.push(subdispatcher);
+      html(
+          persona_container_element(table), v => subvalue[i] = v,
+          subdispatcher);
+    }
+  else {
+    let index = 0;
+    persona_container_expander(table, () => {
+      let subdispatcher = create_gatherer();
+      subdispatchers.push(subdispatcher);
+      let slot = index++;
+      html(persona_container_element(table), v => {
+        subvalue[slot] = v;
+      }, subdispatcher);
+    });
   }
 
   subdispatch(dispatcher, subdispatchers, () => value(subvalue));
 }
 
-function html_sequence(parent, value, dispatcher, html) {
-  let table = persona_container(parent);
-  let subvalue = [], index = 0;
-  let subdispatchers = [];
-
-  persona_container_expander(table, () => {
-    let subdispatcher = create_gatherer();
-    subdispatchers.push(subdispatcher);
-    let slot = index++;
-    html(persona_container_element(table), v => {
-      subvalue[slot] = v;
-    }, subdispatcher);
-  });
-
-  subdispatch(dispatcher, subdispatchers, () => value(subvalue));
-}
+var html_bounded = html_container;
+var html_sequence = html_container;
 
 function html_associative(parent, value, dispatcher, html_key, html_value) {
   let subvalue = {};
