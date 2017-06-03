@@ -336,6 +336,10 @@ function write_multiarray(object, type, extents) {
 // Native to HTML generator //
 //////////////////////////////
 
+function create_gatherer() {
+  return d3.dispatch('gather');
+}
+
 function persona_bool(parent) {
   let node = d3.select(parent)
                  .append('input')
@@ -433,7 +437,7 @@ function html_structure(
     base_row.append('td').text('__bases:');
     let base_data = base_row.append('td').append('table');
     base_html.forEach((h, i) => {
-      let basedispatcher = d3.dispatch('gather');
+      let basedispatcher = create_gatherer();
       basedispatchers.push(basedispatcher);
       let row = base_data.append('tr');
       row.append('td').text(base_names[i]);
@@ -449,7 +453,7 @@ function html_structure(
       let row = d3.select(table).append('tr');
       row.append('td').text((names ? names[i] : i) + ': ');
       let cell = row.append('td').attr('class', 'n2w-html').node();
-      let subdispatcher = d3.dispatch('gather');
+      let subdispatcher = create_gatherer();
       subdispatchers.push(subdispatcher);
       h(cell, v => subvalue[names ? names[i] : i] = v, subdispatcher);
     });
@@ -469,7 +473,7 @@ function html_bounded(parent, value, dispatcher, html, size) {
   let subdispatchers = [];
 
   for (let i = 0; i < size; ++i) {
-    let subdispatcher = d3.dispatch('gather');
+    let subdispatcher = create_gatherer();
     subdispatchers.push(subdispatcher);
     html(
         d3.select(table)
@@ -503,7 +507,7 @@ function html_sequence(parent, value, dispatcher, html) {
                            .append('td')
                            .attr('class', 'n2w-html')
                            .node();
-            let subdispatcher = d3.dispatch('gather');
+            let subdispatcher = create_gatherer();
             subdispatchers.push(subdispatcher);
             let slot = index++;
             html(cell, v => { subvalue[slot] = v; }, subdispatcher);
@@ -520,11 +524,11 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
   let subdispatchers = [];
 
   html_sequence(
-      parent, v => {}, d3.dispatch('gather'),
+      parent, v => {}, create_gatherer(),
       (p, v, d) => {
         let key_value = [];
-        let key_subdispatcher = d3.dispatch('gather'),
-            value_subdispatcher = d3.dispatch('gather');
+        let key_subdispatcher = create_gatherer(),
+            value_subdispatcher = create_gatherer();
         subdispatchers.push(key_subdispatcher);
         subdispatchers.push(value_subdispatcher);
         html_key(p, v => {
