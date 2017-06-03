@@ -340,6 +340,13 @@ function create_gatherer() {
   return d3.dispatch('gather');
 }
 
+function subdispatch(dispatcher, subdispatchers, value) {
+  dispatcher.on('gather', () => {
+    subdispatchers.forEach(s => s.call('gather'));
+    value();
+  });
+}
+
 function persona_bool(parent) {
   let node = d3.select(parent)
                  .append('input')
@@ -555,10 +562,8 @@ function html_structure(
         v => subvalue[names ? names[i] : i] = v, subdispatcher);
     });
 
-  dispatcher.on('gather', () => {
-    basedispatchers.forEach(b => b.call('gather'));
+  subdispatch(dispatcher, basedispatchers.concat(subdispatchers), () => {
     if (base_names && base_names.length > 0) subvalue.__bases = bases;
-    subdispatchers.forEach(s => s.call('gather'));
     value(subvalue);
   });
 }
@@ -574,10 +579,7 @@ function html_bounded(parent, value, dispatcher, html, size) {
     html(persona_container_element(table), v => subvalue[i] = v, subdispatcher);
   }
 
-  dispatcher.on('gather', () => {
-    subdispatchers.forEach(s => s.call('gather'));
-    value(subvalue);
-  });
+  subdispatch(dispatcher, subdispatchers, () => value(subvalue));
 }
 
 function html_sequence(parent, value, dispatcher, html) {
@@ -594,10 +596,7 @@ function html_sequence(parent, value, dispatcher, html) {
     }, subdispatcher);
   });
 
-  dispatcher.on('gather', () => {
-    subdispatchers.forEach(s => s.call('gather'));
-    value(subvalue);
-  });
+  subdispatch(dispatcher, subdispatchers, () => value(subvalue));
 }
 
 function html_associative(parent, value, dispatcher, html_key, html_value) {
@@ -625,10 +624,7 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
         }, value_subdispatcher);
       });
 
-  dispatcher.on('gather', () => {
-    subdispatchers.forEach(s => s.call('gather'));
-    value(subvalue);
-  });
+  subdispatch(dispatcher, subdispatchers, () => value(subvalue));
 }
 
 /////////////////////////////////////////////////
