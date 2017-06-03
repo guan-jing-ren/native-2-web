@@ -397,6 +397,50 @@ function persona_string(parent) {
   return () => node.value || '';
 }
 
+function persona_structure_baselabel(parent) {
+  return d3.select(parent)
+      .append('td')
+      .classed('n2w-persona-structure-baselabel', true)
+      .text('__bases:')
+      .node();
+}
+
+function persona_structure_bases(parent) {
+  return d3.select(parent)
+      .append('td')
+      .append('table')
+      .classed('n2w-persona-structure-bases', true)
+      .node();
+}
+
+function persona_structure_baseholder(parent) {
+  let base_row = d3.select(parent).append('tr').classed(
+      'n2w-persona-structure-baseholder', true);
+  persona_structure_baselabel(base_row.node());
+  return persona_structure_bases(base_row.node());
+}
+
+function persona_structure(parent) {
+  return d3.select(parent)
+      .append('table')
+      .classed('n2w-persona-structure', true)
+      .node();
+}
+
+function persona_structure_base(parent, base_name) {
+  let row = d3.select(parent).append('tr').classed(
+      'n2w-persona-structure-base', true);
+  row.append('td').text(base_name);
+  return row.append('td').attr('class', 'n2w-html').node();
+}
+
+function persona_structure_member(parent, member_name) {
+  let row = d3.select(parent).append('tr').classed(
+      'n2w-persona-structure-member', true);
+  row.append('td').text(member_name + ': ');
+  return row.append('td').attr('class', 'n2w-html').node();
+}
+
 function html_bool(parent, value, dispatcher) {
   d3.select(parent).classed('n2w-terminal', true);
   let value_getter = persona_bool(parent);
@@ -435,22 +479,18 @@ function html_string(parent, value, dispatcher) {
 
 function html_structure(
     parent, value, dispatcher, html, names, base_html, base_names) {
-  let table = d3.select(parent).append('table').node();
+  let table = persona_structure(parent);
   let subvalue = {};
   let subdispatchers = [];
   let basedispatchers = [];
 
   let bases = {};
   if (base_names && base_names.length > 0) {
-    let base_row = d3.select(table).append('tr');
-    base_row.append('td').text('__bases:');
-    let base_data = base_row.append('td').append('table');
+    let base_data = persona_structure_baseholder(table);
     base_html.forEach((h, i) => {
       let basedispatcher = create_gatherer();
       basedispatchers.push(basedispatcher);
-      let row = base_data.append('tr');
-      row.append('td').text(base_names[i]);
-      h(row.append('td').attr('class', 'n2w-html').node(),
+      h(persona_structure_base(base_data, base_names[i]),
         v => bases[base_names[i]] = v, basedispatcher);
     });
   }
@@ -459,12 +499,10 @@ function html_structure(
 
   if (Array.isArray(html))
     html.forEach((h, i) => {
-      let row = d3.select(table).append('tr');
-      row.append('td').text((names ? names[i] : i) + ': ');
-      let cell = row.append('td').attr('class', 'n2w-html').node();
       let subdispatcher = create_gatherer();
       subdispatchers.push(subdispatcher);
-      h(cell, v => subvalue[names ? names[i] : i] = v, subdispatcher);
+      h(persona_structure_member(table, names ? names[i] : i),
+        v => subvalue[names ? names[i] : i] = v, subdispatcher);
     });
 
   dispatcher.on('gather', () => {
