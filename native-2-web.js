@@ -441,6 +441,54 @@ function persona_structure_member(parent, member_name) {
   return row.append('td').attr('class', 'n2w-html').node();
 }
 
+function persona_container(parent) {
+  return d3.select(parent)
+      .append('table')
+      .classed('n2w-persona-container', true)
+      .node();
+}
+
+function persona_container_element(parent) {
+  return d3.select(parent)
+      .append('tr')
+      .classed('n2w-persona-container-element', true)
+      .append('td')
+      .classed('n2w-html', true)
+      .node();
+}
+
+function persona_container_expander(parent, on_expand) {
+  let expand_row = d3.select(parent).append('tr');
+  let expand_button = expand_row.append('td')
+                          .append('input')
+                          .attr('type', 'button')
+                          .attr('value', '+')
+                          .on('click', on_expand);
+}
+
+function persona_map_divider(parent) {
+  return d3.select(parent.parentElement)
+      .append('td')
+      .classed('n2w-persona-map-divider', true)
+      .text('->')
+      .node();
+}
+
+function persona_map_key(parent) {
+  return d3.select(parent)
+      .classed('n2w-persona-container-element', false)
+      .classed('n2w-persona-map-key', true)
+      .node();
+}
+
+function persona_map_value(parent) {
+  return d3.select(parent.parentElement)
+      .append('td')
+      .classed('n2w-persona-map-value', true)
+      .classed('n2w-html', true)
+      .node();
+}
+
 function html_bool(parent, value, dispatcher) {
   d3.select(parent).classed('n2w-terminal', true);
   let value_getter = persona_bool(parent);
@@ -514,21 +562,14 @@ function html_structure(
 }
 
 function html_bounded(parent, value, dispatcher, html, size) {
-  let table = d3.select(parent).append('table').node();
-  let expand_row = d3.select(table).append('tr');
+  let table = persona_container(parent);
   let subvalue = [];
   let subdispatchers = [];
 
   for (let i = 0; i < size; ++i) {
     let subdispatcher = create_gatherer();
     subdispatchers.push(subdispatcher);
-    html(
-        d3.select(table)
-            .append('tr')
-            .append('td')
-            .attr('class', 'n2w-html')
-            .node(),
-        v => subvalue[i] = v, subdispatcher);
+    html(persona_container_element(table), v => subvalue[i] = v, subdispatcher);
   }
 
   dispatcher.on('gather', () => {
@@ -538,27 +579,18 @@ function html_bounded(parent, value, dispatcher, html, size) {
 }
 
 function html_sequence(parent, value, dispatcher, html) {
-  let table = d3.select(parent).append('table').node();
-  let expand_row = d3.select(table).append('tr');
+  let table = persona_container(parent);
   let subvalue = [], index = 0;
   let subdispatchers = [];
 
-  let expand_button =
-      expand_row.append('td')
-          .append('input')
-          .attr('type', 'button')
-          .attr('value', '+')
-          .on('click', () => {
-            let cell = d3.select(table)
-                           .append('tr')
-                           .append('td')
-                           .attr('class', 'n2w-html')
-                           .node();
-            let subdispatcher = create_gatherer();
-            subdispatchers.push(subdispatcher);
-            let slot = index++;
-            html(cell, v => { subvalue[slot] = v; }, subdispatcher);
-          });
+  persona_container_expander(table, () => {
+    let subdispatcher = create_gatherer();
+    subdispatchers.push(subdispatcher);
+    let slot = index++;
+    html(persona_container_element(table), v => {
+      subvalue[slot] = v;
+    }, subdispatcher);
+  });
 
   dispatcher.on('gather', () => {
     subdispatchers.forEach(s => s.call('gather'));
@@ -578,23 +610,17 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
             value_subdispatcher = create_gatherer();
         subdispatchers.push(key_subdispatcher);
         subdispatchers.push(value_subdispatcher);
-        html_key(p, v => {
+        html_key(persona_map_key(p), v => {
           key_value[0] = v;
           if (key_value[1])
             subvalue[JSON.stringify(key_value[0])] = key_value[1];
         }, key_subdispatcher);
-        d3.select(p.parentElement).append('td').text('->');
-        html_value(
-            d3.select(p.parentElement)
-                .append('td')
-                .attr('class', 'n2w-html')
-                .node(),
-            v => {
-              key_value[1] = v;
-              if (key_value[0])
-                subvalue[JSON.stringify(key_value[0])] = key_value[1];
-            },
-            value_subdispatcher);
+        persona_map_divider(p);
+        html_value(persona_map_value(p), v => {
+          key_value[1] = v;
+          if (key_value[0])
+            subvalue[JSON.stringify(key_value[0])] = key_value[1];
+        }, value_subdispatcher);
       });
 
   dispatcher.on('gather', () => {
