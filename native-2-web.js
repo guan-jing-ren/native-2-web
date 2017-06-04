@@ -340,11 +340,19 @@ function create_gatherer() {
   return d3.dispatch('gather');
 }
 
+function dispatch(dispatcher, value) {
+  dispatcher.on('gather', value);
+}
+
 function subdispatch(dispatcher, subdispatchers, value) {
   dispatcher.on('gather', () => {
     subdispatchers.forEach(s => s.call('gather'));
     value();
   });
+}
+
+function persona_terminal(persona, parent) {
+  d3.select(parent).classed(parent, true);
 }
 
 function persona_bool(persona, parent) {
@@ -489,51 +497,58 @@ function persona_map_value(persona, parent) {
 }
 
 function html_bool(parent, value, dispatcher) {
-  d3.select(parent).classed('n2w-terminal', true);
-  let value_getter = persona_bool('n2w-persona-bool', parent);
-  dispatcher.on('gather', () => value(value_getter()));
+  (this.persona_terminal || persona_terminal)('n2w-terminal', parent);
+  let value_getter =
+      (this.persona_bool || persona_bool)('n2w-persona-bool', parent);
+  (this.dispatch || dispatch)(dispatcher, () => value(value_getter()));
 }
 
 function html_number(parent, value, dispatcher) {
-  d3.select(parent).classed('n2w-terminal', true);
-  let value_getter = persona_number('n2w-persona-number', parent);
-  dispatcher.on('gather', () => value(value_getter()));
+  (this.persona_terminal || persona_terminal)('n2w-terminal', parent);
+  let value_getter =
+      (this.persona_number || persona_number)('n2w-persona-number', parent);
+  (this.dispatch || dispatch)(dispatcher, () => value(value_getter()));
 }
 
 function html_enum(parent, value, dispatcher, enums) {
-  d3.select(parent).classed('n2w-terminal', true);
-  let value_getter = persona_enum('n2w-persona-enum', parent, enums);
+  (this.persona_terminal || persona_terminal)('n2w-terminal', parent);
+  let value_getter =
+      (this.persona_enum || persona_enum)('n2w-persona-enum', parent, enums);
   Object.keys(enums)
       .filter(k => enums[k].length > 0)
       .map(k => +k)
       .sort((l, r) => l - r)
       .forEach(
-          k => persona_enum_option(
+          k => (this.persona_enum_option || persona_enum_option)(
               'n2w-persona-enum-option', value_getter[1], k, enums[k]));
-  dispatcher.on('gather', () => value(value_getter[0]()));
+  (this.dispatch || dispatch)(dispatcher, () => value(value_getter[0]()));
 }
 
 function html_char(parent, value, dispatcher) {
-  d3.select(parent).classed('n2w-terminal', true);
-  let value_getter = persona_char('n2w-persona-char8', parent);
-  dispatcher.on('gather', () => value(value_getter()));
+  (this.persona_terminal || persona_terminal)('n2w-terminal', parent);
+  let value_getter =
+      (this.persona_char || persona_char)('n2w-persona-char8', parent);
+  (this.dispatch || dispatch)(dispatcher, () => value(value_getter()));
 }
 
 function html_char32(parent, value, dispatcher) {
-  d3.select(parent).classed('n2w-terminal', true);
-  let value_getter = persona_char('n2w-persona-char32', parent);
-  dispatcher.on('gather', () => value(value_getter()));
+  (this.persona_terminal || persona_terminal)('n2w-terminal', parent);
+  let value_getter =
+      (this.persona_char || persona_char)('n2w-persona-char32', parent);
+  (this.dispatch || dispatch)(dispatcher, () => value(value_getter()));
 }
 
 function html_string(parent, value, dispatcher) {
-  d3.select(parent).classed('n2w-terminal', true);
-  let value_getter = persona_string('n2w-persona-string', parent);
-  dispatcher.on('gather', () => value(value_getter()));
+  (this.persona_terminal || persona_terminal)('n2w-terminal', parent);
+  let value_getter =
+      (this.persona_string || persona_string)('n2w-persona-string', parent);
+  (this.dispatch || dispatch)(dispatcher, () => value(value_getter()));
 }
 
 function html_structure(
     parent, value, dispatcher, html, names, base_html, base_names) {
-  let table = persona_structure('n2w-persona-structure', parent);
+  let table = (this.persona_structure || persona_structure)(
+      'n2w-persona-structure', parent);
   let subvalue = {};
   let subdispatchers = [];
   let basedispatchers = [];
@@ -541,14 +556,16 @@ function html_structure(
   let bases = {};
   if (base_names && base_names.length > 0) {
     let base_holder =
-        persona_structure_baseholder('n2w-persona-structure-baseholder', table);
-    persona_structure_baselabel('n2w-persona-structure-baselabel', base_holder);
-    let base_data =
-        persona_structure_bases('n2w-persona-structure-bases', base_holder);
+        (this.persona_structure_baseholder || persona_structure_baseholder)(
+            'n2w-persona-structure-baseholder', table);
+    (this.persona_structure_baselabel || persona_structure_baselabel)(
+        'n2w-persona-structure-baselabel', base_holder);
+    let base_data = (this.persona_structure_bases || persona_structure_bases)(
+        'n2w-persona-structure-bases', base_holder);
     base_html.forEach((h, i) => {
-      let basedispatcher = create_gatherer();
+      let basedispatcher = (this.create_gatherer || create_gatherer)();
       basedispatchers.push(basedispatcher);
-      h(persona_structure_base(
+      h((this.persona_structure_base || persona_structure_base)(
             'n2w-persona-structure-base', base_data, base_names[i]),
         v => bases[base_names[i]] = v, basedispatcher);
     });
@@ -558,49 +575,57 @@ function html_structure(
 
   if (Array.isArray(html))
     html.forEach((h, i) => {
-      let subdispatcher = create_gatherer();
+      let subdispatcher = (this.create_gatherer || create_gatherer)();
       subdispatchers.push(subdispatcher);
-      let mem_holder = persona_structure_memholder(
-          'n2w-persona-structure-member-holder', table);
-      persona_structure_memlabel(
+      let mem_holder =
+          (this.persona_structure_memholder || persona_structure_memholder)(
+              'n2w-persona-structure-member-holder', table);
+      (this.persona_structure_memlabel || persona_structure_memlabel)(
           'n2w-persona-structure-member-label', mem_holder,
           names ? names[i] : i);
-      h(persona_structure_memvalue('n2w-persona-structure-member', mem_holder),
+      h((this.persona_structure_memvalue || persona_structure_memvalue)(
+            'n2w-persona-structure-member', mem_holder),
         v => subvalue[names ? names[i] : i] = v, subdispatcher);
     });
 
-  subdispatch(dispatcher, basedispatchers.concat(subdispatchers), () => {
-    if (base_names && base_names.length > 0) subvalue.__bases = bases;
-    value(subvalue);
-  });
+  (this.subdispatch || subdispatch)(
+      dispatcher, basedispatchers.concat(subdispatchers), () => {
+        if (base_names && base_names.length > 0) subvalue.__bases = bases;
+        value(subvalue);
+      });
 }
 
 function html_container(parent, value, dispatcher, html, size) {
-  let table = persona_container('n2w-persona-container', parent);
+  let table = (this.persona_container || persona_container)(
+      'n2w-persona-container', parent);
   let subvalue = [];
   let subdispatchers = [];
 
   if (size !== undefined)
     for (let i = 0; i < size; ++i) {
-      let subdispatcher = create_gatherer();
+      let subdispatcher = (this.create_gatherer || create_gatherer)();
       subdispatchers.push(subdispatcher);
       html(
-          persona_container_element('n2w-persona-container-element', table),
+          (this.persona_container_element || persona_container_element)(
+              'n2w-persona-container-element', table),
           v => subvalue[i] = v, subdispatcher);
     }
   else {
     let index = 0;
-    persona_container_expander('n2w-persona-container-expander', table, () => {
-      let subdispatcher = create_gatherer();
-      subdispatchers.push(subdispatcher);
-      let slot = index++;
-      html(
-          persona_container_element('n2w-persona-container-element', table),
-          v => { subvalue[slot] = v; }, subdispatcher);
-    });
+    (this.persona_container_expander || persona_container_expander)(
+        'n2w-persona-container-expander', table, () => {
+          let subdispatcher = (this.create_gatherer || create_gatherer)();
+          subdispatchers.push(subdispatcher);
+          let slot = index++;
+          html(
+              (this.persona_container_element || persona_container_element)(
+                  'n2w-persona-container-element', table),
+              v => { subvalue[slot] = v; }, subdispatcher);
+        });
   }
 
-  subdispatch(dispatcher, subdispatchers, () => value(subvalue));
+  (this.subdispatch || subdispatch)(
+      dispatcher, subdispatchers, () => value(subvalue));
 }
 
 var html_bounded = html_container;
@@ -610,27 +635,35 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
   let subvalue = {};
   let subdispatchers = [];
 
-  html_sequence(
-      parent, v => {}, create_gatherer(),
+  (this.html_sequence || html_sequence)(
+      parent, v => {}, (this.create_gatherer || create_gatherer)(),
       (p, v, d) => {
         let key_value = [];
-        let key_subdispatcher = create_gatherer(),
-            value_subdispatcher = create_gatherer();
+        let key_subdispatcher = (this.create_gatherer || create_gatherer)(),
+            value_subdispatcher = (this.create_gatherer || create_gatherer)();
         subdispatchers.push(key_subdispatcher);
         subdispatchers.push(value_subdispatcher);
-        html_key(persona_map_key('n2w-persona-map-key', p), v => {
-          key_value[0] = v;
-          if (key_value[1])
-            subvalue[JSON.stringify(key_value[0])] = key_value[1];
-        }, key_subdispatcher);
-        html_value(persona_map_value('n2w-persona-map-value', p), v => {
-          key_value[1] = v;
-          if (key_value[0])
-            subvalue[JSON.stringify(key_value[0])] = key_value[1];
-        }, value_subdispatcher);
+        html_key(
+            (this.persona_map_key || persona_map_key)('n2w-persona-map-key', p),
+            v => {
+              key_value[0] = v;
+              if (key_value[1])
+                subvalue[JSON.stringify(key_value[0])] = key_value[1];
+            },
+            key_subdispatcher);
+        html_value(
+            (this.persona_map_value || persona_map_value)(
+                'n2w-persona-map-value', p),
+            v => {
+              key_value[1] = v;
+              if (key_value[0])
+                subvalue[JSON.stringify(key_value[0])] = key_value[1];
+            },
+            value_subdispatcher);
       });
 
-  subdispatch(dispatcher, subdispatchers, () => value(subvalue));
+  (this.subdispatch || subdispatch)(
+      dispatcher, subdispatchers, () => value(subvalue));
 }
 
 /////////////////////////////////////////////////
