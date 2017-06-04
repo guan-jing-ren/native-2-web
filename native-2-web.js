@@ -347,120 +347,108 @@ function subdispatch(dispatcher, subdispatchers, value) {
   });
 }
 
-function persona_bool(parent) {
+function persona_bool(persona, parent) {
   let node = d3.select(parent)
                  .append('input')
-                 .classed('n2w-persona-bool', true)
+                 .classed(persona, true)
                  .attr('type', 'checkbox')
                  .attr('value', false)
                  .node();
   return () => node.checked ? true : false;
 }
 
-function persona_number(parent) {
+function persona_number(persona, parent) {
   let node = d3.select(parent)
                  .append('input')
-                 .classed('n2w-persona-number', true)
+                 .classed(persona, true)
                  .attr('type', 'number')
                  .node();
   return () => node.value || 0;
 }
 
-function persona_enum_option(parent, value, name) {
+function persona_enum_option(persona, parent, value, name) {
   return d3.select(parent)
       .append('option')
-      .classed('n2w-persona-enum-option', true)
+      .classed(persona, true)
       .attr('value', value)
       .text(name)
       .node();
 }
 
-function persona_enum(parent, enums) {
-  let select =
-      d3.select(parent).append('select').classed('n2w-persona-enum', true);
+function persona_enum(persona, parent, enums) {
+  let select = d3.select(parent).append('select').classed(persona, true);
   return [() => +select.node().value, select.node()];
 }
 
-function persona_char(parent, persona) {
+function persona_char(persona, parent) {
   let node = d3.select(parent)
                  .append('input')
-                 .classed('n2w-persona-' + persona, true)
+                 .classed(persona, true)
                  .attr('type', 'text')
                  .node();
   return () => node.value[0] || '\0';
 }
 
-function persona_string(parent) {
+function persona_string(persona, parent) {
   let node = d3.select(parent)
                  .append('input')
-                 .classed('n2w-persona-string', true)
+                 .classed(persona, true)
                  .attr('type', 'text')
                  .node();
   return () => node.value || '';
 }
 
-function persona_structure_baselabel(parent) {
+function persona_structure_baselabel(persona, parent) {
   return d3.select(parent)
       .append('td')
-      .classed('n2w-persona-structure-baselabel', true)
+      .classed(persona, true)
       .text('__bases:')
       .node();
 }
 
-function persona_structure_bases(parent) {
+function persona_structure_bases(persona, parent) {
   return d3.select(parent)
       .append('td')
       .append('table')
-      .classed('n2w-persona-structure-bases', true)
+      .classed(persona, true)
       .node();
 }
 
-function persona_structure_baseholder(parent) {
-  return d3.select(parent)
-      .append('tr')
-      .classed('n2w-persona-structure-baseholder', true)
-      .node();
+function persona_structure_baseholder(persona, parent) {
+  return d3.select(parent).append('tr').classed(persona, true).node();
 }
 
-function persona_structure(parent) {
-  return d3.select(parent)
-      .append('table')
-      .classed('n2w-persona-structure', true)
-      .node();
+function persona_structure(persona, parent) {
+  return d3.select(parent).append('table').classed(persona, true).node();
 }
 
-function persona_structure_base(parent, base_name) {
-  let row = d3.select(parent).append('tr').classed(
-      'n2w-persona-structure-base', true);
+function persona_structure_base(persona, parent, base_name) {
+  let row = d3.select(parent).append('tr').classed(persona, true);
   row.append('td').text(base_name);
   return row.append('td').attr('class', 'n2w-html').node();
 }
 
-function persona_structure_member(parent, member_name) {
-  let row = d3.select(parent).append('tr').classed(
-      'n2w-persona-structure-member', true);
+function persona_structure_member(persona, parent, member_name) {
+  let row = d3.select(parent).append('tr').classed(persona, true);
   row.append('td').text(member_name + ': ');
   return row.append('td').attr('class', 'n2w-html').node();
 }
 
-function persona_container(parent) {
-  return d3.select(parent)
-      .append('table')
-      .classed('n2w-persona-container', true)
-      .node();
+function persona_container(persona, parent) {
+  return d3.select(parent).append('table').classed(persona, true).node();
 }
 
-function persona_container_element(parent) {
+function persona_container_element(persona, parent) {
   return d3.select(parent)
       .append('tr')
-      .classed('n2w-persona-container-element', true)
+      .classed(persona, true)
       .append('td')
       .classed('n2w-html', true)
       .node();
 }
 
-function persona_container_expander(parent, on_expand) {
-  let expand_row = d3.select(parent).append('tr');
+function persona_container_expander(persona, parent, on_expand) {
+  let expand_row = d3.select(parent).append('tr').classed(persona, true);
   let expand_button = expand_row.append('td')
                           .append('input')
                           .attr('type', 'button')
@@ -468,86 +456,91 @@ function persona_container_expander(parent, on_expand) {
                           .on('click', on_expand);
 }
 
-function persona_map_divider(parent) {
+function persona_map_divider(persona, parent) {
   return d3.select(parent.parentElement)
       .append('td')
-      .classed('n2w-persona-map-divider', true)
+      .classed(persona, true)
       .text('->')
       .node();
 }
 
-function persona_map_key(parent) {
+function persona_map_key(persona, parent) {
   return d3.select(parent)
       .classed('n2w-persona-container-element', false)
-      .classed('n2w-persona-map-key', true)
+      .classed(persona, true)
       .node();
 }
 
-function persona_map_value(parent) {
+function persona_map_value(persona, parent) {
   return d3.select(parent.parentElement)
       .append('td')
-      .classed('n2w-persona-map-value', true)
+      .classed(persona, true)
       .classed('n2w-html', true)
       .node();
 }
 
 function html_bool(parent, value, dispatcher) {
   d3.select(parent).classed('n2w-terminal', true);
-  let value_getter = persona_bool(parent);
+  let value_getter = persona_bool('n2w-persona-bool', parent);
   dispatcher.on('gather', () => value(value_getter()));
 }
 
 function html_number(parent, value, dispatcher) {
   d3.select(parent).classed('n2w-terminal', true);
-  let value_getter = persona_number(parent);
+  let value_getter = persona_number('n2w-persona-number', parent);
   dispatcher.on('gather', () => value(value_getter()));
 }
 
 function html_enum(parent, value, dispatcher, enums) {
   d3.select(parent).classed('n2w-terminal', true);
-  let value_getter = persona_enum(parent, enums);
+  let value_getter = persona_enum('n2w-persona-enum', parent, enums);
   Object.keys(enums)
       .filter(k => enums[k].length > 0)
       .map(k => +k)
       .sort((l, r) => l - r)
-      .forEach(k => persona_enum_option(value_getter[1], k, enums[k]));
+      .forEach(
+          k => persona_enum_option(
+              'n2w-persona-enum-option', value_getter[1], k, enums[k]));
   dispatcher.on('gather', () => value(value_getter[0]()));
 }
 
 function html_char(parent, value, dispatcher) {
   d3.select(parent).classed('n2w-terminal', true);
-  let value_getter = persona_char(parent, 'char');
+  let value_getter = persona_char('n2w-persona-char8', parent);
   dispatcher.on('gather', () => value(value_getter()));
 }
 
 function html_char32(parent, value, dispatcher) {
   d3.select(parent).classed('n2w-terminal', true);
-  let value_getter = persona_char(parent, 'char32');
+  let value_getter = persona_char('n2w-persona-char32', parent);
   dispatcher.on('gather', () => value(value_getter()));
 }
 
 function html_string(parent, value, dispatcher) {
   d3.select(parent).classed('n2w-terminal', true);
-  let value_getter = persona_string(parent);
+  let value_getter = persona_string('n2w-persona-string', parent);
   dispatcher.on('gather', () => value(value_getter()));
 }
 
 function html_structure(
     parent, value, dispatcher, html, names, base_html, base_names) {
-  let table = persona_structure(parent);
+  let table = persona_structure('n2w-persona-structure', parent);
   let subvalue = {};
   let subdispatchers = [];
   let basedispatchers = [];
 
   let bases = {};
   if (base_names && base_names.length > 0) {
-    let base_holder = persona_structure_baseholder(table);
-    persona_structure_baselabel(base_holder);
-    let base_data = persona_structure_bases(base_holder);
+    let base_holder =
+        persona_structure_baseholder('n2w-persona-structure-baseholder', table);
+    persona_structure_baselabel('n2w-persona-structure-baselabel', base_holder);
+    let base_data =
+        persona_structure_bases('n2w-persona-structure-bases', base_holder);
     base_html.forEach((h, i) => {
       let basedispatcher = create_gatherer();
       basedispatchers.push(basedispatcher);
-      h(persona_structure_base(base_data, base_names[i]),
+      h(persona_structure_base(
+            'n2w-persona-structure-base', base_data, base_names[i]),
         v => bases[base_names[i]] = v, basedispatcher);
     });
   }
@@ -558,7 +551,8 @@ function html_structure(
     html.forEach((h, i) => {
       let subdispatcher = create_gatherer();
       subdispatchers.push(subdispatcher);
-      h(persona_structure_member(table, names ? names[i] : i),
+      h(persona_structure_member(
+            'n2w-persona-structure-member', table, names ? names[i] : i),
         v => subvalue[names ? names[i] : i] = v, subdispatcher);
     });
 
@@ -569,7 +563,7 @@ function html_structure(
 }
 
 function html_container(parent, value, dispatcher, html, size) {
-  let table = persona_container(parent);
+  let table = persona_container('n2w-persona-container', parent);
   let subvalue = [];
   let subdispatchers = [];
 
@@ -578,18 +572,18 @@ function html_container(parent, value, dispatcher, html, size) {
       let subdispatcher = create_gatherer();
       subdispatchers.push(subdispatcher);
       html(
-          persona_container_element(table), v => subvalue[i] = v,
-          subdispatcher);
+          persona_container_element('n2w-persona-container-element', table),
+          v => subvalue[i] = v, subdispatcher);
     }
   else {
     let index = 0;
-    persona_container_expander(table, () => {
+    persona_container_expander('n2w-persona-container-expander', table, () => {
       let subdispatcher = create_gatherer();
       subdispatchers.push(subdispatcher);
       let slot = index++;
-      html(persona_container_element(table), v => {
-        subvalue[slot] = v;
-      }, subdispatcher);
+      html(
+          persona_container_element('n2w-persona-container-element', table),
+          v => { subvalue[slot] = v; }, subdispatcher);
     });
   }
 
@@ -611,13 +605,13 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
             value_subdispatcher = create_gatherer();
         subdispatchers.push(key_subdispatcher);
         subdispatchers.push(value_subdispatcher);
-        html_key(persona_map_key(p), v => {
+        html_key(persona_map_key('n2w-persona-map-key', p), v => {
           key_value[0] = v;
           if (key_value[1])
             subvalue[JSON.stringify(key_value[0])] = key_value[1];
         }, key_subdispatcher);
-        persona_map_divider(p);
-        html_value(persona_map_value(p), v => {
+        persona_map_divider('n2w-persona-map-divider', p);
+        html_value(persona_map_value('n2w-persona-map-value', p), v => {
           key_value[1] = v;
           if (key_value[0])
             subvalue[JSON.stringify(key_value[0])] = key_value[1];
