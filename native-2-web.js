@@ -456,14 +456,6 @@ function persona_container_expander(persona, parent, on_expand) {
                           .on('click', on_expand);
 }
 
-function persona_map_divider(persona, parent) {
-  return d3.select(parent.parentElement)
-      .append('td')
-      .classed(persona, true)
-      .text('->')
-      .node();
-}
-
 function persona_map_key(persona, parent) {
   return d3.select(parent)
       .classed('n2w-persona-container-element', false)
@@ -472,6 +464,7 @@ function persona_map_key(persona, parent) {
 }
 
 function persona_map_value(persona, parent) {
+  d3.select(parent.parentElement).append('td').text('->');
   return d3.select(parent.parentElement)
       .append('td')
       .classed(persona, true)
@@ -610,7 +603,6 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
           if (key_value[1])
             subvalue[JSON.stringify(key_value[0])] = key_value[1];
         }, key_subdispatcher);
-        persona_map_divider('n2w-persona-map-divider', p);
         html_value(persona_map_value('n2w-persona-map-value', p), v => {
           key_value[1] = v;
           if (key_value[0])
