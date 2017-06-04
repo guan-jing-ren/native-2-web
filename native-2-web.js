@@ -462,12 +462,14 @@ function persona_container_element(persona, parent) {
 }
 
 function persona_container_expander(persona, parent, on_expand) {
-  let expand_row = d3.select(parent).append('tr').classed(persona, true);
-  let expand_button = expand_row.append('td')
-                          .append('input')
-                          .attr('type', 'button')
-                          .attr('value', '+')
-                          .on('click', on_expand);
+  d3.select(parent)
+      .append('tr')
+      .classed(persona, true)
+      .append('td')
+      .append('input')
+      .attr('type', 'button')
+      .attr('value', '+')
+      .on('click', on_expand);
 }
 
 function persona_map_key(persona, parent) {
