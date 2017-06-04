@@ -384,7 +384,7 @@ function persona_enum(parent, enums) {
 function persona_char(parent, persona) {
   let node = d3.select(parent)
                  .append('input')
-                 .classed(persona, true)
+                 .classed('n2w-persona-' + persona, true)
                  .attr('type', 'text')
                  .node();
   return () => node.value[0] || '\0';
@@ -516,13 +516,13 @@ function html_enum(parent, value, dispatcher, enums) {
 
 function html_char(parent, value, dispatcher) {
   d3.select(parent).classed('n2w-terminal', true);
-  let value_getter = persona_char(parent, 'n2w-persona-char');
+  let value_getter = persona_char(parent, 'char');
   dispatcher.on('gather', () => value(value_getter()));
 }
 
 function html_char32(parent, value, dispatcher) {
   d3.select(parent).classed('n2w-terminal', true);
-  let value_getter = persona_char(parent, 'n2w-persona-char32');
+  let value_getter = persona_char(parent, 'char32');
   dispatcher.on('gather', () => value(value_getter()));
 }
 
