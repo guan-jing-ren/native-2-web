@@ -428,10 +428,24 @@ function persona_structure_base(persona, parent, base_name) {
   return row.append('td').attr('class', 'n2w-html').node();
 }
 
-function persona_structure_member(persona, parent, member_name) {
-  let row = d3.select(parent).append('tr').classed(persona, true);
-  row.append('td').text(member_name + ': ');
-  return row.append('td').attr('class', 'n2w-html').node();
+function persona_structure_memlabel(persona, parent, member_name) {
+  return d3.select(parent)
+      .append('td')
+      .classed(persona, true)
+      .text(member_name + ': ')
+      .node();
+}
+
+function persona_structure_memvalue(persona, parent) {
+  return d3.select(parent)
+      .append('td')
+      .classed(persona, true)
+      .attr('class', 'n2w-html')
+      .node();
+}
+
+function persona_structure_memholder(persona, parent) {
+  return d3.select(parent).append('tr').classed(persona, true).node();
 }
 
 function persona_container(persona, parent) {
@@ -544,8 +558,12 @@ function html_structure(
     html.forEach((h, i) => {
       let subdispatcher = create_gatherer();
       subdispatchers.push(subdispatcher);
-      h(persona_structure_member(
-            'n2w-persona-structure-member', table, names ? names[i] : i),
+      let mem_holder = persona_structure_memholder(
+          'n2w-persona-structure-member-holder', table);
+      persona_structure_memlabel(
+          'n2w-persona-structure-member-label', mem_holder,
+          names ? names[i] : i);
+      h(persona_structure_memvalue('n2w-persona-structure-member', mem_holder),
         v => subvalue[names ? names[i] : i] = v, subdispatcher);
     });
 
