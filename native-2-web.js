@@ -409,8 +409,8 @@ function persona_structure_baselabel(persona, parent) {
 function persona_structure_bases(persona, parent) {
   return d3.select(parent)
       .append('td')
-      .append('table')
       .classed(persona, true)
+      .append('table')
       .node();
 }
 
