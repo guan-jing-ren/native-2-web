@@ -134,7 +134,7 @@ int main(int, char **) {
   cout << R"(let test_structure_html = function(parent) {
   let value = {}, dispatcher = d3.dispatch('gather');
   ()" + n2w::to_js<test_structure>::create_html() +
-              R"()(parent, v => value = v, dispatcher);
+              R"().bind(this)(parent, v => value = v, dispatcher);
   d3.select(parent)
     .append('input')
     .attr('type', 'button')
@@ -146,7 +146,9 @@ int main(int, char **) {
       d3.select(parent).append('pre').text(JSON.stringify(eulav, null, '\t'));
     });
 };
-test_structure_html(d3.select('body').node());)";
+let generator = new N2WGenerator();
+generator.test_structure_html = test_structure_html;
+generator.test_structure_html(d3.select('body').node());)";
 
   return 0;
 }

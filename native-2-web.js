@@ -519,8 +519,9 @@ function html_enum(parent, value, dispatcher, enums) {
       .map(k => +k)
       .sort((l, r) => l - r)
       .forEach(
-          k => (this.persona_enum_option || persona_enum_option)(
-              'n2w-persona-enum-option', value_getter[1], k, enums[k]));
+          (k => (this.persona_enum_option || persona_enum_option)(
+               'n2w-persona-enum-option', value_getter[1], k, enums[k]))
+              .bind(this));
   (this.dispatch || dispatch)(dispatcher, () => value(value_getter[0]()));
 }
 
@@ -562,31 +563,33 @@ function html_structure(
         'n2w-persona-structure-baselabel', base_holder);
     let base_data = (this.persona_structure_bases || persona_structure_bases)(
         'n2w-persona-structure-bases', base_holder);
-    base_html.forEach((h, i) => {
-      let basedispatcher = (this.create_gatherer || create_gatherer)();
-      basedispatchers.push(basedispatcher);
-      h((this.persona_structure_base || persona_structure_base)(
-            'n2w-persona-structure-base', base_data, base_names[i]),
-        v => bases[base_names[i]] = v, basedispatcher);
-    });
+    base_html.forEach(
+        ((h, i) => {
+          let basedispatcher = (this.create_gatherer || create_gatherer)();
+          basedispatchers.push(basedispatcher);
+          h((this.persona_structure_base || persona_structure_base)(
+                'n2w-persona-structure-base', base_data, base_names[i]),
+            v => bases[base_names[i]] = v, basedispatcher);
+        }).bind(this));
   }
 
   if (typeof(html) == "function") html = [html];
 
   if (Array.isArray(html))
-    html.forEach((h, i) => {
-      let subdispatcher = (this.create_gatherer || create_gatherer)();
-      subdispatchers.push(subdispatcher);
-      let mem_holder =
-          (this.persona_structure_memholder || persona_structure_memholder)(
-              'n2w-persona-structure-member-holder', table);
-      (this.persona_structure_memlabel || persona_structure_memlabel)(
-          'n2w-persona-structure-member-label', mem_holder,
-          names ? names[i] : i);
-      h((this.persona_structure_memvalue || persona_structure_memvalue)(
-            'n2w-persona-structure-member', mem_holder),
-        v => subvalue[names ? names[i] : i] = v, subdispatcher);
-    });
+    html.forEach(
+        ((h, i) => {
+          let subdispatcher = (this.create_gatherer || create_gatherer)();
+          subdispatchers.push(subdispatcher);
+          let mem_holder =
+              (this.persona_structure_memholder || persona_structure_memholder)(
+                  'n2w-persona-structure-member-holder', table);
+          (this.persona_structure_memlabel || persona_structure_memlabel)(
+              'n2w-persona-structure-member-label', mem_holder,
+              names ? names[i] : i);
+          h((this.persona_structure_memvalue || persona_structure_memvalue)(
+                'n2w-persona-structure-member', mem_holder),
+            v => subvalue[names ? names[i] : i] = v, subdispatcher);
+        }).bind(this));
 
   (this.subdispatch || subdispatch)(
       dispatcher, basedispatchers.concat(subdispatchers), () => {
