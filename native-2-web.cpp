@@ -147,8 +147,7 @@ int main(int, char **) {
     });
 };
 let generator = new N2WGenerator();
-generator.test_structure_html = test_structure_html;
-generator.test_structure_html(d3.select('body').node());)";
+test_structure_html.bind(generator)(d3.select('body').node());)";
 
   return 0;
 }

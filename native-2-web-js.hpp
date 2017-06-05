@@ -71,14 +71,14 @@ template <typename T> struct to_js {
                         "': '" + en.second + "'";
                }) +
            R"( });
-})";
+}.bind(this))";
   }
 };
 
 template <> struct to_js<void *> {
   static string create_reader() { return "function (){}"; }
   static string create_writer() { return "function (){}"; }
-  static string create_html() { return "function (){}"; }
+  static string create_html() { return "function (){}.bind(this)"; }
 };
 
 template <> struct to_js<char> {
@@ -135,7 +135,7 @@ template <typename T, typename U> struct to_js<pair<T, U>> {
     return R"(function (parent, value, dispatcher) {
   return this.html_structure(parent, value, dispatcher, [)" +
            to_js_heterogenous<T, U>::create_html() + R"(], ['first', 'second']);
-})";
+}.bind(this))";
   }
 };
 
@@ -159,7 +159,7 @@ template <typename T, typename... Ts> struct to_js<tuple<T, Ts...>> {
   return this.html_structure(parent, value, dispatcher, [)" +
            to_js_heterogenous<T, Ts...>::create_html() +
            R"(], names, base_html, base_names);
-})";
+}.bind(this))";
   }
 };
 
@@ -209,7 +209,7 @@ template <typename T, typename... Traits> struct to_js<vector<T, Traits...>> {
     return R"(function (parent, value, dispatcher) {
   return this.html_sequence(parent, value, dispatcher, )" +
            to_js<T>::create_html() + R"();
-})";
+}.bind(this))";
   }
 };
 
@@ -286,7 +286,7 @@ template <typename T, size_t N> struct to_js<T[N]> {
   return )" +
            to_js_bounded<T>::create_html() + R"((parent, value, dispatcher, )" +
            to_string(N) + R"();
-})";
+}.bind(this))";
   }
 };
 
@@ -331,7 +331,7 @@ template <typename T, size_t M, size_t N> struct to_js<T[M][N]> {
     return R"(function (parent, value, dispatcher) {
   return this.html_multiarray(parent, value, dispatcher, html, [)" +
            extent() + R"(]);
-})";
+}.bind(this))";
   }
 };
 
@@ -354,7 +354,7 @@ template <typename T, size_t N> struct to_js<array<T, N>> {
     return R"(function (parent, value, dispatcher) {
   return this.html_bounded(parent, value, dispatcher, )" +
            to_js<T>::create_html() + R"(, )" + to_string(N) + R"();
-})";
+}.bind(this))";
   }
 };
 
@@ -378,7 +378,7 @@ struct to_js<map<T, U, Traits...>> {
     return R"(function (parent, value, dispatcher) {
   return this.html_associative(parent, value, dispatcher, )" +
            to_js<T>::create_html() + R"(, )" + to_js<U>::create_html() + R"();
-})";
+}.bind(this))";
   }
 };
 

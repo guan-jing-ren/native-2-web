@@ -671,44 +671,44 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
 
 function N2WGenerator() {
   // Customization points for the facade for n2w APIs.
-  this.persona_bool = persona_bool;
-  this.persona_number = persona_number;
-  this.persona_enum_option = persona_enum_option;
-  this.persona_enum = persona_enum;
-  this.persona_char = persona_char;
-  this.persona_string = persona_string;
-  this.persona_structure_baselabel = persona_structure_baselabel;
-  this.persona_structure_bases = persona_structure_bases;
-  this.persona_structure_baseholder = persona_structure_baseholder;
-  this.persona_structure = persona_structure;
-  this.persona_structure_base = persona_structure_base;
-  this.persona_structure_memlabel = persona_structure_memlabel;
-  this.persona_structure_memvalue = persona_structure_memvalue;
-  this.persona_structure_memholder = persona_structure_memholder;
-  this.persona_container = persona_container;
-  this.persona_container_element = persona_container_element;
-  this.persona_container_expander = persona_container_expander;
-  this.persona_map_key = persona_map_key;
-  this.persona_map_value = persona_map_value;
+  this.persona_bool = persona_bool.bind(this);
+  this.persona_number = persona_number.bind(this);
+  this.persona_enum_option = persona_enum_option.bind(this);
+  this.persona_enum = persona_enum.bind(this);
+  this.persona_char = persona_char.bind(this);
+  this.persona_string = persona_string.bind(this);
+  this.persona_structure_baselabel = persona_structure_baselabel.bind(this);
+  this.persona_structure_bases = persona_structure_bases.bind(this);
+  this.persona_structure_baseholder = persona_structure_baseholder.bind(this);
+  this.persona_structure = persona_structure.bind(this);
+  this.persona_structure_base = persona_structure_base.bind(this);
+  this.persona_structure_memlabel = persona_structure_memlabel.bind(this);
+  this.persona_structure_memvalue = persona_structure_memvalue.bind(this);
+  this.persona_structure_memholder = persona_structure_memholder.bind(this);
+  this.persona_container = persona_container.bind(this);
+  this.persona_container_element = persona_container_element.bind(this);
+  this.persona_container_expander = persona_container_expander.bind(this);
+  this.persona_map_key = persona_map_key.bind(this);
+  this.persona_map_value = persona_map_value.bind(this);
 
   // Not so common to customize the following aspects.
-  this.persona_terminal = persona_terminal;
+  this.persona_terminal = persona_terminal.bind(this);
   // Allow different event dispatcher toolkits.
-  this.create_gatherer = create_gatherer;
-  this.dispatch = dispatch;
-  this.subdispatch = subdispatch;
+  this.create_gatherer = create_gatherer.bind(this);
+  this.dispatch = dispatch.bind(this);
+  this.subdispatch = subdispatch.bind(this);
   // Defines the structure of the interface.
-  this.html_bool = html_bool;
-  this.html_number = html_number;
-  this.html_enum = html_enum;
-  this.html_char = html_char;
-  this.html_char32 = html_char32;
-  this.html_string = html_string;
-  this.html_structure = html_structure;
-  this.html_container = html_container;
-  this.html_bounded = html_bounded;
-  this.html_sequence = html_sequence;
-  this.html_associative = html_associative;
+  this.html_bool = html_bool.bind(this);
+  this.html_number = html_number.bind(this);
+  this.html_enum = html_enum.bind(this);
+  this.html_char = html_char.bind(this);
+  this.html_char32 = html_char32.bind(this);
+  this.html_string = html_string.bind(this);
+  this.html_structure = html_structure.bind(this);
+  this.html_container = html_container.bind(this);
+  this.html_bounded = html_bounded.bind(this);
+  this.html_sequence = html_sequence.bind(this);
+  this.html_associative = html_associative.bind(this);
   return this;
 }
 
