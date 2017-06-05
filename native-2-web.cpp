@@ -101,9 +101,9 @@ int main(int, char **) {
 
   cout << "// Structure JS test\n";
   cout << "let test_structure_read = "
-       << n2w::to_js<test_structure>::create_reader() << '\n';
+       << n2w::to_js<test_structure>::create_reader() << ";\n";
   cout << "let test_structure_write = "
-       << n2w::to_js<test_structure>::create_writer() << '\n';
+       << n2w::to_js<test_structure>::create_writer() << ";\n";
 
   vector<uint8_t> data;
   n2w::filler<test_structure> filler;
