@@ -406,7 +406,7 @@ function persona_string(persona, parent) {
   return () => node.value || '';
 }
 
-function persona_structure_baselabel(persona, parent) {
+function persona_structure_baseslabel(persona, parent) {
   return d3.select(parent)
       .append('td')
       .classed(persona, true)
@@ -422,18 +422,32 @@ function persona_structure_bases(persona, parent) {
       .node();
 }
 
-function persona_structure_baseholder(persona, parent) {
+function persona_structure_basesholder(persona, parent) {
+  return d3.select(parent).append('tr').classed(persona, true).node();
+}
+
+function persona_structure_baselabel(persona, parent, base_name) {
+  return d3.select(parent)
+      .append('td')
+      .classed(persona, true)
+      .text(base_name)
+      .node();
+}
+
+function persona_structure_base(persona, parent) {
+  return d3.select(parent)
+      .append('td')
+      .classed(persona, true)
+      .classed('n2w-html', true)
+      .node();
+}
+
+function persona_structure_baseholder(persona, parent, base_name) {
   return d3.select(parent).append('tr').classed(persona, true).node();
 }
 
 function persona_structure(persona, parent) {
   return d3.select(parent).append('table').classed(persona, true).node();
-}
-
-function persona_structure_base(persona, parent, base_name) {
-  let row = d3.select(parent).append('tr').classed(persona, true);
-  row.append('td').text(base_name);
-  return row.append('td').attr('class', 'n2w-html').node();
 }
 
 function persona_structure_memlabel(persona, parent, member_name) {
@@ -556,19 +570,25 @@ function html_structure(
 
   let bases = {};
   if (base_names && base_names.length > 0) {
-    let base_holder =
-        (this.persona_structure_baseholder || persona_structure_baseholder)(
-            'n2w-persona-structure-baseholder', table);
-    (this.persona_structure_baselabel || persona_structure_baselabel)(
-        'n2w-persona-structure-baselabel', base_holder);
-    let base_data = (this.persona_structure_bases || persona_structure_bases)(
-        'n2w-persona-structure-bases', base_holder);
+    let bases_holder =
+        (this.persona_structure_basesholder || persona_structure_basesholder)(
+            'n2w-persona-structure-basesholder', table);
+    (this.persona_structure_baseslabel || persona_structure_baseslabel)(
+        'n2w-persona-structure-baseslabel', bases_holder);
+    let bases_data = (this.persona_structure_bases || persona_structure_bases)(
+        'n2w-persona-structure-bases', bases_holder);
     base_html.forEach(
         ((h, i) => {
           let basedispatcher = (this.create_gatherer || create_gatherer)();
           basedispatchers.push(basedispatcher);
+          let base_holder =
+              (this.persona_structure_baseholder ||
+               persona_structure_baseholder)(
+                  'n2w-persona-structure-base-holder', bases_data);
+          (this.persona_structure_baselabel || persona_structure_baselabel)(
+              'n2w-persona-structure-base-label', base_holder, base_names[i]);
           h((this.persona_structure_base || persona_structure_base)(
-                'n2w-persona-structure-base', base_data, base_names[i]),
+                'n2w-persona-structure-base', base_holder),
             v => bases[base_names[i]] = v, basedispatcher);
         }).bind(this));
   }
@@ -677,10 +697,12 @@ function N2WGenerator() {
   this.persona_enum = persona_enum.bind(this);
   this.persona_char = persona_char.bind(this);
   this.persona_string = persona_string.bind(this);
-  this.persona_structure_baselabel = persona_structure_baselabel.bind(this);
+  this.persona_structure_baseslabel = persona_structure_baseslabel.bind(this);
   this.persona_structure_bases = persona_structure_bases.bind(this);
-  this.persona_structure_baseholder = persona_structure_baseholder.bind(this);
+  this.persona_structure_basesholder = persona_structure_basesholder.bind(this);
   this.persona_structure = persona_structure.bind(this);
+  this.persona_structure_baseholder = persona_structure_baseholder.bind(this);
+  this.persona_structure_baselabel = persona_structure_baselabel.bind(this);
   this.persona_structure_base = persona_structure_base.bind(this);
   this.persona_structure_memlabel = persona_structure_memlabel.bind(this);
   this.persona_structure_memvalue = persona_structure_memvalue.bind(this);
