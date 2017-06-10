@@ -362,6 +362,7 @@ function persona_bool(persona, parent) {
                  .attr('type', 'checkbox')
                  .attr('value', false)
                  .node();
+  if (this.prefill) node.checked = this.prefill == true;
   return () => node.checked ? true : false;
 }
 
@@ -371,6 +372,7 @@ function persona_number(persona, parent) {
                  .classed(persona, true)
                  .attr('type', 'number')
                  .node();
+  if (this.prefill) node.value = +this.prefill;
   return () => node.value || 0;
 }
 
@@ -384,8 +386,9 @@ function persona_enum_option(persona, parent, value, name) {
 }
 
 function persona_enum(persona, parent, enums) {
-  let select = d3.select(parent).append('select').classed(persona, true);
-  return [() => +select.node().value, select.node()];
+  let select = d3.select(parent).append('select').classed(persona, true).node();
+  if (this.prefill) select.value = +this.prefill;
+  return [() => +select.value, select];
 }
 
 function persona_char(persona, parent) {
@@ -394,6 +397,7 @@ function persona_char(persona, parent) {
                  .classed(persona, true)
                  .attr('type', 'text')
                  .node();
+  if (this.prefill) node.value = this.prefill[0];
   return () => node.value[0] || '\0';
 }
 
@@ -403,6 +407,7 @@ function persona_string(persona, parent) {
                  .classed(persona, true)
                  .attr('type', 'text')
                  .node();
+  if (this.prefill) node.value = this.prefill;
   return () => node.value || '';
 }
 
@@ -587,9 +592,13 @@ function html_structure(
                   'n2w-persona-structure-base-holder', bases_data);
           (this.persona_structure_baselabel || persona_structure_baselabel)(
               'n2w-persona-structure-base-label', base_holder, base_names[i]);
-          h((this.persona_structure_base || persona_structure_base)(
-                'n2w-persona-structure-base', base_holder),
-            v => bases[base_names[i]] = v, basedispatcher);
+          let prefill_saved = this.prefill;
+          if (this.prefill) this.prefill = this.prefill.__bases[base_names[i]];
+          h.bind(this)(
+              (this.persona_structure_base || persona_structure_base)(
+                  'n2w-persona-structure-base', base_holder),
+              v => bases[base_names[i]] = v, basedispatcher);
+          this.prefill = prefill_saved;
         }).bind(this));
   }
 
@@ -606,9 +615,13 @@ function html_structure(
           (this.persona_structure_memlabel || persona_structure_memlabel)(
               'n2w-persona-structure-member-label', mem_holder,
               names ? names[i] : i);
-          h((this.persona_structure_memvalue || persona_structure_memvalue)(
-                'n2w-persona-structure-member', mem_holder),
-            v => subvalue[names ? names[i] : i] = v, subdispatcher);
+          let prefill_saved = this.prefill;
+          if (this.prefill) this.prefill = this.prefill[names ? names[i] : i];
+          h.bind(this)(
+              (this.persona_structure_memvalue || persona_structure_memvalue)(
+                  'n2w-persona-structure-member', mem_holder),
+              v => subvalue[names ? names[i] : i] = v, subdispatcher);
+          this.prefill = prefill_saved;
         }).bind(this));
 
   (this.subdispatch || subdispatch)(
@@ -628,23 +641,35 @@ function html_container(parent, value, dispatcher, html, size) {
     for (let i = 0; i < size; ++i) {
       let subdispatcher = (this.create_gatherer || create_gatherer)();
       subdispatchers.push(subdispatcher);
-      html(
+      let prefill_saved = this.prefill;
+      if (this.prefill) this.prefill = this.prefill[i];
+      html.bind(this)(
           (this.persona_container_element || persona_container_element)(
               'n2w-persona-container-element', table),
           v => subvalue[i] = v, subdispatcher);
+      this.prefill = prefill_saved;
     }
   else {
     let index = 0;
-    (this.persona_container_expander || persona_container_expander)(
-        'n2w-persona-container-expander', table, () => {
+    let expander =
+        (() => {
           let subdispatcher = (this.create_gatherer || create_gatherer)();
           subdispatchers.push(subdispatcher);
           let slot = index++;
-          html(
+          html.bind(this)(
               (this.persona_container_element || persona_container_element)(
                   'n2w-persona-container-element', table),
               v => { subvalue[slot] = v; }, subdispatcher);
-        });
+        }).bind(this);
+    (this.persona_container_expander || persona_container_expander)(
+        'n2w-persona-container-expander', table, expander);
+    let prefill_saved = this.prefill;
+    if (this.prefill)
+      for (let pf in prefill_saved) {
+        this.prefill = prefill_saved[pf];
+        expander();
+      }
+    this.prefill = prefill_saved;
   }
 
   (this.subdispatch || subdispatch)(
@@ -658,6 +683,9 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
   let subvalue = {};
   let subdispatchers = [];
 
+  let prefill_saved = this.prefill;
+  if (this.prefill)
+    this.prefill = Object.keys(this.prefill).map(k => [k, this.prefill[k]]);
   (this.html_sequence || html_sequence)(
       parent, v => {}, (this.create_gatherer || create_gatherer)(),
       (p, v, d) => {
@@ -666,7 +694,9 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
             value_subdispatcher = (this.create_gatherer || create_gatherer)();
         subdispatchers.push(key_subdispatcher);
         subdispatchers.push(value_subdispatcher);
-        html_key(
+        let prefill_saved = this.prefill;
+        if (this.prefill) this.prefill = prefill_saved[0];
+        html_key.bind(this)(
             (this.persona_map_key || persona_map_key)('n2w-persona-map-key', p),
             v => {
               key_value[0] = v;
@@ -674,7 +704,8 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
                 subvalue[JSON.stringify(key_value[0])] = key_value[1];
             },
             key_subdispatcher);
-        html_value(
+        if (this.prefill) this.prefill = prefill_saved[1];
+        html_value.bind(this)(
             (this.persona_map_value || persona_map_value)(
                 'n2w-persona-map-value', p),
             v => {
@@ -683,7 +714,9 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
                 subvalue[JSON.stringify(key_value[0])] = key_value[1];
             },
             value_subdispatcher);
+        this.prefill = prefill_saved;
       });
+  this.prefill = prefill_saved;
 
   (this.subdispatch || subdispatch)(
       dispatcher, subdispatchers, () => value(subvalue));
