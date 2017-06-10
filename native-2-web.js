@@ -352,7 +352,7 @@ function subdispatch(dispatcher, subdispatchers, value) {
 }
 
 function persona_terminal(persona, parent) {
-  d3.select(parent).classed(parent, true);
+  d3.select(parent).classed(persona, true);
 }
 
 function persona_bool(persona, parent) {
