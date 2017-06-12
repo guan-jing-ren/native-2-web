@@ -24,8 +24,7 @@ template <> const string js_constructor<double> = "Float64";
 template <typename T> struct to_js {
   template <typename U = T>
   static auto create_reader() -> enable_if_t<is_arithmetic<U>{}, string> {
-    return is_same<U, bool>{} ? R"(read_bool)"
-                              :
+    return is_same<U, bool>{} ? R"(read_bool)" :
                               R"(function (data, offset) {
   return read_number(data, offset, 'get)" +
                                   js_constructor<U> + R"(');
@@ -33,8 +32,7 @@ template <typename T> struct to_js {
   }
   template <typename U = T>
   static auto create_writer() -> enable_if_t<is_arithmetic<U>{}, string> {
-    return is_same<U, bool>{} ? R"(write_bool)"
-                              :
+    return is_same<U, bool>{} ? R"(write_bool)" :
                               R"(function (object) {
   return write_number(object, 'set)" +
                                   js_constructor<U> + R"(');
