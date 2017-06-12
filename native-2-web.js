@@ -749,6 +749,30 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
       dispatcher, subdispatchers, () => value(subvalue));
 }
 
+function html_function(parent, html_args, html_return, name, executor) {
+  let value = {}, dispatcher = (this.create_gatherer || create_gatherer)();
+  let args_node = (this.persona_function_args || persona_function_args)(
+      'n2w-persona-function-args', parent);
+  let ret_node = (this.persona_function_return || persona_function_return)(
+      'n2w-persona-function-return', args_node);
+  html_args.bind(this)(args_node, v => value = v, dispatcher);
+  let execute =
+      (() => {
+        dispatcher.call('gather');
+        executor(value, (r => {
+                          let generator = this || new N2WGenerator();
+                          generator.prefill = r;
+                          ret_node.innerHTML = '';
+                          html_return.bind(generator)(
+                              ret_node, v => r = v,
+                              (this.create_gatherer || create_gatherer)());
+                          generator.prefill = null;
+                        }).bind(this));
+      }).bind(this);
+  (this.persona_function_exec || persona_function_exec)(
+      'n2w-persona-function-execute', args_node, execute, name);
+}
+
 function N2WGenerator() {
   // Customization points for the facade for n2w APIs.
   this.persona_bool = persona_bool.bind(this);
@@ -794,6 +818,7 @@ function N2WGenerator() {
   this.html_bounded = html_bounded.bind(this);
   this.html_sequence = html_sequence.bind(this);
   this.html_associative = html_associative.bind(this);
+  this.html_function = html_function.bind(this);
   return this;
 }
 
