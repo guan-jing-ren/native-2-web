@@ -377,17 +377,18 @@ function persona_number(persona, parent) {
 }
 
 function persona_enum_option(persona, parent, value, name) {
-  return d3.select(parent)
-      .append('option')
-      .classed(persona, true)
-      .attr('value', value)
-      .text(name)
-      .node();
+  let node = d3.select(parent)
+                 .append('option')
+                 .classed(persona, true)
+                 .attr('value', value)
+                 .text(name)
+                 .node();
+  if (this.prefill && value == this.prefill) node.selected = true;
+  return node;
 }
 
 function persona_enum(persona, parent, enums) {
   let select = d3.select(parent).append('select').classed(persona, true).node();
-  if (this.prefill) select.value = +this.prefill;
   return [() => +select.value, select];
 }
 
