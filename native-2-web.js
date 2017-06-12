@@ -695,7 +695,7 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
         subdispatchers.push(key_subdispatcher);
         subdispatchers.push(value_subdispatcher);
         let prefill_saved = this.prefill;
-        if (this.prefill) this.prefill = prefill_saved[0];
+        if (this.prefill) this.prefill = JSON.parse(prefill_saved[0]);
         html_key.bind(this)(
             (this.persona_map_key || persona_map_key)('n2w-persona-map-key', p),
             v => {
