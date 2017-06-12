@@ -131,19 +131,20 @@ int main(int, char **) {
   cout << "let rval2 = test_structure_read(valr, 0)[0];\n";
   cout << "d3.select('body').append('pre').text(JSON.stringify(rval2, null, "
           "'\\t'));\n";
-  cout << R"(let test_structure_html = function(parent) {
-  let html = )" +
-              n2w::to_js<test_structure>::create_html() + R"(;
-  let executor = (value, retfunc) => {
+  cout << R"(let test_structure_html = )" +
+              n2w::create_html((test_structure(*)(test_structure))(nullptr),
+                               "test_structure_html") +
+              R"(;
+let generator = new N2WGenerator();
+test_structure_html.bind(generator)(d3.select('body').node(),
+  (value, retfunc) => {
+    let parent = d3.select('body').node();
     d3.select(parent).append('pre').text(JSON.stringify(value, null, '\t'));
-    let eulav = test_structure_read(new DataView(test_structure_write(value)), 0)[0];
+    let eulav = test_structure_read(
+        new DataView(test_structure_write(value)), 0)[0];
     d3.select(parent).append('pre').text(JSON.stringify(eulav, null, '\t'));
     retfunc(eulav);
-  };
-  html_function(parent, html, html, 'test_structure_html', executor);
-};
-let generator = new N2WGenerator();
-test_structure_html.bind(generator)(d3.select('body').node());)";
+  });)";
 
   return 0;
 }
