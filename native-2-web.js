@@ -515,6 +515,33 @@ function persona_map_value(persona, parent) {
       .node();
 }
 
+function persona_function_args(persona, parent) {
+  return d3.select(parent)
+      .append('table')
+      .classed(persona, true)
+      .append('tr')
+      .append('td')
+      .node();
+}
+
+function persona_function_return(persona, parent) {
+  return d3.select(parent.parentElement)
+      .append('td')
+      .classed(persona, true)
+      .node();
+}
+
+function persona_function_exec(persona, parent, func, name) {
+  d3.select(parent.parentElement.parentElement)
+      .append('tr')
+      .classed(persona, true)
+      .append('td')
+      .append('input')
+      .attr('type', 'button')
+      .attr('value', name)
+      .on('click', func);
+}
+
 function html_bool(parent, value, dispatcher) {
   (this.persona_terminal || persona_terminal)('n2w-terminal', parent);
   let value_getter =
@@ -745,6 +772,9 @@ function N2WGenerator() {
   this.persona_container_expander = persona_container_expander.bind(this);
   this.persona_map_key = persona_map_key.bind(this);
   this.persona_map_value = persona_map_value.bind(this);
+  this.persona_function_args = persona_function_args.bind(this);
+  this.persona_function_exec = persona_function_exec.bind(this);
+  this.persona_function_return = persona_function_return.bind(this);
 
   // Not so common to customize the following aspects.
   this.persona_terminal = persona_terminal.bind(this);
