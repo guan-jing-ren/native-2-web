@@ -132,19 +132,15 @@ int main(int, char **) {
   cout << "d3.select('body').append('pre').text(JSON.stringify(rval2, null, "
           "'\\t'));\n";
   cout << R"(let test_structure_html = function(parent) {
-  let value = {}, dispatcher = d3.dispatch('gather');
-  ()" + n2w::to_js<test_structure>::create_html() +
-              R"().bind(this)(parent, v => value = v, dispatcher);
-  d3.select(parent)
-    .append('input')
-    .attr('type', 'button')
-    .attr('value','test_structure_html')
-    .on('click', () => {
-      dispatcher.call('gather');
-      d3.select(parent).append('pre').text(JSON.stringify(value, null, '\t'));
-      let eulav = test_structure_read(new DataView(test_structure_write(value)), 0)[0];
-      d3.select(parent).append('pre').text(JSON.stringify(eulav, null, '\t'));
-    });
+  let html = )" +
+              n2w::to_js<test_structure>::create_html() + R"(;
+  let executor = (value, retfunc) => {
+    d3.select(parent).append('pre').text(JSON.stringify(value, null, '\t'));
+    let eulav = test_structure_read(new DataView(test_structure_write(value)), 0)[0];
+    d3.select(parent).append('pre').text(JSON.stringify(eulav, null, '\t'));
+    retfunc(eulav);
+  };
+  html_function(parent, html, html, 'test_structure_html', executor);
 };
 let generator = new N2WGenerator();
 test_structure_html.bind(generator)(d3.select('body').node());)";
