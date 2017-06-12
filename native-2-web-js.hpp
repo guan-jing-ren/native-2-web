@@ -473,6 +473,18 @@ const string to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>>::base_names =
   namespace n2w {                                                              \
   template <> struct to_js<s> : to_js<c> {};                                   \
   }
+
+template <typename R, typename... Args>
+std::string create_html(R (*f)(Args...), std::string name) {
+  return R"(function(parent, executor) {
+  let html_arg = )" +
+         n2w::to_js_heterogenous<Args...>::create_html() + R"(;
+  let html_ret = )" +
+         n2w::to_js<R>::create_html() + R"(;
+  (this.html_function || html_function)(parent, html_arg, html_ret, ')" +
+         name + R"(', executor);
+})";
+}
 }
 
 #endif
