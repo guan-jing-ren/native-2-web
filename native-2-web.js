@@ -656,6 +656,7 @@ function html_structure(
       dispatcher, basedispatchers.concat(subdispatchers), () => {
         if (base_names && base_names.length > 0) subvalue.__bases = bases;
         value(subvalue);
+        subvalue = {};
       });
 }
 
@@ -700,8 +701,10 @@ function html_container(parent, value, dispatcher, html, size) {
     this.prefill = prefill_saved;
   }
 
-  (this.subdispatch || subdispatch)(
-      dispatcher, subdispatchers, () => value(subvalue));
+  (this.subdispatch || subdispatch)(dispatcher, subdispatchers, () => {
+    value(subvalue);
+    subvalue = [];
+  });
 }
 
 var html_bounded = html_container;
@@ -761,6 +764,7 @@ function html_function(parent, html_args, html_return, name, executor) {
   html_args.bind(this)(args_node, v => value = v, dispatcher);
   let execute =
       (() => {
+        value = {};
         dispatcher.call('gather');
         executor(value, (r => {
                           let generator = this || new N2WGenerator();
@@ -771,6 +775,7 @@ function html_function(parent, html_args, html_return, name, executor) {
                               (this.create_gatherer || create_gatherer)());
                           generator.prefill = null;
                         }).bind(this));
+        value = {};
       }).bind(this);
   (this.persona_function_exec || persona_function_exec)(
       'n2w-persona-function-execute', args_node, execute, name);
