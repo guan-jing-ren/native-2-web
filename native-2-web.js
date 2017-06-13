@@ -17,6 +17,8 @@ var sizes = {
   "setFloat64": 8,
 };
 
+var __n2w_deleted_value = {};
+
 //////////////////////////////////
 // Native to Javascript readers //
 //////////////////////////////////
@@ -489,13 +491,16 @@ function persona_container_element(persona, parent) {
       .node();
 }
 
-function persona_container_element_deleter(persona, element) {
+function persona_container_element_deleter(persona, element, deleter) {
   d3.select(element.parentElement)
       .append('td')
       .append('input')
       .attr('type', 'button')
       .attr('value', '-')
-      .on('click', () => element.parentElement.innerHTML = '');
+      .on('click', () => {
+        d3.select(element.parentElement).remove();
+        deleter();
+      });
 }
 
 function persona_container_expander(persona, parent, on_expand) {
@@ -697,10 +702,14 @@ function html_container(parent, value, dispatcher, html, size) {
           let element =
               (this.persona_container_element || persona_container_element)(
                   'n2w-persona-container-element', table);
-          html.bind(this)(element, v => { subvalue[slot] = v; }, subdispatcher);
+          html.bind(this)(element, v => {
+            subvalue[slot] =
+                subvalue[slot] != __n2w_deleted_value ? v : __n2w_deleted_value;
+          }, subdispatcher);
           (this.persona_container_element_deleter ||
            persona_container_element_deleter)(
-              'n2w-persona-container-deleter', element);
+              'n2w-persona-container-deleter', element,
+              () => subvalue[slot] = __n2w_deleted_value);
         }).bind(this);
     (this.persona_container_expander || persona_container_expander)(
         'n2w-persona-container-expander', table, expander);
@@ -714,8 +723,7 @@ function html_container(parent, value, dispatcher, html, size) {
   }
 
   (this.subdispatch || subdispatch)(dispatcher, subdispatchers, () => {
-    value(subvalue);
-    subvalue = [];
+    value(subvalue.filter(s => s !== __n2w_deleted_value));
   });
 }
 
