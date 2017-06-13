@@ -489,6 +489,15 @@ function persona_container_element(persona, parent) {
       .node();
 }
 
+function persona_container_element_deleter(persona, element) {
+  d3.select(element.parentElement)
+      .append('td')
+      .append('input')
+      .attr('type', 'button')
+      .attr('value', '-')
+      .on('click', () => element.parentElement.innerHTML = '');
+}
+
 function persona_container_expander(persona, parent, on_expand) {
   d3.select(parent)
       .append('tr')
@@ -685,10 +694,13 @@ function html_container(parent, value, dispatcher, html, size) {
           let subdispatcher = (this.create_gatherer || create_gatherer)();
           subdispatchers.push(subdispatcher);
           let slot = index++;
-          html.bind(this)(
+          let element =
               (this.persona_container_element || persona_container_element)(
-                  'n2w-persona-container-element', table),
-              v => { subvalue[slot] = v; }, subdispatcher);
+                  'n2w-persona-container-element', table);
+          html.bind(this)(element, v => { subvalue[slot] = v; }, subdispatcher);
+          (this.persona_container_element_deleter ||
+           persona_container_element_deleter)(
+              'n2w-persona-container-deleter', element);
         }).bind(this);
     (this.persona_container_expander || persona_container_expander)(
         'n2w-persona-container-expander', table, expander);
@@ -801,6 +813,8 @@ function N2WGenerator() {
   this.persona_structure_memholder = persona_structure_memholder.bind(this);
   this.persona_container = persona_container.bind(this);
   this.persona_container_element = persona_container_element.bind(this);
+  this.persona_container_element_deleter =
+      persona_container_element_deleter.bind(this);
   this.persona_container_expander = persona_container_expander.bind(this);
   this.persona_map_key = persona_map_key.bind(this);
   this.persona_map_value = persona_map_value.bind(this);
