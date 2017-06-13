@@ -746,8 +746,10 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
       });
   this.prefill = prefill_saved;
 
-  (this.subdispatch || subdispatch)(
-      dispatcher, subdispatchers, () => value(subvalue));
+  (this.subdispatch || subdispatch)(dispatcher, subdispatchers, () => {
+    value(subvalue);
+    subvalue = {};
+  });
 }
 
 function html_function(parent, html_args, html_return, name, executor) {
