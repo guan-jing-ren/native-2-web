@@ -494,6 +494,7 @@ function persona_container_element(persona, parent) {
 function persona_container_element_deleter(persona, element, deleter) {
   d3.select(element.parentElement)
       .append('td')
+      .classed(persona, true)
       .append('input')
       .attr('type', 'button')
       .attr('value', '-')
