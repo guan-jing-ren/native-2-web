@@ -398,7 +398,7 @@ function persona_char(persona, parent) {
                  .classed(persona, true)
                  .attr('type', 'text')
                  .node();
-  if (this.prefill) node.value = this.prefill[0];
+  if (this.prefill) node.value = this.prefill[0] == '\0' ? '' : this.prefill[0];
   return () => node.value[0] || '\0';
 }
 
