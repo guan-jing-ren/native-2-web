@@ -534,6 +534,21 @@ function persona_map_value(persona, parent) {
       .node();
 }
 
+function persona_map_element_deleter(persona, element, deleter) {
+  return d3.select(element.parentElement)
+      .insert('td', ':first-child')
+      .classed(persona, true)
+      .append('input')
+      .attr('type', 'button')
+      .attr('value', '-')
+      .on('click',
+          () => {
+            d3.select(element.parentElement).remove();
+            deleter();
+          })
+      .node();
+}
+
 function persona_function_args(persona, parent) {
   return d3.select(parent)
       .append('table')
@@ -830,6 +845,7 @@ function N2WGenerator() {
   this.persona_container_expander = persona_container_expander.bind(this);
   this.persona_map_key = persona_map_key.bind(this);
   this.persona_map_value = persona_map_value.bind(this);
+  this.persona_map_element_deleter = persona_map_element_deleter.bind(this);
   this.persona_function_args = persona_function_args.bind(this);
   this.persona_function_exec = persona_function_exec.bind(this);
   this.persona_function_return = persona_function_return.bind(this);
