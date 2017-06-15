@@ -492,27 +492,30 @@ function persona_container_element(persona, parent) {
 }
 
 function persona_container_element_deleter(persona, element, deleter) {
-  d3.select(element.parentElement)
+  return d3.select(element.parentElement)
       .append('td')
       .classed(persona, true)
       .append('input')
       .attr('type', 'button')
       .attr('value', '-')
-      .on('click', () => {
-        d3.select(element.parentElement).remove();
-        deleter();
-      });
+      .on('click',
+          () => {
+            d3.select(element.parentElement).remove();
+            deleter();
+          })
+      .node();
 }
 
 function persona_container_expander(persona, parent, on_expand) {
-  d3.select(parent)
+  return d3.select(parent)
       .append('tr')
       .classed(persona, true)
       .append('td')
       .append('input')
       .attr('type', 'button')
       .attr('value', '+')
-      .on('click', on_expand);
+      .on('click', on_expand)
+      .node();
 }
 
 function persona_map_key(persona, parent) {
