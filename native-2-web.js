@@ -693,14 +693,14 @@ function html_structure(
       });
 }
 
-function html_container(parent, value, dispatcher, html, size) {
+function html_container(parent, value, dispatcher, html, size_or_deleter) {
   let table = (this.persona_container || persona_container)(
       'n2w-persona-container', parent);
   let subvalue = [];
   let subdispatchers = [];
 
-  if (size !== undefined)
-    for (let i = 0; i < size; ++i) {
+  if (typeof(size_or_deleter) == 'number')
+    for (let i = 0; i < size_or_deleter; ++i) {
       let subdispatcher = (this.create_gatherer || create_gatherer)();
       subdispatchers.push(subdispatcher);
       let prefill_saved = this.prefill;
@@ -725,9 +725,8 @@ function html_container(parent, value, dispatcher, html, size) {
             subvalue[slot] =
                 subvalue[slot] != __n2w_deleted_value ? v : __n2w_deleted_value;
           }, subdispatcher);
-          (this.persona_container_element_deleter ||
-           persona_container_element_deleter)(
-              'n2w-persona-container-deleter', element,
+          size_or_deleter.bind(this)(
+              'n2w-persona-container-element-deleter', element,
               () => subvalue[slot] = __n2w_deleted_value);
         }).bind(this);
     (this.persona_container_expander || persona_container_expander)(
@@ -747,7 +746,11 @@ function html_container(parent, value, dispatcher, html, size) {
 }
 
 var html_bounded = html_container;
-var html_sequence = html_container;
+function html_sequence() {
+  html_container(
+      ...arguments, this.persona_container_element_deleter ||
+          persona_container_element_deleter);
+}
 
 function html_associative(parent, value, dispatcher, html_key, html_value) {
   let subvalue = {};
@@ -756,36 +759,43 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
   let prefill_saved = this.prefill;
   if (this.prefill)
     this.prefill = Object.keys(this.prefill).map(k => [k, this.prefill[k]]);
-  (this.html_sequence || html_sequence)(
-      parent, v => {}, (this.create_gatherer || create_gatherer)(),
-      (p, v, d) => {
-        let key_value = [];
-        let key_subdispatcher = (this.create_gatherer || create_gatherer)(),
-            value_subdispatcher = (this.create_gatherer || create_gatherer)();
-        subdispatchers.push(key_subdispatcher);
-        subdispatchers.push(value_subdispatcher);
-        let prefill_saved = this.prefill;
-        if (this.prefill) this.prefill = JSON.parse(prefill_saved[0]);
-        html_key.bind(this)(
-            (this.persona_map_key || persona_map_key)('n2w-persona-map-key', p),
-            v => {
-              key_value[0] = v;
-              if (key_value[1])
-                subvalue[JSON.stringify(key_value[0])] = key_value[1];
-            },
-            key_subdispatcher);
-        if (this.prefill) this.prefill = prefill_saved[1];
-        html_value.bind(this)(
-            (this.persona_map_value || persona_map_value)(
-                'n2w-persona-map-value', p),
-            v => {
-              key_value[1] = v;
-              if (key_value[0])
-                subvalue[JSON.stringify(key_value[0])] = key_value[1];
-            },
-            value_subdispatcher);
-        this.prefill = prefill_saved;
-      });
+  (this.html_container || html_container)
+      .bind(this)(
+          parent, v => {}, (this.create_gatherer || create_gatherer)(),
+          (p, v, d) => {
+            let key_value = [];
+            let key_subdispatcher = (this.create_gatherer || create_gatherer)(),
+                value_subdispatcher =
+                    (this.create_gatherer || create_gatherer)();
+            subdispatchers.push(key_subdispatcher);
+            subdispatchers.push(value_subdispatcher);
+            let prefill_saved = this.prefill;
+            if (this.prefill) this.prefill = JSON.parse(prefill_saved[0]);
+            html_key.bind(this)(
+                (this.persona_map_key || persona_map_key)(
+                    'n2w-persona-map-key', p),
+                v => {
+                  key_value[0] = v;
+                  if (key_value[1])
+                    subvalue[JSON.stringify(key_value[0])] = key_value[1];
+                },
+                key_subdispatcher);
+            if (this.prefill) this.prefill = prefill_saved[1];
+            html_value.bind(this)(
+                (this.persona_map_value || persona_map_value)(
+                    'n2w-persona-map-value', p),
+                v => {
+                  key_value[1] = v;
+                  if (key_value[0])
+                    subvalue[JSON.stringify(key_value[0])] = key_value[1];
+                },
+                value_subdispatcher);
+            this.prefill = prefill_saved;
+          },
+          (p, e, d) => {
+            (this.persona_map_element_deleter || persona_map_element_deleter)(
+                'n2w-persona-map-element-deleter', e, () => {});
+          });
   this.prefill = prefill_saved;
 
   (this.subdispatch || subdispatch)(dispatcher, subdispatchers, () => {
