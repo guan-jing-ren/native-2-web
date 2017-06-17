@@ -803,27 +803,36 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
 }
 
 function html_function(parent, html_args, html_return, name, executor) {
-  let value = {}, dispatcher = (this.create_gatherer || create_gatherer)();
+  let value = [], dispatcher = (this.create_gatherer || create_gatherer)();
   let args_node = (this.persona_function_args || persona_function_args)(
       'n2w-persona-function-args', parent);
   let ret_node = (this.persona_function_return || persona_function_return)(
       'n2w-persona-function-return', args_node);
   html_args.bind(this)(args_node, v => value = v, dispatcher);
-  let execute =
-      (() => {
-        value = {};
-        dispatcher.call('gather');
-        executor(value, (r => {
-                          let generator = this || new N2WGenerator();
-                          generator.prefill = r;
-                          ret_node.innerHTML = '';
-                          html_return.bind(generator)(
-                              ret_node, v => r = v,
-                              (this.create_gatherer || create_gatherer)());
-                          generator.prefill = null;
-                        }).bind(this));
-        value = {};
-      }).bind(this);
+  let execute = (() => {
+                  value = [];
+                  dispatcher.call('gather');
+                  executor(
+                      Object.keys(value)
+                          .map(k => +k)
+                          .sort((l, r) => l - r)
+                          .reduce(
+                              (p, c) => {
+                                p[c] = value[c];
+                                return p;
+                              },
+                              []),
+                      (r => {
+                        let generator = this || new N2WGenerator();
+                        generator.prefill = r;
+                        ret_node.innerHTML = '';
+                        html_return.bind(generator)(
+                            ret_node, v => r = v,
+                            (this.create_gatherer || create_gatherer)());
+                        generator.prefill = null;
+                      }).bind(this));
+                  value = [];
+                }).bind(this);
   (this.persona_function_exec || persona_function_exec)(
       'n2w-persona-function-execute', args_node, execute, name);
 }
@@ -921,6 +930,18 @@ function create_kaonashi(pointer, writer) {
 function pair_service_generator(service, generator) {
   return function(parent, ws) {
     service.html.bind(generator || this)(
-        parent, (value, executor) => service(ws, value).then(executor));
+        parent, (value, executor) => service(ws, ...value).then(executor));
   };
+}
+
+function module_directory(module, parent, ws) {
+  let ul = d3.select(parent).append('ul');
+  Object.keys(module).forEach(m => {
+    let li = ul.append('li').text(m);
+    if (typeof(module[m]) == "function") {
+      if (module[m].html) pair_service_generator(module[m])(li.node(), ws);
+      return;
+    }
+    module_directory(module[m], li.node(), ws);
+  });
 }
