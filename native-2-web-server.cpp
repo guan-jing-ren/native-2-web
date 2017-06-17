@@ -475,10 +475,10 @@ n2w::plugin server = []() {
 
 string create_modules() {
   reload_plugins();
-  string modules = "var n2w = (function () {\n";
-  modules += "this['$server'] = {};\n";
+  string modules = "var n2w = (function () {\nlet n2w = {};\n";
+  modules += "n2w['$server'] = {};\n";
   for (auto &s : server.get_services()) {
-    modules += "this.$server." + server.get_name(s) + " = " +
+    modules += "n2w.$server." + server.get_name(s) + " = " +
                server.get_javascript(s) + ";\n";
   }
 
@@ -489,21 +489,21 @@ string create_modules() {
       module = accumulate(
           first, last, string{},
           [](auto mods, const auto &mod) { return mods + "['" + mod + "']"; });
-      modules += "this" + module + " = this" + module + " || {};\n";
+      modules += "n2w" + module + " = n2w" + module + " || {};\n";
     }
     module = accumulate(
         cbegin(p.first), cend(p.first), string{},
         [](auto mods, const auto &mod) { return mods + "['" + mod + "']"; });
-    modules += "this" + module + " = this" + module + " || {};\n";
+    modules += "n2w" + module + " = n2w" + module + " || {};\n";
 
     for (auto &s : p.second.get_services()) {
-      modules += "this" + module + '.' + p.second.get_name(s) + " = " +
+      modules += "n2w" + module + '.' + p.second.get_name(s) + " = " +
                  p.second.get_javascript(s) + ";\n";
-      modules += "this" + module + '.' + p.second.get_name(s) + ".html = " +
+      modules += "n2w" + module + '.' + p.second.get_name(s) + ".html = " +
                  p.second.get_generator(s) + ";\n";
     }
   }
-  modules += "return this;\n})();\n";
+  modules += "return n2w;\n}());\n";
   return modules;
 }
 
