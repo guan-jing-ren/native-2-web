@@ -499,6 +499,8 @@ string create_modules() {
     for (auto &s : p.second.get_services()) {
       modules += "this" + module + '.' + p.second.get_name(s) + " = " +
                  p.second.get_javascript(s) + ";\n";
+      modules += "this" + module + '.' + p.second.get_name(s) + ".html = " +
+                 p.second.get_generator(s) + ";\n";
     }
   }
   modules += "return this;\n})();\n";
