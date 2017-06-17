@@ -917,3 +917,10 @@ function create_kaonashi(pointer, writer) {
     ws.send(writer(...arguments));
   };
 }
+
+function pair_service_generator(service, generator) {
+  return function(parent, ws) {
+    service.html.bind(generator || this)(
+        parent, (value, executor) => service(ws, value).then(executor));
+  };
+}
