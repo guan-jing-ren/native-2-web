@@ -31,6 +31,7 @@ protected:
   std::unordered_map<std::string, std::function<buf_type(const buf_type &)>>
       pointer_to_function;
   std::unordered_map<std::string, std::string> pointer_to_javascript;
+  std::unordered_map<std::string, std::string> pointer_to_generator;
 
   std::unordered_set<std::string> services;
   std::unordered_set<std::string> push_notifiers;
@@ -115,6 +116,16 @@ public:
         std::regex_replace(function_address(callback), regex{"'"}, R"(\')") +
         R"(', )" + to_js<args_t<Args...>>::create_writer() + R"(, )" +
         to_js<ret_t<R>>::create_reader() + R"())";
+
+    pointer_to_generator[function_address(callback)] =
+        R"(function (parent, executor) {
+  let html_args = )" +
+        to_js<args_t<Args...>>::create_html() + R"(;
+  let html_return = )" +
+        to_js<ret_t<R>>::create_html() + R"(;
+  (this.html_function || html_function)(parent, html_args, html_return, ')" +
+        name + R"(', executor);
+})";
   }
   template <typename R, typename... Args>
   void register_push_notifier(const char *name, R (*callback)(Args...),
@@ -144,6 +155,10 @@ public:
   }
 
   std::string get_name(std::string pointer) { return pointer_to_name[pointer]; }
+
+  std::string get_generator(std::string pointer) {
+    return pointer_to_generator[pointer];
+  }
 
   std::string get_javascript(std::string pointer) {
     return pointer_to_javascript[pointer];
