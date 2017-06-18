@@ -480,6 +480,8 @@ string create_modules() {
   for (auto &s : server.get_services()) {
     modules += "n2w.$server." + server.get_name(s) + " = " +
                server.get_javascript(s) + ";\n";
+    modules += "n2w.$server." + server.get_name(s) + ".html = " +
+               server.get_generator(s) + ";\n";
   }
 
   for (auto &p : plugins) {
