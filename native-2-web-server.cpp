@@ -108,7 +108,14 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
   void defer_response(shared_future<void> &&reply_future) {
     socket.get_io_service().post(
-        [reply_future]() mutable { reply_future.get(); });
+        [ reply_future, self = this->shared_from_this() ]() mutable {
+          try {
+            reply_future.get();
+          } catch (...) {
+            clog << "Exception thrown from void future\n";
+            self->ws.close({4000, "Exception thrown from void future"});
+          }
+        });
   }
 
   template <typename R> auto create_writer(const R &response) {
@@ -135,8 +142,14 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
     defer_response(async(launch::deferred, [
       self = this->shared_from_this(), reply_future = move(reply_future)
     ]() mutable->function<void()> {
-      return self->create_writer(self->ws_stuff.text_response =
-                                     move(reply_future.get()));
+      try {
+        return self->create_writer(self->ws_stuff.text_response =
+                                       move(reply_future.get()));
+      } catch (...) {
+        clog << "Exception thrown from string future\n";
+        self->ws.close({4000, "Exception thrown from string future"});
+        return []() {};
+      }
     }));
   }
 
@@ -144,8 +157,14 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
     defer_response(async(launch::deferred, [
       self = this->shared_from_this(), reply_future = move(reply_future)
     ]() mutable->function<void()> {
-      return self->create_writer(self->ws_stuff.binary_response =
-                                     move(reply_future.get()));
+      try {
+        return self->create_writer(self->ws_stuff.binary_response =
+                                       move(reply_future.get()));
+      } catch (...) {
+        clog << "Exception thrown from binary future\n";
+        self->ws.close({4000, "Exception thrown from binary future"});
+        return []() {};
+      }
     }));
   }
 
