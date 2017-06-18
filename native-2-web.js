@@ -895,6 +895,7 @@ function N2WGenerator() {
 
 function create_service(pointer, writer, reader) {
   return function(ws) {
+    ws = typeof(ws) == 'function' ? ws() : ws;
     let listener = function(e) {
       ws.removeEventListener('message', listener);
       let ret = reader(new DataView(e.data), 0);
