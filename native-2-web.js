@@ -577,6 +577,18 @@ function persona_function_exec(persona, parent, func, name) {
       .on('click', func);
 }
 
+function persona_submodule_entry(persona, parent, name) {
+  return d3.select(parent)
+      .append('li')
+      .classed(persona, true)
+      .text(name)
+      .node();
+}
+
+function persona_submodule(persona, parent) {
+  return d3.select(parent).append('ul').classed(persona, true).node();
+}
+
 function html_void() {}
 
 function html_bool(parent, value, dispatcher) {
@@ -840,6 +852,20 @@ function html_function(parent, html_args, html_return, name, executor) {
       'n2w-persona-function-execute', args_node, execute, name);
 }
 
+function html_module_directory(module, parent, ws) {
+  let submod = (this.persona_submodule || persona_submodule)(
+      'n2w-persona-submodule', parent);
+  Object.keys(module).forEach(m => {
+    let entry =
+        persona_submodule_entry('n2w-persona-submodule-entry', submod, m);
+    if (typeof(module[m]) == "function") {
+      if (module[m].html) pair_service_generator(module[m])(entry, ws);
+      return;
+    }
+    html_module_directory(module[m], entry, ws);
+  });
+}
+
 function N2WGenerator() {
   // Customization points for the facade for n2w APIs.
   this.persona_bool = persona_bool.bind(this);
@@ -869,6 +895,8 @@ function N2WGenerator() {
   this.persona_function_args = persona_function_args.bind(this);
   this.persona_function_exec = persona_function_exec.bind(this);
   this.persona_function_return = persona_function_return.bind(this);
+  this.persona_submodule = persona_submodule.bind(this);
+  this.persona_submodule_entry = persona_submodule_entry.bind(this);
 
   // Not so common to customize the following aspects.
   this.persona_terminal = persona_terminal.bind(this);
@@ -889,6 +917,7 @@ function N2WGenerator() {
   this.html_sequence = html_sequence.bind(this);
   this.html_associative = html_associative.bind(this);
   this.html_function = html_function.bind(this);
+  this.html_module_directory = html_module_directory.bind(this);
   return this;
 }
 
@@ -936,16 +965,4 @@ function pair_service_generator(service, generator) {
     service.html.bind(generator || this)(
         parent, (value, executor) => service(ws, ...value).then(executor));
   };
-}
-
-function module_directory(module, parent, ws) {
-  let ul = d3.select(parent).append('ul');
-  Object.keys(module).forEach(m => {
-    let li = ul.append('li').text(m);
-    if (typeof(module[m]) == "function") {
-      if (module[m].html) pair_service_generator(module[m])(li.node(), ws);
-      return;
-    }
-    module_directory(module[m], li.node(), ws);
-  });
 }
