@@ -76,7 +76,7 @@ template <typename T> struct to_js {
 template <> struct to_js<void *> {
   static string create_reader() { return "function (){}"; }
   static string create_writer() { return "function (){}"; }
-  static string create_html() { return "function (){}.bind(this)"; }
+  static string create_html() { return "this.html_void"; }
 };
 
 template <> struct to_js<char> {

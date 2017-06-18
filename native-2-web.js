@@ -570,11 +570,14 @@ function persona_function_exec(persona, parent, func, name) {
       .append('tr')
       .classed(persona, true)
       .append('td')
+      .attr('colspan', 2)
       .append('input')
       .attr('type', 'button')
       .attr('value', name)
       .on('click', func);
 }
+
+function html_void() {}
 
 function html_bool(parent, value, dispatcher) {
   (this.persona_terminal || persona_terminal)('n2w-terminal', parent);
