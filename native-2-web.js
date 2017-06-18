@@ -641,6 +641,36 @@ function html_string(parent, value, dispatcher) {
   (this.dispatch || dispatch)(dispatcher, () => value(value_getter()));
 }
 
+let clipboard = {};
+function persona_extracter(persona, parent, extracter) {
+  if (parent.tagName == 'TABLE') {
+    return d3.select(parent)
+        .append('tr')
+        .classed(persona, true)
+        .append('td')
+        .attr('colspan', 2)
+        .append('input')
+        .attr('type', 'button')
+        .attr('value', 'extract')
+        .on('click', extracter)
+        .node();
+  }
+}
+function persona_inserter(persona, parent, inserter) {
+  if (parent.tagName == 'TABLE') {
+    return d3.select(parent)
+        .append('tr')
+        .classed(persona, true)
+        .append('td')
+        .attr('colspan', 2)
+        .append('input')
+        .attr('type', 'button')
+        .attr('value', 'insert')
+        .on('click', inserter)
+        .node();
+  }
+}
+
 function html_structure(
     parent, value, dispatcher, html, names, base_html, base_names) {
   let table = (this.persona_structure || persona_structure)(
@@ -704,8 +734,18 @@ function html_structure(
       dispatcher, basedispatchers.concat(subdispatchers), () => {
         if (base_names && base_names.length > 0) subvalue.__bases = bases;
         value(subvalue);
-        subvalue = {};
       });
+
+  persona_extracter('n2w-persona-extracter', table, () => {
+    dispatcher.call('gather');
+    clipboard = subvalue;
+  });
+  persona_inserter('n2w-persona-inserter', table, () => {
+    this.prefill = clipboard;
+    d3.select(table).remove();
+    this.html_structure(
+        parent, value, dispatcher, html, names, base_html, base_names);
+  });
 }
 
 function html_container(parent, value, dispatcher, html, size_or_deleter) {
