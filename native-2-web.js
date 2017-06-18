@@ -798,6 +798,16 @@ function html_container(parent, value, dispatcher, html, size_or_deleter) {
   (this.subdispatch || subdispatch)(dispatcher, subdispatchers, () => {
     value(subvalue.filter(s => s !== __n2w_deleted_value));
   });
+
+  persona_extracter('n2w-persona-extracter', table, () => {
+    dispatcher.call('gather');
+    clipboard = subvalue;
+  });
+  persona_inserter('n2w-persona-inserter', table, () => {
+    this.prefill = clipboard;
+    d3.select(table).remove();
+    this.html_container(parent, value, dispatcher, html, size_or_deleter);
+  });
 }
 
 var html_bounded = html_container;
@@ -854,6 +864,16 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
                   return p;
                 },
                 {}));
+  });
+
+  persona_extracter('n2w-persona-extracter', parent, () => {
+    dispatcher.call('gather');
+    clipboard = subvalue;
+  });
+  persona_inserter('n2w-persona-inserter', parent, () => {
+    this.prefill = clipboard;
+    parent.innerHTML = '';
+    this.html_associative(parent, value, dispatcher, html_key, html_value);
   });
 }
 
