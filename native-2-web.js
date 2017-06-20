@@ -585,6 +585,36 @@ function persona_submodule_entry(persona, parent, name) {
       .node();
 }
 
+let clipboard = {};
+function persona_extracter(persona, parent, extracter) {
+  if (parent.tagName == 'TABLE') {
+    return d3.select(parent)
+        .append('tr')
+        .classed(persona, true)
+        .append('td')
+        .attr('colspan', 2)
+        .append('input')
+        .attr('type', 'button')
+        .attr('value', 'extract')
+        .on('click', extracter)
+        .node();
+  }
+}
+function persona_inserter(persona, parent, inserter) {
+  if (parent.tagName == 'TABLE') {
+    return d3.select(parent)
+        .append('tr')
+        .classed(persona, true)
+        .append('td')
+        .attr('colspan', 2)
+        .append('input')
+        .attr('type', 'button')
+        .attr('value', 'insert')
+        .on('click', inserter)
+        .node();
+  }
+}
+
 function persona_submodule(persona, parent) {
   return d3.select(parent).append('ul').classed(persona, true).node();
 }
@@ -639,36 +669,6 @@ function html_string(parent, value, dispatcher) {
   let value_getter =
       (this.persona_string || persona_string)('n2w-persona-string', parent);
   (this.dispatch || dispatch)(dispatcher, () => value(value_getter()));
-}
-
-let clipboard = {};
-function persona_extracter(persona, parent, extracter) {
-  if (parent.tagName == 'TABLE') {
-    return d3.select(parent)
-        .append('tr')
-        .classed(persona, true)
-        .append('td')
-        .attr('colspan', 2)
-        .append('input')
-        .attr('type', 'button')
-        .attr('value', 'extract')
-        .on('click', extracter)
-        .node();
-  }
-}
-function persona_inserter(persona, parent, inserter) {
-  if (parent.tagName == 'TABLE') {
-    return d3.select(parent)
-        .append('tr')
-        .classed(persona, true)
-        .append('td')
-        .attr('colspan', 2)
-        .append('input')
-        .attr('type', 'button')
-        .attr('value', 'insert')
-        .on('click', inserter)
-        .node();
-  }
 }
 
 function html_structure(
@@ -736,16 +736,18 @@ function html_structure(
         value(subvalue);
       });
 
-  persona_extracter('n2w-persona-extracter', table, () => {
-    dispatcher.call('gather');
-    clipboard = subvalue;
-  });
-  persona_inserter('n2w-persona-inserter', table, () => {
-    this.prefill = clipboard;
-    d3.select(table).remove();
-    this.html_structure(
-        parent, value, dispatcher, html, names, base_html, base_names);
-  });
+  (this.persona_extracter || persona_extracter)(
+      'n2w-persona-extracter', table, () => {
+        dispatcher.call('gather');
+        clipboard = subvalue;
+      });
+  (this.persona_inserter || persona_inserter)(
+      'n2w-persona-inserter', table, () => {
+        this.prefill = clipboard;
+        d3.select(table).remove();
+        this.html_structure(
+            parent, value, dispatcher, html, names, base_html, base_names);
+      });
 }
 
 function html_container(parent, value, dispatcher, html, size_or_deleter) {
@@ -799,15 +801,17 @@ function html_container(parent, value, dispatcher, html, size_or_deleter) {
     value(subvalue.filter(s => s !== __n2w_deleted_value));
   });
 
-  persona_extracter('n2w-persona-extracter', table, () => {
-    dispatcher.call('gather');
-    clipboard = subvalue;
-  });
-  persona_inserter('n2w-persona-inserter', table, () => {
-    this.prefill = clipboard;
-    d3.select(table).remove();
-    this.html_container(parent, value, dispatcher, html, size_or_deleter);
-  });
+  (this.persona_extracter || persona_extracter)(
+      'n2w-persona-extracter', table, () => {
+        dispatcher.call('gather');
+        clipboard = subvalue;
+      });
+  (this.persona_inserter || persona_inserter)(
+      'n2w-persona-inserter', table, () => {
+        this.prefill = clipboard;
+        d3.select(table).remove();
+        this.html_container(parent, value, dispatcher, html, size_or_deleter);
+      });
 }
 
 var html_bounded = html_container;
@@ -866,15 +870,17 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
                 {}));
   });
 
-  persona_extracter('n2w-persona-extracter', parent, () => {
-    dispatcher.call('gather');
-    clipboard = subvalue;
-  });
-  persona_inserter('n2w-persona-inserter', parent, () => {
-    this.prefill = clipboard;
-    parent.innerHTML = '';
-    this.html_associative(parent, value, dispatcher, html_key, html_value);
-  });
+  (this.persona_extracter || persona_extracter)(
+      'n2w-persona-extracter', parent, () => {
+        dispatcher.call('gather');
+        clipboard = subvalue;
+      });
+  (this.persona_inserter || persona_inserter)(
+      'n2w-persona-inserter', parent, () => {
+        this.prefill = clipboard;
+        parent.innerHTML = '';
+        this.html_associative(parent, value, dispatcher, html_key, html_value);
+      });
 }
 
 function html_function(parent, html_args, html_return, name, executor) {
