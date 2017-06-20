@@ -803,6 +803,8 @@ function generic_container(
     value(subvalue.filter(s => s !== __n2w_deleted_value));
   });
 
+  if (suppress_extracter_inserter) return;
+
   (this.persona_extracter || persona_extracter)(
       'n2w-persona-extracter', table, () => {
         dispatcher.call('gather');
@@ -858,7 +860,8 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
             (this.persona_map_element_deleter || persona_map_element_deleter)(
                 'n2w-persona-map-element-deleter', e,
                 () => {subvalue[s] = __n2w_deleted_value});
-          });
+          },
+          true);
   this.prefill = prefill_saved;
 
   (this.subdispatch || subdispatch)(dispatcher, subdispatchers, () => {
