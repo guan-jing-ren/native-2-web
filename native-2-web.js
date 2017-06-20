@@ -750,7 +750,9 @@ function html_structure(
       });
 }
 
-function html_container(parent, value, dispatcher, html, size_or_deleter) {
+function generic_container(
+    parent, value, dispatcher, html, size_or_deleter,
+    suppress_extracter_inserter) {
   let table = (this.persona_container || persona_container)(
       'n2w-persona-container', parent);
   let subvalue = [];
@@ -814,9 +816,9 @@ function html_container(parent, value, dispatcher, html, size_or_deleter) {
       });
 }
 
-var html_bounded = html_container;
+var html_bounded = generic_container;
 function html_sequence() {
-  html_container(
+  generic_container(
       ...arguments, this.persona_container_element_deleter ||
           persona_container_element_deleter);
 }
@@ -828,7 +830,7 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
   let prefill_saved = this.prefill;
   if (this.prefill)
     this.prefill = Object.keys(this.prefill).map(k => [k, this.prefill[k]]);
-  (this.html_container || html_container)
+  (this.generic_container || generic_container)
       .bind(this)(
           parent, v => {}, (this.create_gatherer || create_gatherer)(),
           (p, v, d) => {
@@ -978,7 +980,6 @@ function N2WGenerator() {
   this.html_char32 = html_char32.bind(this);
   this.html_string = html_string.bind(this);
   this.html_structure = html_structure.bind(this);
-  this.html_container = html_container.bind(this);
   this.html_bounded = html_bounded.bind(this);
   this.html_sequence = html_sequence.bind(this);
   this.html_associative = html_associative.bind(this);
