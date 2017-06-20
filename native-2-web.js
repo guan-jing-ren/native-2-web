@@ -747,6 +747,7 @@ function html_structure(
         d3.select(table).remove();
         this.html_structure(
             parent, value, dispatcher, html, names, base_html, base_names);
+        this.prefill = null;
       });
 }
 
@@ -815,6 +816,7 @@ function generic_container(
         this.prefill = clipboard;
         d3.select(table).remove();
         this.html_container(parent, value, dispatcher, html, size_or_deleter);
+        this.prefill = null;
       });
 }
 
@@ -885,6 +887,7 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
         this.prefill = clipboard;
         parent.innerHTML = '';
         this.html_associative(parent, value, dispatcher, html_key, html_value);
+        this.prefill = null;
       });
 }
 
