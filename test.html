@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:200,300,400,500,600,700,900" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Source Code Pro', monospace;
+        }
+
+        .n2w-html:not(.n2w-terminal) {
+            border-style: solid;
+            border-width: 2px;
+            border-color: black;
+        }
+    </style>
+    <script src='https://d3js.org/d3.v4.min.js' type='text/javascript'></script>
+    <script src='native-2-web.js' type='text/javascript'></script>
+</head>
+
+<body>
+    <script type='text/javascript'>
+        let ws1 = new WebSocket('ws://localhost:9001');
+        let reconnect = ev => {
+            console.log(ev.reason);
+            ws1 = new WebSocket('ws://localhost:9001');
+            ws1.addEventListener('close', reconnect);
+        };
+        ws1.addEventListener('open', ev => { ws1.send("Hello world!"); ws1.send(new ArrayBuffer(20)); }, true);
+        ws1.addEventListener('error', reconnect);
+        ws1.addEventListener('close', reconnect);
+        let ws2 = new WebSocket('ws://localhost:9002');
+        let count = 0;
+        ws2.addEventListener('message', ev => { console.log(ev.data); if (count++ > 20) ws2.close(); });
+        ws2.addEventListener('error', ev => console.log(ev.reason));
+        ws2.addEventListener('close', ev => console.log(ev.reason));
+    </script>
+    <script src='modules.js' type='text/javascript'></script>
+    <br/>
+    <script type='text/javascript'>
+        html_module_directory(n2w, document.body, () => ws1);
+    </script>
+</body>
+
+</html>

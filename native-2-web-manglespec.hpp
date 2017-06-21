@@ -2,30 +2,29 @@
 #define _NATIVE_2_WEB_MANGLESPEC_HPP_
 
 #include "native-2-web-common.hpp"
-
 namespace n2w {
 
 using namespace std;
+constexpr auto terminate_processing = "z";
+
+template <typename T> const string mangle = terminate_processing;
 
 namespace {
-template <typename T> constexpr auto mangle = "";
-template <typename T, typename... Ts>
-const auto csv = csv<T> + ',' + csv<Ts...>;
-template <typename T> const string csv<T> = mangle<T>;
+template <typename... Ts> string csv();
 template <typename T, typename U>
-const auto kv = string{mangle<T>} + ':' + mangle<U>;
+const auto kv = string{mangle<T>} + ':' + string{mangle<U>};
 }
 
-template <typename> constexpr auto mangle_prefix = "";
-template <typename T, size_t N> constexpr auto mangle_prefix<T[N]> = "c[";
+template <typename> constexpr auto mangle_prefix = terminate_processing;
+template <typename T, size_t N> constexpr auto mangle_prefix<T[N]> = "p[";
 template <typename T, size_t N>
 constexpr auto mangle_prefix<array<T, N>> = "a[";
 template <typename T, typename U>
-constexpr auto mangle_prefix<pair<T, U>> = '<';
+constexpr auto mangle_prefix<pair<T, U>> = "<";
 template <typename T, typename... Ts>
-constexpr auto mangle_prefix<tuple<T, Ts...>> = '(';
+constexpr auto mangle_prefix<tuple<T, Ts...>> = "(";
 template <typename T, typename... Traits>
-constexpr auto mangle_prefix<basic_string<T, Traits...>> = '"';
+constexpr auto mangle_prefix<basic_string<T, Traits...>> = "\"";
 template <typename T, typename... Traits>
 constexpr auto mangle_prefix<vector<T, Traits...>> = "v[";
 template <typename T, typename... Traits>
@@ -50,9 +49,14 @@ template <typename T, typename... Traits>
 constexpr auto mangle_prefix<unordered_multiset<T, Traits...>> = "H[";
 template <typename T, typename U, typename... Traits>
 constexpr auto mangle_prefix<unordered_multimap<T, U, Traits...>> = "H{";
+template <typename S, typename T, typename... Ts, typename... Bs>
+const auto mangle_prefix<structure<S, tuple<T, Ts...>, tuple<Bs...>>> = "{";
+template <typename R, typename... Ts>
+constexpr auto mangle_prefix<R(Ts...)> = "^";
 
-template <> constexpr auto mangle<void> = '0';
-template <> constexpr auto mangle<bool> = 'b';
+template <> constexpr auto mangle<void> = "0";
+template <> constexpr auto mangle<bool> = "b";
+template <> constexpr auto mangle<char> = "'3";
 template <> constexpr auto mangle<wchar_t> = "'w";
 template <> constexpr auto mangle<char16_t> = "'4";
 template <> constexpr auto mangle<char32_t> = "'5";
@@ -75,10 +79,10 @@ template <typename T, size_t N>
 const auto mangle<array<T, N>> = mangle_prefix<array<T, N>> +
                                  string{mangle<T>} + ',' + to_string(N);
 template <typename T, typename U>
-const auto mangle<pair<T, U>> = mangle_prefix<pair<T, U>> + csv<T, U>;
+const auto mangle<pair<T, U>> = mangle_prefix<pair<T, U>> + csv<T, U>();
 template <typename T, typename... Ts>
-const auto mangle<tuple<T, Ts...>> =
-    mangle_prefix<tuple<T, Ts...>> + csv<T, Ts...> + ')';
+const auto mangle<tuple<T, Ts...>> = mangle_prefix<tuple<T, Ts...>> +
+                                     csv<T, Ts...>() + ')';
 template <typename T, typename... Traits>
 const auto mangle<basic_string<T, Traits...>> =
     mangle_prefix<basic_string<T, Traits...>> + string{mangle<T>};
@@ -119,6 +123,57 @@ const auto mangle<unordered_multiset<T, Traits...>> =
 template <typename T, typename U, typename... Traits>
 const auto mangle<unordered_multimap<T, U, Traits...>> =
     mangle_prefix<unordered_multimap<T, U, Traits...>> + kv<T, U>;
+
+template <typename S, typename T, typename... Ts, typename... Bs>
+const auto mangle<structure<S, tuple<T, Ts...>, tuple<Bs...>>> =
+    mangle_prefix<structure<S, tuple<T, Ts...>, tuple<Bs...>>> + string{} + '}';
+
+#define N2W__MANGLE_SPEC(s, m, ...)                                            \
+  namespace n2w {                                                              \
+  template <>                                                                  \
+  const string mangle<s> = mangle<N2W__USING_STRUCTURE(s, m, __VA_ARGS__)>;    \
+  }
+
+template <bool e = __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__>
+constexpr auto endianness = e ? "e" : "E";
+
+template <typename R, typename... Ts>
+const auto mangle<R(Ts...)> = mangle_prefix<R(Ts...)> + string{mangle<R>} +
+                              '=' +
+                              csv<remove_cv_t<remove_reference_t<Ts>>...>();
+template <typename R, typename... Ts>
+const auto mangle<R (*)(Ts...)> = mangle<R(Ts...)>;
+
+template <typename R, typename... Ts>
+const string function_address(R (*f)(Ts...),
+                              const uint8_t (&crypt)[sizeof(void (*)())]) {
+  uintptr_t obf = 0;
+  for (auto i = 0; i < sizeof(f); ++i)
+    obf |= static_cast<uintptr_t>(reinterpret_cast<uint8_t *>(&f)[crypt[i]])
+           << (i * 8);
+  return '@' + to_string(obf) + string{mangle<R(Ts...)>};
+}
+
+template <typename R, typename... Ts>
+const string function_address(R (*f)(Ts...)) {
+  constexpr uint8_t scrambler[] = {0, 1, 2, 3, 4, 5, 6, 7};
+  return function_address(f, scrambler);
+}
+
+namespace {
+template <typename... Ts> string csv() {
+  if (sizeof...(Ts) == 0)
+    return "";
+  string v;
+  size_t i = 0;
+  for (auto &s : initializer_list<string>{mangle<remove_cv_t<Ts>>...}) {
+    v += s + (++i == sizeof...(Ts) ? "" : ",");
+  }
+  return v;
+}
+}
+
+template <typename T> string mangled() { return mangle<T>; }
 }
 
 #endif
