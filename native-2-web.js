@@ -880,7 +880,13 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
   (this.persona_extracter || persona_extracter)(
       'n2w-persona-extracter', parent, () => {
         dispatcher.call('gather');
-        clipboard = subvalue;
+        clipboard = subvalue.filter(s => s !== __n2w_deleted_value)
+                        .reduce(
+                            (p, c) => {
+                              p[JSON.stringify(c[0])] = c[1];
+                              return p;
+                            },
+                            {});
       });
   (this.persona_inserter || persona_inserter)(
       'n2w-persona-inserter', parent, () => {
