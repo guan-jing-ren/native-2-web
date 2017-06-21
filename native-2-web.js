@@ -815,7 +815,7 @@ function generic_container(
       'n2w-persona-inserter', table, () => {
         this.prefill = clipboard;
         d3.select(table).remove();
-        this.html_container(parent, value, dispatcher, html, size_or_deleter);
+        generic_container(parent, value, dispatcher, html, size_or_deleter);
         this.prefill = null;
       });
 }
