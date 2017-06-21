@@ -46,7 +46,7 @@ int main(int, char **) {
 
   std::cout << n2w::mangled<int[90]>() << '\n';
   std::cout << n2w::mangled<std::array<std::vector<double>, 5>>() << '\n';
-  std::cout << n2w::csv<int[90], float, std::u16string>() << '\n';
+  std::cout << n2w::csv<int[90], float, std::u16string> << '\n';
   std::cout
       << n2w::mangled<std::pair<int[90], std::array<std::vector<double>, 5>>>()
       << '\n';
