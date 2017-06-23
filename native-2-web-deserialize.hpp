@@ -160,9 +160,9 @@ struct deserializer<basic_string<T, Traits...>> {
     string utf8;
     deserialize_sequence<char>(i, back_inserter(utf8));
     struct cvt : codecvt<T, char, mbstate_t> {};
-    wstring_convert<cvt, T> cvter{"Could not convert from " +
-                                  mangle<basic_string<char, Traits...>> +
-                                  " to " + mangle<basic_string<T, Traits...>>};
+    wstring_convert<cvt, T> cvter{
+        "Could not convert from " + mangled<basic_string<char, Traits...>>() +
+        " to " + mangled<basic_string<T, Traits...>>()};
     t = cvter.from_bytes(utf8);
   }
 };

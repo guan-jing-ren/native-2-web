@@ -168,9 +168,9 @@ struct serializer<basic_string<T, Traits...>> {
   template <typename I>
   static void serialize(const basic_string<T, Traits...> &t, I &i) {
     struct cvt : codecvt<T, char, mbstate_t> {};
-    wstring_convert<cvt, T> cvter{"Could not convert from " +
-                                  mangle<basic_string<T, Traits...>> + " to " +
-                                  mangle<basic_string<char, Traits...>>};
+    wstring_convert<cvt, T> cvter{
+        "Could not convert from " + mangled<basic_string<T, Traits...>>() +
+        " to " + mangled<basic_string<char, Traits...>>()};
     string utf8 = cvter.to_bytes(t);
     serialize_sequence<char>(utf8.size(), cbegin(utf8), i);
   }

@@ -7,142 +7,288 @@ namespace n2w {
 using namespace std;
 string terminate_processing = "z";
 
-template <typename T> string mangle = terminate_processing;
+template <typename... Ts> struct mangle {
+  static string value() { return terminate_processing; }
+};
+template <typename> struct mangle_prefix {
+  static string value() { return terminate_processing; }
+};
 
-namespace {
-template <typename... Ts> string csv = "";
-template <typename T, typename... Ts>
-string csv<T, Ts...> = string{mangle<T>} +
-                       (sizeof...(Ts) ? "," : "") + csv<Ts...>;
-template <typename T, typename U>
-string kv = string{mangle<T>} + ':' + string{mangle<U>};
+template <typename T> string mangled() { return mangle<T>::value(); }
+template <typename T> string mangled(const T &&) { return mangled<T>(); }
+
+template <typename T> string mangle_prefixed() {
+  return mangle_prefix<T>::value();
+}
+template <typename T> string mangle_prefixed(const T &&) {
+  return mangle_prefixed<T>();
 }
 
-template <typename> string mangle_prefix = terminate_processing;
-template <typename T, size_t N> string mangle_prefix<T[N]> = "p[";
-template <typename T, size_t N> string mangle_prefix<array<T, N>> = "a[";
-template <typename T, typename U> string mangle_prefix<pair<T, U>> = "<";
-template <typename T, typename... Ts>
-string mangle_prefix<tuple<T, Ts...>> = "(";
+namespace {
+template <typename... Ts> struct csv {
+  static string value() { return ""; }
+};
+template <typename T, typename... Ts> struct csv<T, Ts...> {
+  static string value() {
+    return mangled<T>() + (sizeof...(Ts) ? "," : "") + csv<Ts...>::value();
+  }
+};
+template <typename T, typename U> struct kv {
+  static string value() { return mangled<T>() + ":" + mangled<U>(); }
+};
+}
+
+template <typename T, size_t N> struct mangle_prefix<T[N]> {
+  static string value() { return "p["; }
+};
+template <typename T, size_t N> struct mangle_prefix<array<T, N>> {
+  static string value() { return "a["; }
+};
+template <typename T, typename U> struct mangle_prefix<pair<T, U>> {
+  static string value() { return "<"; }
+};
+template <typename T, typename... Ts> struct mangle_prefix<tuple<T, Ts...>> {
+  static string value() { return "("; }
+};
 template <typename T, typename... Traits>
-string mangle_prefix<basic_string<T, Traits...>> = "\"";
+struct mangle_prefix<basic_string<T, Traits...>> {
+  static string value() { return "\""; }
+};
 template <typename T, typename... Traits>
-string mangle_prefix<vector<T, Traits...>> = "v[";
+struct mangle_prefix<vector<T, Traits...>> {
+  static string value() { return "v["; }
+};
 template <typename T, typename... Traits>
-string mangle_prefix<list<T, Traits...>> = "l[";
+struct mangle_prefix<list<T, Traits...>> {
+  static string value() { return "l["; }
+};
 template <typename T, typename... Traits>
-string mangle_prefix<forward_list<T, Traits...>> = "g[";
+struct mangle_prefix<forward_list<T, Traits...>> {
+  static string value() { return "g["; }
+};
 template <typename T, typename... Traits>
-string mangle_prefix<deque<T, Traits...>> = "d[";
+struct mangle_prefix<deque<T, Traits...>> {
+  static string value() { return "d["; }
+};
 template <typename T, typename... Traits>
-string mangle_prefix<set<T, Traits...>> = "s[";
+struct mangle_prefix<set<T, Traits...>> {
+  static string value() { return "s["; }
+};
 template <typename T, typename U, typename... Traits>
-string mangle_prefix<map<T, U, Traits...>> = "m{";
+struct mangle_prefix<map<T, U, Traits...>> {
+  static string value() { return "m{"; }
+};
 template <typename T, typename... Traits>
-string mangle_prefix<unordered_set<T, Traits...>> = "h[";
+struct mangle_prefix<unordered_set<T, Traits...>> {
+  static string value() { return "h["; }
+};
 template <typename T, typename U, typename... Traits>
-string mangle_prefix<unordered_map<T, U, Traits...>> = "h{";
+struct mangle_prefix<unordered_map<T, U, Traits...>> {
+  static string value() { return "h{"; }
+};
 template <typename T, typename... Traits>
-string mangle_prefix<multiset<T, Traits...>> = "S[";
+struct mangle_prefix<multiset<T, Traits...>> {
+  static string value() { return "S["; }
+};
 template <typename T, typename U, typename... Traits>
-string mangle_prefix<multimap<T, U, Traits...>> = "M{";
+struct mangle_prefix<multimap<T, U, Traits...>> {
+  static string value() { return "M{"; }
+};
 template <typename T, typename... Traits>
-string mangle_prefix<unordered_multiset<T, Traits...>> = "H[";
+struct mangle_prefix<unordered_multiset<T, Traits...>> {
+  static string value() { return "H["; }
+};
 template <typename T, typename U, typename... Traits>
-string mangle_prefix<unordered_multimap<T, U, Traits...>> = "H{";
+struct mangle_prefix<unordered_multimap<T, U, Traits...>> {
+  static string value() { return "H{"; }
+};
 template <typename S, typename T, typename... Ts, typename... Bs>
-string mangle_prefix<structure<S, tuple<T, Ts...>, tuple<Bs...>>> = "{";
-template <typename R, typename... Ts> string mangle_prefix<R(Ts...)> = "^";
+struct mangle_prefix<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
+  static string value() { return "{"; }
+};
+template <typename R, typename... Ts> struct mangle_prefix<R(Ts...)> {
+  static string value() { return "^"; }
+};
 
-template <> string mangle<void> = "0";
-template <> string mangle<bool> = "b";
-template <> string mangle<char> = "'3";
-template <> string mangle<wchar_t> = "'w";
-template <> string mangle<char16_t> = "'4";
-template <> string mangle<char32_t> = "'5";
-template <> string mangle<int8_t> = "i3";
-template <> string mangle<int16_t> = "i4";
-template <> string mangle<int32_t> = "i5";
-template <> string mangle<int64_t> = "i6";
-template <> string mangle<uint8_t> = "u3";
-template <> string mangle<uint16_t> = "u4";
-template <> string mangle<uint32_t> = "u5";
-template <> string mangle<uint64_t> = "u6";
-template <> string mangle<float> = "f5";
-template <> string mangle<double> = "f6";
-template <> string mangle<long double> = "f7";
+template <> struct mangle<void> {
+  static string value() { return "0"; }
+};
+template <> struct mangle<bool> {
+  static string value() { return "b"; }
+};
+template <> struct mangle<char> {
+  static string value() { return "'3"; }
+};
+template <> struct mangle<wchar_t> {
+  static string value() { return "'w"; }
+};
+template <> struct mangle<char16_t> {
+  static string value() { return "'4"; }
+};
+template <> struct mangle<char32_t> {
+  static string value() { return "'5"; }
+};
+template <> struct mangle<int8_t> {
+  static string value() { return "i3"; }
+};
+template <> struct mangle<int16_t> {
+  static string value() { return "i4"; }
+};
+template <> struct mangle<int32_t> {
+  static string value() { return "i5"; }
+};
+template <> struct mangle<int64_t> {
+  static string value() { return "i6"; }
+};
+template <> struct mangle<uint8_t> {
+  static string value() { return "u3"; }
+};
+template <> struct mangle<uint16_t> {
+  static string value() { return "u4"; }
+};
+template <> struct mangle<uint32_t> {
+  static string value() { return "u5"; }
+};
+template <> struct mangle<uint64_t> {
+  static string value() { return "u6"; }
+};
+template <> struct mangle<float> {
+  static string value() { return "f5"; }
+};
+template <> struct mangle<double> {
+  static string value() { return "f6"; }
+};
+template <> struct mangle<long double> {
+  static string value() { return "f7"; }
+};
 
-template <typename T, size_t N>
-string mangle<T[N]> = mangle_prefix<T[N]> + string{mangle<T>} + ',' +
-                      to_string(N);
-template <typename T, size_t N>
-string mangle<array<T, N>> = mangle_prefix<array<T, N>> + string{mangle<T>} +
-                             ',' + to_string(N);
-template <typename T, typename U>
-string mangle<pair<T, U>> = mangle_prefix<pair<T, U>> + csv<T, U>;
-template <typename T, typename... Ts>
-string mangle<tuple<T, Ts...>> =
-    mangle_prefix<tuple<T, Ts...>> + csv<T, Ts...> + ')';
+template <typename T, size_t N> struct mangle<T[N]> {
+  static string value() {
+    return mangle_prefixed<T[N]>() + mangled<T>() + "," + to_string(N);
+  }
+};
+template <typename T, size_t N> struct mangle<array<T, N>> {
+  static string value() {
+    return mangle_prefixed<array<T, N>>() + mangled<T>() + "," + to_string(N);
+  }
+};
+template <typename T, typename U> struct mangle<pair<T, U>> {
+  static string value() {
+    return mangle_prefixed<pair<T, U>>() + csv<T, U>::value();
+  }
+};
+template <typename T, typename... Ts> struct mangle<tuple<T, Ts...>> {
+  static string value() {
+    return mangle_prefixed<tuple<T, Ts...>>() + csv<T, Ts...>::value() + ")";
+  }
+};
 template <typename T, typename... Traits>
-string mangle<basic_string<T, Traits...>> =
-    mangle_prefix<basic_string<T, Traits...>> + string{mangle<T>};
+struct mangle<basic_string<T, Traits...>> {
+  static string value() {
+    return mangle_prefixed<basic_string<T, Traits...>>() + mangled<T>();
+  }
+};
+template <typename T, typename... Traits> struct mangle<vector<T, Traits...>> {
+  static string value() {
+    return mangle_prefixed<vector<T, Traits...>>() + mangled<T>();
+  }
+};
+template <typename T, typename... Traits> struct mangle<list<T, Traits...>> {
+  static string value() {
+    return mangle_prefixed<list<T, Traits...>>() + mangled<T>();
+  }
+};
 template <typename T, typename... Traits>
-string mangle<vector<T, Traits...>> =
-    mangle_prefix<vector<T, Traits...>> + string{mangle<T>};
-template <typename T, typename... Traits>
-string mangle<list<T, Traits...>> =
-    mangle_prefix<list<T, Traits...>> + string{mangle<T>};
-template <typename T, typename... Traits>
-string mangle<forward_list<T, Traits...>> =
-    mangle_prefix<forward_list<T, Traits...>> + string{mangle<T>};
-template <typename T, typename... Traits>
-string mangle<deque<T, Traits...>> =
-    mangle_prefix<deque<T, Traits...>> + string{mangle<T>};
-template <typename T, typename... Traits>
-string mangle<set<T, Traits...>> =
-    mangle_prefix<set<T, Traits...>> + string{mangle<T>};
+struct mangle<forward_list<T, Traits...>> {
+  static string value() {
+    return mangle_prefixed<forward_list<T, Traits...>>() + mangled<T>();
+  }
+};
+template <typename T, typename... Traits> struct mangle<deque<T, Traits...>> {
+  static string value() {
+    return mangle_prefixed<deque<T, Traits...>>() + mangled<T>();
+  }
+};
+template <typename T, typename... Traits> struct mangle<set<T, Traits...>> {
+  static string value() {
+    return mangle_prefixed<set<T, Traits...>>() + mangled<T>();
+  }
+};
 template <typename T, typename U, typename... Traits>
-string mangle<map<T, U, Traits...>> =
-    mangle_prefix<map<T, U, Traits...>> + kv<T, U>;
+struct mangle<map<T, U, Traits...>> {
+  static string value() {
+    return mangle_prefixed<map<T, U, Traits...>>() + kv<T, U>::value();
+  }
+};
 template <typename T, typename... Traits>
-string mangle<unordered_set<T, Traits...>> =
-    mangle_prefix<unordered_set<T, Traits...>> + string{mangle<T>};
+struct mangle<unordered_set<T, Traits...>> {
+  static string value() {
+    return mangle_prefixed<unordered_set<T, Traits...>>() + mangled<T>();
+  }
+};
 template <typename T, typename U, typename... Traits>
-string mangle<unordered_map<T, U, Traits...>> =
-    mangle_prefix<unordered_map<T, U, Traits...>> + kv<T, U>;
+struct mangle<unordered_map<T, U, Traits...>> {
+  static string value() {
+    return mangle_prefixed<unordered_map<T, U, Traits...>>() +
+           kv<T, U>::value();
+  }
+};
 template <typename T, typename... Traits>
-string mangle<multiset<T, Traits...>> =
-    mangle_prefix<multiset<T, Traits...>> + string{mangle<T>};
+struct mangle<multiset<T, Traits...>> {
+  static string value() {
+    return mangle_prefixed<multiset<T, Traits...>>() + mangled<T>();
+  }
+};
 template <typename T, typename U, typename... Traits>
-string mangle<multimap<T, U, Traits...>> =
-    mangle_prefix<multimap<T, U, Traits...>> + kv<T, U>;
+struct mangle<multimap<T, U, Traits...>> {
+  static string value() {
+    return mangle_prefixed<multimap<T, U, Traits...>>() + kv<T, U>::value();
+  }
+};
 template <typename T, typename... Traits>
-string mangle<unordered_multiset<T, Traits...>> =
-    mangle_prefix<unordered_multiset<T, Traits...>> + string{mangle<T>};
+struct mangle<unordered_multiset<T, Traits...>> {
+  static string value() {
+    return mangle_prefixed<unordered_multiset<T, Traits...>>() + mangled<T>();
+  }
+};
 
 template <typename T, typename U, typename... Traits>
-string mangle<unordered_multimap<T, U, Traits...>> =
-    mangle_prefix<unordered_multimap<T, U, Traits...>> + kv<T, U>;
+struct mangle<unordered_multimap<T, U, Traits...>> {
+  static string value() {
+    return mangle_prefixed<unordered_multimap<T, U, Traits...>>() +
+           kv<T, U>::value();
+  }
+};
 
 template <typename S, typename T, typename... Ts, typename... Bs>
-string mangle<structure<S, tuple<T, Ts...>, tuple<Bs...>>> =
-    mangle_prefix<structure<S, tuple<T, Ts...>, tuple<Bs...>>> + csv<T, Ts...> +
-    '}';
+struct mangle<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
+  static string value() {
+    return mangle_prefixed<structure<S, tuple<T, Ts...>, tuple<Bs...>>>() +
+           csv<T, Ts...>::value() + "}";
+  }
+};
 
 #define N2W__MANGLE_SPEC(s, m, ...)                                            \
   namespace n2w {                                                              \
-  template <>                                                                  \
-  string mangle<s> = mangle<N2W__USING_STRUCTURE(s, m, __VA_ARGS__)>;          \
+  template <> struct mangle<s> {                                               \
+    static string value() {                                                    \
+      return mangled<N2W__USING_STRUCTURE(s, m, __VA_ARGS__)>();               \
+    }                                                                          \
+  };                                                                           \
   }
 
 template <bool e = __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__>
 string endianness = e ? "e" : "E";
 
-template <typename R, typename... Ts>
-string mangle<R(Ts...)> = mangle_prefix<R(Ts...)> + string{mangle<R>} + '=' +
-                          csv<remove_cv_t<remove_reference_t<Ts>>...>;
-template <typename R, typename... Ts>
-string mangle<R (*)(Ts...)> = mangle<R(Ts...)>;
+template <typename R, typename... Ts> struct mangle<R(Ts...)> {
+  static string value() {
+    return mangle_prefixed<R(Ts...)>() + mangled<R>() + "=" +
+           csv<remove_cv_t<remove_reference_t<Ts>>...>::value();
+  }
+};
+template <typename R, typename... Ts> struct mangle<R (*)(Ts...)> {
+  static string value() { return mangled<R(Ts...)>(); }
+};
 
 template <typename R, typename... Ts>
 string function_address(R (*f)(Ts...), uint8_t (&crypt)[sizeof(void (*)())]) {
@@ -150,15 +296,13 @@ string function_address(R (*f)(Ts...), uint8_t (&crypt)[sizeof(void (*)())]) {
   for (auto i = 0; i < sizeof(f); ++i)
     obf |= static_cast<uintptr_t>(reinterpret_cast<uint8_t *>(&f)[crypt[i]])
            << (i * 8);
-  return '@' + to_string(obf) + string{mangle<R(Ts...)>};
+  return "@" + to_string(obf) + mangled<R(Ts...)>();
 }
 
 template <typename R, typename... Ts> string function_address(R (*f)(Ts...)) {
   uint8_t scrambler[] = {0, 1, 2, 3, 4, 5, 6, 7};
   return function_address(f, scrambler);
 }
-
-template <typename T> string mangled() { return mangle<T>; }
 }
 
 #endif
