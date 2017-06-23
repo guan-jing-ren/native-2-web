@@ -14,11 +14,13 @@ template <typename> struct mangle_prefix {
   static string value() { return terminate_processing; }
 };
 
-template <typename T> string mangled() { return mangle<T>::value(); }
+template <typename T> string mangled() {
+  return mangle<remove_cv_t<remove_reference_t<T>>>::value();
+}
 template <typename T> string mangled(const T &&) { return mangled<T>(); }
 
 template <typename T> string mangle_prefixed() {
-  return mangle_prefix<T>::value();
+  return mangle_prefix<remove_cv_t<remove_reference_t<T>>>::value();
 }
 template <typename T> string mangle_prefixed(const T &&) {
   return mangle_prefixed<T>();
