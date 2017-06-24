@@ -119,6 +119,9 @@ template <typename R, typename... Ts> struct mangle_prefix<R(Ts...)> {
 template <> struct mangle<void> {
   static string value() { return "0"; }
 };
+template <> struct mangle<void *> {
+  static string value() { return "0"; }
+};
 template <> struct mangle<bool> {
   static string value() { return "b"; }
 };
@@ -307,7 +310,8 @@ string endianness = e ? "e" : "E";
 template <typename R, typename... Ts> struct mangle<R(Ts...)> {
   static string value() {
     return mangle_prefixed<R(Ts...)>() + mangled<R>() + "=" +
-           csv<remove_cv_t<remove_reference_t<Ts>>...>::value();
+           (sizeof...(Ts) ? csv<remove_cv_t<remove_reference_t<Ts>>...>::value()
+                          : mangled<void *>());
   }
 };
 template <typename R, typename... Ts> struct mangle<R (*)(Ts...)> {
