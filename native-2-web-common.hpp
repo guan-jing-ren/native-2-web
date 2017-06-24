@@ -244,15 +244,9 @@ name(const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &s) {
   return s.names[N + 1];
 }
 
-template <typename E> struct enum_hash {
-  auto operator()(E e) const {
-    return std::hash<std::underlying_type_t<E>>{}(
-        static_cast<std::underlying_type_t<E>>(e));
-  }
-};
 template <typename E> struct enumeration {
   static const std::string type_name;
-  static std::unordered_map<E, std::string, enum_hash<E>> e_to_str;
+  static std::map<E, std::string> e_to_str;
   static std::unordered_map<std::string, E> str_to_e;
 };
 
@@ -298,8 +292,8 @@ using element_t = std::remove_cv_t<
   template <> struct n2w::mangle<e> : n2w::mangle<enumeration<e>> {};          \
   template <> const std::string n2w::enumeration<e>::type_name = #e;           \
   template <>                                                                  \
-  std::unordered_map<e, std::string, n2w::enum_hash<e>>                        \
-      n2w::enumeration<e>::e_to_str = {N2W__ENUM_TO_STRING(m)};                \
+  std::map<e, std::string> n2w::enumeration<e>::e_to_str = {                   \
+      N2W__ENUM_TO_STRING(m)};                                                 \
   template <>                                                                  \
   std::unordered_map<std::string, e> n2w::enumeration<e>::str_to_e = {         \
       N2W__STRING_TO_ENUM(m)};
