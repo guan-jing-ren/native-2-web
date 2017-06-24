@@ -7,10 +7,10 @@ namespace n2w {
 using namespace std;
 string terminate_processing = "z";
 
-template <typename... Ts> struct mangle {
+template <typename...> struct mangle {
   static string value() { return terminate_processing; }
 };
-template <typename> struct mangle_prefix {
+template <typename...> struct mangle_prefix {
   static string value() { return terminate_processing; }
 };
 
@@ -40,6 +40,10 @@ template <typename T, typename U> struct kv {
 };
 }
 
+template <typename E>
+struct mangle_prefix<E> : enable_if_t<is_enum<E>::value, true_type> {
+  static string value() { return "c["; }
+};
 template <typename T, size_t N> struct mangle_prefix<T[N]> {
   static string value() { return "p["; }
 };
@@ -267,6 +271,12 @@ struct mangle<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
   static string value() {
     return mangle_prefixed<structure<S, tuple<T, Ts...>, tuple<Bs...>>>() +
            csv<T, Ts...>::value() + "}";
+  }
+};
+
+template <typename E> struct mangle<enumeration<E>> {
+  static string value() {
+    return mangle_prefixed<E>() + mangled<underlying_type_t<E>>();
   }
 };
 

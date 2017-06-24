@@ -295,6 +295,7 @@ using element_t = std::remove_cv_t<
 #define N2W__ENUM_TO_STRING(m) BOOST_PP_SEQ_FOR_EACH_I(N2W__E_S_PAIR, _, m)
 #define N2W__STRING_TO_ENUM(m) BOOST_PP_SEQ_FOR_EACH_I(N2W__S_E_PAIR, _, m)
 #define N2W__SPECIALIZE_ENUM(e, m)                                             \
+  template <> struct n2w::mangle<e> : n2w::mangle<enumeration<e>> {};          \
   template <> const std::string n2w::enumeration<e>::type_name = #e;           \
   template <>                                                                  \
   std::unordered_map<e, std::string, n2w::enum_hash<e>>                        \

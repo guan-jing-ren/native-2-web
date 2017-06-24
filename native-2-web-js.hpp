@@ -63,7 +63,7 @@ template <typename T> struct to_js {
   static auto create_html() -> enable_if_t<is_enum<U>{}, string> {
     return R"(function (parent, value, dispatcher) {
   this.signature = ')" +
-           std::regex_replace(mangled<T>(), std::regex{"'"}, "\\'") +
+           std::regex_replace(mangled<U>(), std::regex{"'"}, "\\'") +
            R"(';
   return (this.html_enum || html_enum)(parent, value, dispatcher, { )" +
            accumulate(
