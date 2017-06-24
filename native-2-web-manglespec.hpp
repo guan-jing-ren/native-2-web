@@ -296,6 +296,11 @@ template <typename E> struct mangle<enumeration<E>> {
   };                                                                           \
   }
 
+#define N2w__MANGLE_CONV(s, c)                                                 \
+  namespace n2w {                                                              \
+  template <> struct mangle<s> : mangle<c> {};                                 \
+  }
+
 template <bool e = __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__>
 string endianness = e ? "e" : "E";
 

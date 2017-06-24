@@ -505,6 +505,7 @@ const string to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>>::base_names =
   }
 
 #define N2W__JS_CONV(s, c)                                                     \
+  N2w__MANGLE_CONV(s, c);                                                      \
   namespace n2w {                                                              \
   template <> struct to_js<s> : to_js<c> {};                                   \
   }
