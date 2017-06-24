@@ -594,6 +594,7 @@ function persona_submodule_entry(persona, parent, name) {
 }
 
 let clipboard = {};
+let clipboard_signature = {};
 function persona_extracter(persona, parent, extracter) {
   if (parent.tagName == 'TABLE') {
     return d3.select(parent)
@@ -681,6 +682,7 @@ function html_string(parent, value, dispatcher) {
 
 function html_structure(
     parent, value, dispatcher, html, names, base_html, base_names) {
+  let sig = this.signature;
   let table = (this.persona_structure || persona_structure)(
       'n2w-persona-structure', parent);
   let subvalue = {};
@@ -748,11 +750,13 @@ function html_structure(
       'n2w-persona-extracter', table, () => {
         dispatcher.call('gather');
         clipboard = subvalue;
+        clipboard_signature = sig;
       });
   (this.persona_inserter || persona_inserter)(
       'n2w-persona-inserter', table, () => {
         this.prefill = clipboard;
         d3.select(table).remove();
+        this.signature = sig;
         this.html_structure(
             parent, value, dispatcher, html, names, base_html, base_names);
         this.prefill = null;
@@ -762,6 +766,7 @@ function html_structure(
 function generic_container(
     parent, value, dispatcher, html, size_or_deleter,
     suppress_extracter_inserter) {
+  let sig = this.signature;
   let table = (this.persona_container || persona_container)(
       'n2w-persona-container', parent);
   let subvalue = [];
@@ -818,11 +823,13 @@ function generic_container(
       'n2w-persona-extracter', table, () => {
         dispatcher.call('gather');
         clipboard = subvalue;
+        clipboard_signature = sig;
       });
   (this.persona_inserter || persona_inserter)(
       'n2w-persona-inserter', table, () => {
         this.prefill = clipboard;
         d3.select(table).remove();
+        this.signature = sig;
         generic_container(parent, value, dispatcher, html, size_or_deleter);
         this.prefill = null;
       });
@@ -836,6 +843,7 @@ function html_sequence() {
 }
 
 function html_associative(parent, value, dispatcher, html_key, html_value) {
+  let sig = this.signature;
   let subvalue = [];
   let subdispatchers = [];
 
@@ -895,11 +903,13 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
                               return p;
                             },
                             {});
+        clipboard_signature = sig;
       });
   (this.persona_inserter || persona_inserter)(
       'n2w-persona-inserter', parent, () => {
         this.prefill = clipboard;
         parent.innerHTML = '';
+        this.signature = sig;
         this.html_associative(parent, value, dispatcher, html_key, html_value);
         this.prefill = null;
       });
