@@ -2,6 +2,9 @@
 #define _NATIVE_2_WEB_JS_HPP_
 
 #include "native-2-web-common.hpp"
+#include "native-2-web-manglespec.hpp"
+
+#include <regex>
 
 namespace n2w {
 using namespace std;
@@ -59,6 +62,9 @@ template <typename T> struct to_js {
   template <typename U = T>
   static auto create_html() -> enable_if_t<is_enum<U>{}, string> {
     return R"(function (parent, value, dispatcher) {
+  this.signature = ')" +
+           std::regex_replace(mangled<T>(), std::regex{"'"}, "\\'") +
+           R"(';
   return (this.html_enum || html_enum)(parent, value, dispatcher, { )" +
            accumulate(
                cbegin(enumeration<U>::e_to_str), cend(enumeration<U>::e_to_str),
@@ -131,6 +137,9 @@ template <typename T, typename U> struct to_js<pair<T, U>> {
   }
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
+  this.signature = ')" +
+           std::regex_replace(mangled<pair<T, U>>(), std::regex{"'"}, "\\'") +
+           R"(';
   return (this.html_structure || html_structure)(parent, value, dispatcher, [)" +
            to_js_heterogenous<T, U>::create_html() + R"(], ['first', 'second']);
 }.bind(this))";
@@ -154,6 +163,10 @@ template <typename T, typename... Ts> struct to_js<tuple<T, Ts...>> {
   }
   static string create_html() {
     return R"(function (parent, value, dispatcher, names, base_html, base_names) {
+  this.signature = ')" +
+           std::regex_replace(mangled<tuple<T, Ts...>>(), std::regex{"'"},
+                              "\\'") +
+           R"(';
   return (this.html_structure || html_structure)(parent, value, dispatcher, [)" +
            to_js_heterogenous<T, Ts...>::create_html() +
            R"(], names, base_html, base_names);
@@ -205,6 +218,10 @@ template <typename T, typename... Traits> struct to_js<vector<T, Traits...>> {
 
   static auto create_html() {
     return R"(function (parent, value, dispatcher) {
+  this.signature = ')" +
+           std::regex_replace(mangled<vector<T, Traits...>>(), std::regex{"'"},
+                              "\\'") +
+           R"(';
   return (this.html_sequence || html_sequence)(parent, value, dispatcher, )" +
            to_js<T>::create_html() + R"();
 }.bind(this))";
@@ -281,6 +298,9 @@ template <typename T, size_t N> struct to_js<T[N]> {
   }
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
+  this.signature = ')" +
+           std::regex_replace(mangled<T[N]>(), std::regex{"'"}, "\\'") +
+           R"(';
   return )" +
            to_js_bounded<T>::create_html() + R"((parent, value, dispatcher, )" +
            to_string(N) + R"();
@@ -327,6 +347,9 @@ template <typename T, size_t M, size_t N> struct to_js<T[M][N]> {
 
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
+  this.signature = ')" +
+           std::regex_replace(mangled<T[M][N]>(), std::regex{"'"}, "\\'") +
+           R"(';
   return (this.html_multiarray || html_multiarray)(parent, value, dispatcher, html, [)" +
            extent() + R"(]);
 }.bind(this))";
@@ -350,6 +373,9 @@ template <typename T, size_t N> struct to_js<array<T, N>> {
   }
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
+  this.signature = ')" +
+           std::regex_replace(mangled<array<T, N>>(), std::regex{"'"}, "\\'") +
+           R"(';
   return (this.html_bounded || html_bounded)(parent, value, dispatcher, )" +
            to_js<T>::create_html() + R"(, )" + to_string(N) + R"();
 }.bind(this))";
@@ -374,6 +400,10 @@ struct to_js<map<T, U, Traits...>> {
   }
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
+  this.signature = ')" +
+           std::regex_replace(mangled<map<T, U, Traits...>>(), std::regex{"'"},
+                              "\\'") +
+           R"(';
   return (this.html_associative || html_associative)(parent, value, dispatcher, )" +
            to_js<T>::create_html() + R"(, )" + to_js<U>::create_html() + R"();
 }.bind(this))";
@@ -433,6 +463,11 @@ struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
     base_html = "  let base_html = [" + base_html + "];\n";
 
     return R"(function (parent, value, dispatcher) {
+  this.signature = ')" +
+           std::regex_replace(
+               mangled<structure<S, tuple<T, Ts...>, tuple<Bs...>>>(),
+               std::regex{"'"}, "\\'") +
+           R"(';
   )" + base_names +
            base_html + names + '(' + to_js<tuple<T, Ts...>>::create_html() +
            R"().bind(this)(parent, value, dispatcher, names, base_html, base_names);

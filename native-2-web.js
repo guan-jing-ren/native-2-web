@@ -455,7 +455,11 @@ function persona_structure_baseholder(persona, parent, base_name) {
 }
 
 function persona_structure(persona, parent) {
-  return d3.select(parent).append('table').classed(persona, true).node();
+  return d3.select(parent)
+      .append('table')
+      .classed(persona, true)
+      .attr('n2w-signature', this.signature)
+      .node();
 }
 
 function persona_structure_memlabel(persona, parent, member_name) {
@@ -479,7 +483,11 @@ function persona_structure_memholder(persona, parent) {
 }
 
 function persona_container(persona, parent) {
-  return d3.select(parent).append('table').classed(persona, true).node();
+  return d3.select(parent)
+      .append('table')
+      .classed(persona, true)
+      .attr('n2w-signature', this.signature)
+      .node();
 }
 
 function persona_container_element(persona, parent) {
@@ -822,7 +830,7 @@ function generic_container(
 
 var html_bounded = generic_container;
 function html_sequence() {
-  generic_container(
+  generic_container.bind(this)(
       ...arguments, this.persona_container_element_deleter ||
           persona_container_element_deleter);
 }
