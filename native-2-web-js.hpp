@@ -65,7 +65,7 @@ template <typename T> struct to_js {
   this.signature = ')" +
            std::regex_replace(mangled<U>(), std::regex{"'"}, "\\'") +
            R"(';
-  return (this.html_enum || html_enum)(parent, value, dispatcher, { )" +
+  return (this.html_enum || html_enum)(parent, value, dispatcher, {)" +
            accumulate(
                cbegin(enumeration<U>::e_to_str), cend(enumeration<U>::e_to_str),
                string{},
@@ -74,7 +74,7 @@ template <typename T> struct to_js {
                         to_string(static_cast<underlying_type_t<U>>(en.first)) +
                         "': '" + en.second + "'";
                }) +
-           R"( });
+           R"(});
 }.bind(this))";
   }
 };
