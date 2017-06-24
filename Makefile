@@ -1,6 +1,6 @@
 CXX=clang++
 
-libn2w-fs.so: n2w-fs.cpp native-2-web-plugin.hpp
+libn2w-fs.so: n2w-fs.cpp native-2-web-plugin.hpp native-2-web-manglespec.hpp native-2-web-js.hpp
 	time -p $(CXX) -O3 -Os -std=c++1z -I ../preprocessor/include/ -shared -fPIC -pthread -o libn2w-fs.so n2w-fs.cpp -ldl -lstdc++fs 
 
 n2w-server: native-2-web-server.cpp native-2-web-plugin.hpp libn2w-fs.so
