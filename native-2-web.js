@@ -756,6 +756,7 @@ function html_structure(
       });
   (this.persona_inserter || persona_inserter)(
       'n2w-persona-inserter', table, () => {
+        if (clipboard_signature != sig) return;
         this.prefill = clipboard;
         d3.select(table).remove();
         this.signature = sig;
@@ -831,6 +832,7 @@ function generic_container(
       });
   (this.persona_inserter || persona_inserter)(
       'n2w-persona-inserter', table, () => {
+        if (clipboard_signature != sig) return;
         this.prefill = clipboard;
         d3.select(table).remove();
         this.signature = sig;
@@ -916,6 +918,7 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
       });
   (this.persona_inserter || persona_inserter)(
       'n2w-persona-inserter', parent, () => {
+        if (clipboard_signature != sig) return;
         this.prefill = clipboard;
         parent.innerHTML = '';
         this.signature = sig;
