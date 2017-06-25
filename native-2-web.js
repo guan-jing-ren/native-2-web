@@ -597,6 +597,11 @@ let clipboard = {};
 let clipboard_signature = {};
 function persona_extracter(persona, parent, extracter) {
   if (parent.tagName == 'TABLE') {
+    d3.select(parent)
+        .select(
+            'tr.' + persona + '[n2w-signature="' +
+            (this.signature || '').replace(/(")/g, '\\$1') + '"]')
+        .remove();
     return d3.select(parent)
         .append('tr')
         .classed(persona, true)
@@ -612,6 +617,11 @@ function persona_extracter(persona, parent, extracter) {
 }
 function persona_inserter(persona, parent, inserter) {
   if (parent.tagName == 'TABLE') {
+    d3.select(parent)
+        .select(
+            'tr.' + persona + '[n2w-signature="' +
+            (this.signature || '').replace(/(")/g, '\\$1') + '"]')
+        .remove();
     return d3.select(parent)
         .append('tr')
         .classed(persona, true)
