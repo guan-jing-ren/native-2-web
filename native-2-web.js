@@ -605,6 +605,7 @@ function persona_submodule_entry(persona, parent, name) {
 let clipboard = {};
 let clipboard_signature = {};
 function persona_extracter(persona, parent, extracter) {
+  let sig = this.signature;
   if (parent.tagName == 'TABLE') {
     d3.select(parent)
         .select(
@@ -620,7 +621,11 @@ function persona_extracter(persona, parent, extracter) {
         .append('input')
         .attr('type', 'button')
         .attr('value', 'extract')
-        .on('click', extracter)
+        .on('click',
+            () => {
+              clipboard = extracter();
+              clipboard_signature = sig;
+            })
         .node();
   }
 }
@@ -701,6 +706,13 @@ function html_string(parent, value, dispatcher) {
   (this.dispatch || dispatch)(dispatcher, () => value(value_getter()));
 }
 
+function extract_doer(dispatcher, subvalue) {
+  return function() {
+    dispatcher.call('gather');
+    return subvalue();
+  };
+}
+
 function html_structure(
     parent, value, dispatcher, html, names, base_html, base_names) {
   let sig = this.signature;
@@ -770,11 +782,9 @@ function html_structure(
       });
 
   (this.persona_extracter || persona_extracter)
-      .bind(this)('n2w-persona-extracter', table, () => {
-        dispatcher.call('gather');
-        clipboard = subvalue;
-        clipboard_signature = sig;
-      });
+      .bind(this)(
+          'n2w-persona-extracter', table,
+          extract_doer(dispatcher, () => subvalue));
   (this.persona_inserter || persona_inserter)
       .bind(this)('n2w-persona-inserter', table, () => {
         if (clipboard_signature != sig) return;
@@ -799,11 +809,9 @@ function generic_container(
 
   let extracter_inserter = suppress_extracter_inserter || function(table) {
     (this.persona_extracter || persona_extracter)
-        .bind(this)('n2w-persona-extracter', table, () => {
-          dispatcher.call('gather');
-          clipboard = subvalue;
-          clipboard_signature = sig;
-        });
+        .bind(this)(
+            'n2w-persona-extracter', table,
+            extract_doer(dispatcher, () => subvalue));
     (this.persona_inserter || persona_inserter)
         .bind(this)('n2w-persona-inserter', table, () => {
           if (clipboard_signature != sig) return;
@@ -885,17 +893,17 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
 
   let extracter_inserter = function(table) {
     (this.persona_extracter || persona_extracter)
-        .bind(this)('n2w-persona-extracter', table, () => {
-          dispatcher.call('gather');
-          clipboard = subvalue.filter(s => s !== __n2w_deleted_value)
+        .bind(this)(
+            'n2w-persona-extracter', table,
+            extract_doer(
+                dispatcher,
+                () => subvalue.filter(s => s !== __n2w_deleted_value)
                           .reduce(
                               (p, c) => {
                                 p[JSON.stringify(c[0])] = c[1];
                                 return p;
                               },
-                              {});
-          clipboard_signature = sig;
-        });
+                              {})));
     (this.persona_inserter || persona_inserter)
         .bind(this)('n2w-persona-inserter', table, () => {
           if (clipboard_signature != sig) return;
