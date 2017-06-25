@@ -775,6 +775,26 @@ function generic_container(
   let subvalue = [];
   let subdispatchers = [];
 
+
+  let extracter_inserter = suppress_extracter_inserter || function(table) {
+    (this.persona_extracter || persona_extracter)(
+        'n2w-persona-extracter', table, () => {
+          dispatcher.call('gather');
+          clipboard = subvalue;
+          clipboard_signature = sig;
+        });
+    (this.persona_inserter || persona_inserter)(
+        'n2w-persona-inserter', table, () => {
+          if (clipboard_signature != sig) return;
+          this.prefill = clipboard;
+          d3.select(table).remove();
+          this.signature = sig;
+          generic_container.bind(this)(
+              parent, value, dispatcher, html, size_or_deleter);
+          this.prefill = null;
+        });
+  }.bind(this);
+
   if (typeof(size_or_deleter) == 'number')
     for (let i = 0; i < size_or_deleter; ++i) {
       let subdispatcher = (this.create_gatherer || create_gatherer)();
@@ -822,24 +842,7 @@ function generic_container(
     value(subvalue.filter(s => s !== __n2w_deleted_value));
   });
 
-  if (suppress_extracter_inserter) return table;
-
-  (this.persona_extracter || persona_extracter)(
-      'n2w-persona-extracter', table, () => {
-        dispatcher.call('gather');
-        clipboard = subvalue;
-        clipboard_signature = sig;
-      });
-  (this.persona_inserter || persona_inserter)(
-      'n2w-persona-inserter', table, () => {
-        if (clipboard_signature != sig) return;
-        this.prefill = clipboard;
-        d3.select(table).remove();
-        this.signature = sig;
-        generic_container.bind(this)(
-            parent, value, dispatcher, html, size_or_deleter);
-        this.prefill = null;
-      });
+  extracter_inserter(table);
 }
 
 function html_bounded() {
@@ -855,6 +858,30 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
   let sig = this.signature;
   let subvalue = [];
   let subdispatchers = [];
+
+  let extracter_inserter = function(table) {
+    (this.persona_extracter || persona_extracter)(
+        'n2w-persona-extracter', table, () => {
+          dispatcher.call('gather');
+          clipboard = subvalue.filter(s => s !== __n2w_deleted_value)
+                          .reduce(
+                              (p, c) => {
+                                p[JSON.stringify(c[0])] = c[1];
+                                return p;
+                              },
+                              {});
+          clipboard_signature = sig;
+        });
+    (this.persona_inserter ||
+     persona_inserter)('n2w-persona-inserter', table, () => {
+      if (clipboard_signature != sig) return;
+      this.prefill = clipboard;
+      parent.innerHTML = '';
+      this.signature = sig;
+      this.html_associative(parent, value, dispatcher, html_key, html_value);
+      this.prefill = null;
+    });
+  }.bind(this);
 
   let prefill_saved = this.prefill;
   if (this.prefill)
@@ -891,7 +918,7 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
                     'n2w-persona-map-element-deleter', e,
                     () => {subvalue[s] = __n2w_deleted_value});
               },
-              true);
+              extracter_inserter);
   this.prefill = prefill_saved;
 
   this.signature = sig;
@@ -906,28 +933,6 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
                 },
                 {}));
   });
-
-  (this.persona_extracter || persona_extracter)(
-      'n2w-persona-extracter', table, () => {
-        dispatcher.call('gather');
-        clipboard = subvalue.filter(s => s !== __n2w_deleted_value)
-                        .reduce(
-                            (p, c) => {
-                              p[JSON.stringify(c[0])] = c[1];
-                              return p;
-                            },
-                            {});
-        clipboard_signature = sig;
-      });
-  (this.persona_inserter || persona_inserter)(
-      'n2w-persona-inserter', table, () => {
-        if (clipboard_signature != sig) return;
-        this.prefill = clipboard;
-        parent.innerHTML = '';
-        this.signature = sig;
-        this.html_associative(parent, value, dispatcher, html_key, html_value);
-        this.prefill = null;
-      });
 }
 
 function html_function(parent, html_args, html_return, name, executor) {
