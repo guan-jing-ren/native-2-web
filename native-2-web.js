@@ -834,12 +834,15 @@ function generic_container(
         this.prefill = clipboard;
         d3.select(table).remove();
         this.signature = sig;
-        generic_container(parent, value, dispatcher, html, size_or_deleter);
+        generic_container.bind(this)(
+            parent, value, dispatcher, html, size_or_deleter);
         this.prefill = null;
       });
 }
 
-var html_bounded = generic_container;
+function html_bounded() {
+  generic_container.bind(this)(...arguments);
+}
 function html_sequence() {
   generic_container.bind(this)(
       ...arguments, this.persona_container_element_deleter ||
