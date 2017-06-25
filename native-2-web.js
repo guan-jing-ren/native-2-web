@@ -740,6 +740,8 @@ function html_structure(
           this.prefill = prefill_saved;
         }).bind(this));
 
+  this.signature = sig;
+
   (this.subdispatch || subdispatch)(
       dispatcher, basedispatchers.concat(subdispatchers), () => {
         if (base_names && base_names.length > 0) subvalue.__bases = bases;
@@ -813,6 +815,8 @@ function generic_container(
     this.prefill = prefill_saved;
   }
 
+  this.signature = sig;
+
   (this.subdispatch || subdispatch)(dispatcher, subdispatchers, () => {
     value(subvalue.filter(s => s !== __n2w_deleted_value));
   });
@@ -881,6 +885,8 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
           },
           true);
   this.prefill = prefill_saved;
+
+  this.signature = sig;
 
   (this.subdispatch || subdispatch)(dispatcher, subdispatchers, () => {
     value(
