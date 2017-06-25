@@ -361,6 +361,7 @@ function persona_bool(persona, parent) {
   let node = d3.select(parent)
                  .append('input')
                  .classed(persona, true)
+                 .attr('n2w-signature', this.signature)
                  .attr('type', 'checkbox')
                  .attr('value', false)
                  .node();
@@ -372,6 +373,7 @@ function persona_number(persona, parent) {
   let node = d3.select(parent)
                  .append('input')
                  .classed(persona, true)
+                 .attr('n2w-signature', this.signature)
                  .attr('type', 'number')
                  .node();
   if (this.prefill) node.value = +this.prefill;
@@ -382,6 +384,7 @@ function persona_enum_option(persona, parent, value, name) {
   let node = d3.select(parent)
                  .append('option')
                  .classed(persona, true)
+                 .attr('n2w-signature', this.signature)
                  .attr('value', value)
                  .text(name)
                  .node();
@@ -390,7 +393,11 @@ function persona_enum_option(persona, parent, value, name) {
 }
 
 function persona_enum(persona, parent, enums) {
-  let select = d3.select(parent).append('select').classed(persona, true).node();
+  let select = d3.select(parent)
+                   .append('select')
+                   .classed(persona, true)
+                   .attr('n2w-signature', this.signature)
+                   .node();
   return [() => +select.value, select];
 }
 
@@ -398,6 +405,7 @@ function persona_char(persona, parent) {
   let node = d3.select(parent)
                  .append('input')
                  .classed(persona, true)
+                 .attr('n2w-signature', this.signature)
                  .attr('type', 'text')
                  .node();
   if (this.prefill) node.value = this.prefill[0] == '\0' ? '' : this.prefill[0];
@@ -408,6 +416,7 @@ function persona_string(persona, parent) {
   let node = d3.select(parent)
                  .append('input')
                  .classed(persona, true)
+                 .attr('n2w-signature', this.signature)
                  .attr('type', 'text')
                  .node();
   if (this.prefill) node.value = this.prefill;

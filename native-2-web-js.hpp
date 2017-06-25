@@ -43,7 +43,12 @@ template <typename T> struct to_js {
   }
   template <typename U = T>
   static auto create_html() -> enable_if_t<is_arithmetic<U>{}, string> {
-    return is_same<U, bool>{} ? R"(this.html_bool)" : R"(this.html_number)";
+    return R"(function (parent, value, dispatcher) {
+  this.signature = ')" +
+           std::regex_replace(mangled<U>(), std::regex{"'"}, "\\'") + R"(';
+  )" + (is_same<U, bool>{} ? R"(this.html_bool)" : R"(this.html_number)") +
+           R"((parent, value, dispatcher);
+  }.bind(this))";
   }
   template <typename U = T>
   static auto create_reader() -> enable_if_t<is_enum<U>{}, string> {
@@ -82,18 +87,37 @@ template <typename T> struct to_js {
 template <> struct to_js<void *> {
   static string create_reader() { return "function (){}"; }
   static string create_writer() { return "function (){}"; }
-  static string create_html() { return "this.html_void"; }
+  static string create_html() {
+    return R"(function (parent, value, dispatcher) {
+  this.signature = ')" +
+           std::regex_replace(mangled<void *>(), std::regex{"'"}, "\\'") + R"(';
+  return (this.html_void || html_void)(parent, value, dispatcher);
+  }.bind(this))";
+  }
 };
 
 template <> struct to_js<char> {
   static string create_reader() { return R"(read_char)"; }
   static string create_writer() { return R"(write_char)"; }
-  static string create_html() { return R"(this.html_char)"; }
+  static string create_html() {
+    return R"(function (parent, value, dispatcher) {
+  this.signature = ')" +
+           std::regex_replace(mangled<char>(), std::regex{"'"}, "\\'") + R"(';
+  return (this.html_char || html_char)(parent, value, dispatcher);
+  }.bind(this))";
+  }
 };
 template <> struct to_js<char32_t> {
   static string create_reader() { return R"(read_char32)"; }
   static string create_writer() { return R"(write_char32)"; }
-  static string create_html() { return R"(this.html_char32)"; }
+  static string create_html() {
+    return R"(function (parent, value, dispatcher) {
+  this.signature = ')" +
+           std::regex_replace(mangled<char32_t>(), std::regex{"'"}, "\\'") +
+           R"(';
+  return (this.html_char32 || html_char32)(parent, value, dispatcher);
+  }.bind(this))";
+  }
 };
 
 template <> struct to_js<char16_t> : to_js<char32_t> {};
@@ -178,7 +202,15 @@ template <typename T, typename... Traits>
 struct to_js<basic_string<T, Traits...>> {
   static string create_reader() { return "read_string"; }
   static string create_writer() { return "write_string"; }
-  static string create_html() { return "this.html_string"; }
+  static string create_html() {
+    return R"(function (parent, value, dispatcher) {
+  this.signature = ')" +
+           std::regex_replace(mangled<basic_string<T, Traits...>>(),
+                              std::regex{"'"}, "\\'") +
+           R"(';
+  return (this.html_string || html_string)(parent, value, dispatcher);
+  }.bind(this))";
+  }
 };
 
 template <typename T, typename... Traits> struct to_js<vector<T, Traits...>> {
@@ -470,8 +502,8 @@ struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
            R"(';
   )" + base_names +
            base_html + names + '(' + to_js<tuple<T, Ts...>>::create_html() +
-           R"().bind(this)(parent, value, dispatcher, names, base_html, base_names);
-})";
+           R"()(parent, value, dispatcher, names, base_html, base_names);
+}.bind(this))";
   }
 };
 
