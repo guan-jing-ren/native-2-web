@@ -630,6 +630,7 @@ function persona_extracter(persona, parent, extracter) {
   }
 }
 function persona_inserter(persona, parent, inserter) {
+  let sig = this.signature;
   if (parent.tagName == 'TABLE') {
     d3.select(parent)
         .select(
@@ -645,7 +646,12 @@ function persona_inserter(persona, parent, inserter) {
         .append('input')
         .attr('type', 'button')
         .attr('value', 'insert')
-        .on('click', inserter)
+        .on('click',
+            () => {
+              if (clipboard_signature != sig) return;
+              parent.innerHTML = '';
+              inserter(clipboard);
+            })
         .node();
   }
 }
@@ -711,6 +717,15 @@ function extract_doer(dispatcher, subvalue) {
     dispatcher.call('gather');
     return subvalue();
   };
+}
+
+function insert_doer(self, args, sig) {
+  return function(value) {
+    this.signature = sig;
+    this.prefill = value;
+    self.apply(this, args);
+    this.prefill = null;
+  }.bind(this);
 }
 
 function html_structure(
@@ -781,20 +796,15 @@ function html_structure(
         value(subvalue);
       });
 
+  let inserter_args = [...arguments];
   (this.persona_extracter || persona_extracter)
       .bind(this)(
           'n2w-persona-extracter', table,
           extract_doer(dispatcher, () => subvalue));
   (this.persona_inserter || persona_inserter)
-      .bind(this)('n2w-persona-inserter', table, () => {
-        if (clipboard_signature != sig) return;
-        this.prefill = clipboard;
-        d3.select(table).remove();
-        this.signature = sig;
-        this.html_structure(
-            parent, value, dispatcher, html, names, base_html, base_names);
-        this.prefill = null;
-      });
+      .bind(this)(
+          'n2w-persona-inserter', table,
+          insert_doer.bind(this)(this.html_structure, inserter_args, sig));
 }
 
 function generic_container(
@@ -805,6 +815,7 @@ function generic_container(
       'n2w-persona-container', parent);
   let subvalue = [];
   let subdispatchers = [];
+  let inserter_args = [...arguments];
 
 
   let extracter_inserter = suppress_extracter_inserter || function(table) {
@@ -813,15 +824,10 @@ function generic_container(
             'n2w-persona-extracter', table,
             extract_doer(dispatcher, () => subvalue));
     (this.persona_inserter || persona_inserter)
-        .bind(this)('n2w-persona-inserter', table, () => {
-          if (clipboard_signature != sig) return;
-          this.prefill = clipboard;
-          d3.select(table).remove();
-          this.signature = sig;
-          generic_container.bind(this)(
-              parent, value, dispatcher, html, size_or_deleter);
-          this.prefill = null;
-        });
+        .bind(this)(
+            'n2w-persona-inserter', table,
+            insert_doer.bind(this)(
+                generic_container.bind(this), inserter_args, sig));
   }.bind(this);
 
   if (typeof(size_or_deleter) == 'number')
@@ -890,6 +896,7 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
   let sig = this.signature;
   let subvalue = [];
   let subdispatchers = [];
+  let inserter_args = [...arguments];
 
   let extracter_inserter = function(table) {
     (this.persona_extracter || persona_extracter)
@@ -905,15 +912,9 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
                               },
                               {})));
     (this.persona_inserter || persona_inserter)
-        .bind(this)('n2w-persona-inserter', table, () => {
-          if (clipboard_signature != sig) return;
-          this.prefill = clipboard;
-          d3.select(table).remove();
-          this.signature = sig;
-          this.html_associative(
-              parent, value, dispatcher, html_key, html_value);
-          this.prefill = null;
-        });
+        .bind(this)(
+            'n2w-persona-inserter', table,
+            insert_doer.bind(this)(this.html_associative, inserter_args, sig));
   }.bind(this);
 
   let prefill_saved = this.prefill;
@@ -1045,6 +1046,8 @@ function N2WGenerator() {
   this.persona_function_return = persona_function_return.bind(this);
   this.persona_submodule = persona_submodule.bind(this);
   this.persona_submodule_entry = persona_submodule_entry.bind(this);
+  this.persona_extracter = persona_extracter.bind(this);
+  this.persona_inserter = persona_inserter.bind(this);
 
   // Not so common to customize the following aspects.
   this.persona_terminal = persona_terminal.bind(this);
