@@ -804,7 +804,7 @@ function html_structure(
   (this.persona_inserter || persona_inserter)
       .bind(this)(
           'n2w-persona-inserter', table,
-          insert_doer.bind(this)(this.html_structure, inserter_args, sig));
+          insert_doer.bind(this)(this.html_structure, [...arguments], sig));
 }
 
 function generic_container(
