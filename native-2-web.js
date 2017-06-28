@@ -660,6 +660,22 @@ function persona_submodule(persona, parent) {
   return d3.select(parent).append('ul').classed(persona, true).node();
 }
 
+function extract_doer(dispatcher, subvalue) {
+  return function() {
+    dispatcher.call('gather');
+    return subvalue();
+  };
+}
+
+function insert_doer(self, args, sig) {
+  return function(value) {
+    this.signature = sig;
+    this.prefill = value;
+    self.apply(this, args);
+    this.prefill = null;
+  }.bind(this);
+}
+
 function html_void() {}
 
 function html_bool(parent, value, dispatcher) {
@@ -710,22 +726,6 @@ function html_string(parent, value, dispatcher) {
   let value_getter =
       (this.persona_string || persona_string)('n2w-persona-string', parent);
   (this.dispatch || dispatch)(dispatcher, () => value(value_getter()));
-}
-
-function extract_doer(dispatcher, subvalue) {
-  return function() {
-    dispatcher.call('gather');
-    return subvalue();
-  };
-}
-
-function insert_doer(self, args, sig) {
-  return function(value) {
-    this.signature = sig;
-    this.prefill = value;
-    self.apply(this, args);
-    this.prefill = null;
-  }.bind(this);
 }
 
 function html_structure(
