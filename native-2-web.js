@@ -718,6 +718,15 @@ function html_number(parent, value, dispatcher) {
   let value_getter =
       (this.persona_number || persona_number)('n2w-persona-number', parent);
   (this.dispatch || dispatch)(dispatcher, () => value(value_getter()));
+  (this.persona_extracter || persona_extracter)
+      .bind(this)(
+          'n2w-persona-extracter', parent,
+          extract_doer(dispatcher, () => value_getter()));
+  (this.persona_inserter || persona_inserter)
+      .bind(this)(
+          'n2w-persona-inserter', parent,
+          insert_doer.bind(this)(
+              this.html_number, [...arguments], this.signature));
 }
 
 function html_enum(parent, value, dispatcher, enums) {
@@ -740,6 +749,15 @@ function html_char(parent, value, dispatcher) {
   let value_getter =
       (this.persona_char || persona_char)('n2w-persona-char8', parent);
   (this.dispatch || dispatch)(dispatcher, () => value(value_getter()));
+  (this.persona_extracter || persona_extracter)
+      .bind(this)(
+          'n2w-persona-extracter', parent,
+          extract_doer(dispatcher, () => value_getter()));
+  (this.persona_inserter || persona_inserter)
+      .bind(this)(
+          'n2w-persona-inserter', parent,
+          insert_doer.bind(this)(
+              this.html_char, [...arguments], this.signature));
 }
 
 function html_char32(parent, value, dispatcher) {
@@ -747,6 +765,15 @@ function html_char32(parent, value, dispatcher) {
   let value_getter =
       (this.persona_char || persona_char)('n2w-persona-char32', parent);
   (this.dispatch || dispatch)(dispatcher, () => value(value_getter()));
+  (this.persona_extracter || persona_extracter)
+      .bind(this)(
+          'n2w-persona-extracter', parent,
+          extract_doer(dispatcher, () => value_getter()));
+  (this.persona_inserter || persona_inserter)
+      .bind(this)(
+          'n2w-persona-inserter', parent,
+          insert_doer.bind(this)(
+              this.html_char32, [...arguments], this.signature));
 }
 
 function html_string(parent, value, dispatcher) {
@@ -754,6 +781,15 @@ function html_string(parent, value, dispatcher) {
   let value_getter =
       (this.persona_string || persona_string)('n2w-persona-string', parent);
   (this.dispatch || dispatch)(dispatcher, () => value(value_getter()));
+  (this.persona_extracter || persona_extracter)
+      .bind(this)(
+          'n2w-persona-extracter', parent,
+          extract_doer(dispatcher, () => value_getter()));
+  (this.persona_inserter || persona_inserter)
+      .bind(this)(
+          'n2w-persona-inserter', parent,
+          insert_doer.bind(this)(
+              this.html_string, [...arguments], this.signature));
 }
 
 function html_structure(
