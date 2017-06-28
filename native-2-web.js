@@ -702,6 +702,15 @@ function html_bool(parent, value, dispatcher) {
   let value_getter =
       (this.persona_bool || persona_bool)('n2w-persona-bool', parent);
   (this.dispatch || dispatch)(dispatcher, () => value(value_getter()));
+  (this.persona_extracter || persona_extracter)
+      .bind(this)(
+          'n2w-persona-extracter', parent,
+          extract_doer(dispatcher, () => value_getter()));
+  (this.persona_inserter || persona_inserter)
+      .bind(this)(
+          'n2w-persona-inserter', parent,
+          insert_doer.bind(this)(
+              this.html_bool, [...arguments], this.signature));
 }
 
 function html_number(parent, value, dispatcher) {
