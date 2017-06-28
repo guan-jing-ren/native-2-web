@@ -606,54 +606,73 @@ let clipboard = {};
 let clipboard_signature = {};
 function persona_extracter(persona, parent, extracter) {
   let sig = this.signature;
+  let extract;
   if (parent.tagName == 'TABLE') {
     d3.select(parent)
         .select(
             'tr.' + persona + '[n2w-signature="' +
             (this.signature || '').replace(/(")/g, '\\$1') + '"]')
         .remove();
-    return d3.select(parent)
-        .append('tr')
-        .classed(persona, true)
-        .attr('n2w-signature', this.signature)
-        .append('td')
-        .attr('colspan', 2)
-        .append('input')
-        .attr('type', 'button')
-        .attr('value', 'extract')
-        .on('click',
-            () => {
-              clipboard = extracter();
-              clipboard_signature = sig;
-            })
-        .node();
+    extract = d3.select(parent)
+                  .append('tr')
+                  .classed(persona, true)
+                  .attr('n2w-signature', this.signature)
+                  .append('td')
+                  .attr('colspan', 2);
+  } else if (parent.tagName == 'TD') {
+    extract = d3.select(parent.parentElement)
+                  .append('td')
+                  .classed(persona, true)
+                  .attr('n2w-signature', this.signature);
   }
+  return extract.append('input')
+      .attr('type', 'button')
+      .attr('value', 'extract')
+      .on('click',
+          () => {
+            clipboard = extracter();
+            clipboard_signature = sig;
+          })
+      .node();
 }
 function persona_inserter(persona, parent, inserter) {
   let sig = this.signature;
+  let insert;
   if (parent.tagName == 'TABLE') {
     d3.select(parent)
         .select(
             'tr.' + persona + '[n2w-signature="' +
             (this.signature || '').replace(/(")/g, '\\$1') + '"]')
         .remove();
-    return d3.select(parent)
-        .append('tr')
-        .classed(persona, true)
-        .attr('n2w-signature', this.signature)
-        .append('td')
-        .attr('colspan', 2)
-        .append('input')
-        .attr('type', 'button')
-        .attr('value', 'insert')
-        .on('click',
-            () => {
-              if (clipboard_signature != sig) return;
-              d3.select(parent).remove();
-              inserter(clipboard);
-            })
-        .node();
+    insert = d3.select(parent)
+                 .append('tr')
+                 .classed(persona, true)
+                 .attr('n2w-signature', this.signature)
+                 .append('td')
+                 .attr('colspan', 2);
+  } else if (parent.tagName == 'TD') {
+    insert = d3.select(parent.parentElement)
+                 .append('td')
+                 .classed(persona, true)
+                 .attr('n2w-signature', this.signature);
   }
+
+  return insert.append('input')
+      .attr('type', 'button')
+      .attr('value', 'insert')
+      .on('click',
+          () => {
+            if (clipboard_signature != sig) return;
+            if (parent.tagName == 'TABLE')
+              d3.select(parent).remove();
+            else if (parent.tagName == 'TD') {
+              d3.select(parent).selectAll('*').remove();
+              while (parent.nextElementSibling)
+                d3.select(parent.nextElementSibling).remove();
+            }
+            inserter(clipboard);
+          })
+      .node();
 }
 
 function persona_submodule(persona, parent) {
