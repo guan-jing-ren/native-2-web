@@ -620,12 +620,11 @@ function persona_extracter(persona, parent, extracter) {
                   .append('td')
                   .attr('colspan', 2);
   } else if (parent.tagName == 'TD') {
-    extract = d3.select(parent.parentElement)
-                  .append('td')
-                  .classed(persona, true)
-                  .attr('n2w-signature', this.signature);
+    extract = d3.select(parent);
   }
   return extract.append('input')
+      .classed(persona, true)
+      .attr('n2w-signature', this.signature)
       .attr('type', 'button')
       .attr('value', 'extract')
       .on('click',
@@ -642,22 +641,21 @@ function persona_inserter(persona, parent, inserter) {
     d3.select(parent)
         .select(
             'tr.' + persona + '[n2w-signature="' +
-            (this.signature || '').replace(/(")/g, '\\$1') + '"]')
+            (sig || '').replace(/(")/g, '\\$1') + '"]')
         .remove();
     insert = d3.select(parent)
                  .append('tr')
                  .classed(persona, true)
-                 .attr('n2w-signature', this.signature)
+                 .attr('n2w-signature', sig)
                  .append('td')
                  .attr('colspan', 2);
   } else if (parent.tagName == 'TD') {
-    insert = d3.select(parent.parentElement)
-                 .append('td')
-                 .classed(persona, true)
-                 .attr('n2w-signature', this.signature);
+    insert = d3.select(parent);
   }
 
   return insert.append('input')
+      .classed(persona, true)
+      .attr('n2w-signature', sig)
       .attr('type', 'button')
       .attr('value', 'insert')
       .on('click',
@@ -667,8 +665,6 @@ function persona_inserter(persona, parent, inserter) {
               d3.select(parent).remove();
             else if (parent.tagName == 'TD') {
               d3.select(parent).selectAll('*').remove();
-              while (parent.nextElementSibling)
-                d3.select(parent.nextElementSibling).remove();
             }
             inserter(clipboard);
           })
