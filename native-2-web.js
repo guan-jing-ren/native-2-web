@@ -882,7 +882,9 @@ function generic_container(
     (this.persona_extracter || persona_extracter)
         .bind(this)(
             'n2w-persona-extracter', table,
-            extract_doer(dispatcher, () => subvalue));
+            extract_doer(
+                dispatcher,
+                () => subvalue.filter(s => s !== __n2w_deleted_value)));
     (this.persona_inserter || persona_inserter)
         .bind(this)(
             'n2w-persona-inserter', table,
