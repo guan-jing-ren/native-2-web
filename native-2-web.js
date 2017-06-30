@@ -738,6 +738,15 @@ function html_enum(parent, value, dispatcher, enums) {
                'n2w-persona-enum-option', value_getter[1], k, enums[k]))
               .bind(this));
   (this.dispatch || dispatch)(dispatcher, () => value(value_getter[0]()));
+  (this.persona_extracter || persona_extracter)
+      .bind(this)(
+          'n2w-persona-extracter', parent,
+          extract_doer(dispatcher, () => value_getter[0]()));
+  (this.persona_inserter || persona_inserter)
+      .bind(this)(
+          'n2w-persona-inserter', parent,
+          insert_doer.bind(this)(
+              this.html_enum, [...arguments], this.signature));
 }
 
 function html_char(parent, value, dispatcher) {
