@@ -170,8 +170,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
   auto create_writer(const http::response<http::string_body> &response) {
     return [self = this->shared_from_this()]() mutable {
-      http::async_write(self->socket, self->response,
-                        [self = move(self)](auto ec) mutable {
+      http::async_write(self->socket,
+                        self->response, [self = move(self)](auto ec) mutable {
                           clog << "Thread: " << this_thread::get_id()
                                << "; Written HTTP response:" << ec << ".\n";
                           ++self->serving;
@@ -204,15 +204,15 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
   template <bool B = supports_websocket> auto accept_ws() -> enable_if_t<!B> {}
   template <bool B = supports_websocket> auto accept_ws() -> enable_if_t<B> {
-    ws.async_accept(request,
-                    [self = this->shared_from_this()](auto ec) mutable {
-                      clog << "Accepted websocket connection: " << ec << '\n';
-                      if (ec)
-                        return;
-                      self->ws_stuff.stream >> noskipws;
-                      self->register_websocket_pusher();
-                      self->ws_serve();
-                    });
+    ws.async_accept(
+        request, [self = this->shared_from_this()](auto ec) mutable {
+          clog << "Accepted websocket connection: " << ec << '\n';
+          if (ec)
+            return;
+          self->ws_stuff.stream >> noskipws;
+          self->register_websocket_pusher();
+          self->ws_serve();
+        });
   }
 
   void respond() {
@@ -430,21 +430,20 @@ struct normalized_uri {
     path = uri;
     if (path.has_relative_path())
       path = path.relative_path();
-    auto segments =
-        accumulate(find_if_not(begin(path), end(path),
-                               [](const auto &node) { return node == ".."; }),
-                   end(path), vector<filesystem::path>{},
-                   [](auto &v, const auto &p) {
-                     if (p != ".") {
-                       if (p != "..") {
-                         v.push_back(p);
-                       } else if (!v.empty()) {
-                         v.pop_back();
-                       }
-                     }
+    auto segments = accumulate(
+        find_if_not(begin(path), end(path),
+                    [](const auto &node) { return node == ".."; }),
+        end(path), vector<filesystem::path>{}, [](auto &v, const auto &p) {
+          if (p != ".") {
+            if (p != "..") {
+              v.push_back(p);
+            } else if (!v.empty()) {
+              v.pop_back();
+            }
+          }
 
-                     return v;
-                   });
+          return v;
+        });
     auto path = accumulate(begin(segments), end(segments), filesystem::path{},
                            divides<>{});
   }
@@ -478,10 +477,11 @@ void reload_plugins() {
     path.replace_extension("");
     transform(first, end(path), back_inserter(hierarchy),
               mem_fn(&filesystem::path::generic_u8string));
-    transform(cbegin(hierarchy), cend(hierarchy), begin(hierarchy),
-              [offset = strlen("libn2w-")](const auto &module) {
-                return module.substr(offset);
-              });
+    transform(
+        cbegin(hierarchy), cend(hierarchy),
+        begin(hierarchy), [offset = strlen("libn2w-")](const auto &module) {
+          return module.substr(offset);
+        });
     plugins.emplace(hierarchy, modfile.c_str());
   }
 }
@@ -499,17 +499,18 @@ string create_modules() {
   for (auto &s : server.get_services()) {
     modules += "n2w.$server." + server.get_name(s) + " = " +
                server.get_javascript(s) + ";\n";
-    modules += "n2w.$server." + server.get_name(s) + ".html = " +
-               server.get_generator(s) + ";\n";
+    modules += "n2w.$server." + server.get_name(s) +
+               ".html = " + server.get_generator(s) + ";\n";
   }
 
   for (auto &p : plugins) {
     string module;
     for (auto first = cbegin(p.first), last = min(first + 1, cend(p.first));
          last != cend(p.first); ++last) {
-      module = accumulate(
-          first, last, string{},
-          [](auto mods, const auto &mod) { return mods + "['" + mod + "']"; });
+      module =
+          accumulate(first, last, string{}, [](auto mods, const auto &mod) {
+            return mods + "['" + mod + "']";
+          });
       modules += "n2w" + module + " = n2w" + module + " || {};\n";
     }
     module = accumulate(
@@ -520,8 +521,8 @@ string create_modules() {
     for (auto &s : p.second.get_services()) {
       modules += "n2w" + module + '.' + p.second.get_name(s) + " = " +
                  p.second.get_javascript(s) + ";\n";
-      modules += "n2w" + module + '.' + p.second.get_name(s) + ".html = " +
-                 p.second.get_generator(s) + ";\n";
+      modules += "n2w" + module + '.' + p.second.get_name(s) +
+                 ".html = " + p.second.get_generator(s) + ";\n";
     }
   }
   modules += "return n2w;\n}());\n";
