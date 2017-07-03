@@ -529,6 +529,7 @@ string create_modules() {
 
 int main() {
   io_service service;
+  io_service::work work{service};
   ip::tcp::endpoint endpoint{ip::address_v4::from_string("0.0.0.0"), 9001};
   ip::tcp::acceptor acceptor{service, endpoint, true};
   acceptor.listen();
@@ -644,6 +645,7 @@ int main() {
   generate_n(back_inserter(threadpool), 10, [&service]() {
     return async(launch::async, [&service]() { service.run(); });
   });
+  service.run();
 
   return 0;
 }
