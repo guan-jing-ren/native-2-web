@@ -1,6 +1,6 @@
 CXX=clang++
 BOOST_INCLUDES=
-BEAST_INCLUDES=$(BOOST_INCLUDES) -I ../asio/include/ -I ../Beast/include/
+BEAST_INCLUDES=$(BOOST_INCLUDES) -I ../Beast/include/
 
 libn2w-fs.so: n2w-fs.cpp native-2-web-plugin.hpp native-2-web-manglespec.hpp native-2-web-js.hpp
 	time -p $(CXX) -O3 -Os -std=c++1z $(BOOST_INCLUDES) -shared -fPIC -pthread -o libn2w-fs.so n2w-fs.cpp -ldl -lstdc++fs 
@@ -11,3 +11,6 @@ n2w-server: native-2-web-server.cpp native-2-web-plugin.hpp libn2w-fs.so
 all:
 	time -p $(CXX) -O3 -Os -std=c++1z -I ../preprocessor/include/ -o n2w native-2-web.cpp &
 	time -p $(CXX) -O3 -Os -std=c++1z -I ../preprocessor/include/ native-2-web-test.cpp &
+
+clean:
+	rm ./n2w-server ./libn2w-fs.so a.out n2w
