@@ -119,7 +119,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   }
 
   template <typename R> auto create_writer(const R &response) {
-    static constexpr const auto response_type =
+    static constexpr const char *response_type =
         is_same<string, R>::value ? "text" : "binary";
     static const auto message_type = websocket::message_type{
         is_same<string, R>::value ? websocket::opcode::text
