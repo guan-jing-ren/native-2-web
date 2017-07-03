@@ -104,7 +104,9 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                    static_cast<Handler *>(nullptr))),
                false_type>::value;
 
-  template <typename> friend void accept(io_service &, ip::tcp::acceptor &);
+  template <typename>
+  friend void accept(reference_wrapper<io_service>,
+                     reference_wrapper<ip::tcp::acceptor>);
 
   void defer_response(shared_future<void> &&reply_future) {
     socket.get_io_service().post(
@@ -357,21 +359,21 @@ public:
 };
 
 template <typename Handler>
-void check_use_count(io_service &service,
+void check_use_count(reference_wrapper<io_service> &service,
                      weak_ptr<n2w_connection<Handler>> conn,
                      uintptr_t conn_id) {
   static basic_waitable_timer<chrono::system_clock> timer{service};
   timer.expires_from_now(chrono::seconds{1});
 
-  service.post([
-    &service, conn = weak_ptr<n2w_connection<Handler>>(conn), conn_id
+  service.get().post([
+    service, conn = weak_ptr<n2w_connection<Handler>>(conn), conn_id
   ]() mutable {
     clog << "Connection " << conn_id << " use count: " << conn.use_count()
          << '\n';
     if (conn.expired() || conn.use_count() < 2)
       return;
 
-    timer.async_wait([&service, conn = move(conn), conn_id ](auto ec) mutable {
+    timer.async_wait([ service, conn = move(conn), conn_id ](auto ec) mutable {
       if (ec == error::operation_aborted)
         return;
       check_use_count(service, move(conn), conn_id);
@@ -380,12 +382,12 @@ void check_use_count(io_service &service,
 }
 
 template <typename Handler>
-void accept(io_service &service, ip::tcp::acceptor &acceptor) {
+void accept(reference_wrapper<io_service> service,
+            reference_wrapper<ip::tcp::acceptor> acceptor) {
   auto connection = make_shared<n2w_connection<Handler>>(service);
   auto &socket_ref = connection->socket;
-  acceptor.async_accept(
-      socket_ref,
-      [&service, &acceptor, connection = move(connection) ](auto ec) mutable {
+  acceptor.get().async_accept(
+      connection->socket, [service, acceptor, connection](auto ec) mutable {
         clog << "Thread: " << this_thread::get_id()
              << "; Accepted connection: " << ec << '\n';
         if (ec)
@@ -611,7 +613,7 @@ int main() {
     }
   };
 
-  accept<http_handler>(service, acceptor);
+  accept<http_handler>(ref(service), ref(acceptor));
 
   struct ws_only_handler {
     struct websocket_handler_type {
@@ -636,7 +638,7 @@ int main() {
   ip::tcp::endpoint wsendpoint{ip::address_v4::from_string("0.0.0.0"), 9002};
   ip::tcp::acceptor wsacceptor{service, wsendpoint, true};
   wsacceptor.listen();
-  accept<ws_only_handler>(service, wsacceptor);
+  accept<ws_only_handler>(ref(service), ref(wsacceptor));
 
   vector<future<void>> threadpool;
   for (auto i = 0; i < 10; ++i)
