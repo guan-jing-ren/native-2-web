@@ -641,9 +641,9 @@ int main() {
   accept<ws_only_handler>(ref(service), ref(wsacceptor));
 
   vector<future<void>> threadpool;
-  for (auto i = 0; i < 10; ++i)
-    threadpool.emplace_back(
-        async(launch::async, [&service]() mutable { service.run(); }));
+  generate_n(back_inserter(threadpool), 10, [&service]() {
+    return async(launch::async, [&service]() { service.run(); });
+  });
 
   return 0;
 }
