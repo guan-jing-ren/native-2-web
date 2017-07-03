@@ -127,14 +127,13 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
     return [ self = this->shared_from_this(), &response ]() mutable {
       self->ws.set_option(message_type);
-      self->ws.async_write(
-          buffer(response), [self = move(self)](auto ec) mutable {
-            clog << "Thread: " << this_thread::get_id() << "; Written "
-                 << response_type << " websocket response:" << ec << ".\n";
-            ++self->serving;
-            if (ec)
-              self->ws_stuff.websocket_handler = websocket_handler_type{};
-          });
+      self->ws.async_write(buffer(response), [self](auto ec) mutable {
+        clog << "Thread: " << this_thread::get_id() << "; Written "
+             << response_type << " websocket response:" << ec << ".\n";
+        ++self->serving;
+        if (ec)
+          self->ws_stuff.websocket_handler = websocket_handler_type{};
+      });
     };
   }
 
@@ -170,12 +169,11 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
   auto create_writer(const http::response<http::string_body> &response) {
     return [self = this->shared_from_this()]() mutable {
-      http::async_write(self->socket,
-                        self->response, [self = move(self)](auto ec) mutable {
-                          clog << "Thread: " << this_thread::get_id()
-                               << "; Written HTTP response:" << ec << ".\n";
-                          ++self->serving;
-                        });
+      http::async_write(self->socket, self->response, [self](auto ec) mutable {
+        clog << "Thread: " << this_thread::get_id()
+             << "; Written HTTP response:" << ec << ".\n";
+        ++self->serving;
+      });
     };
   }
 
@@ -235,7 +233,6 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
                           return self->create_writer(self->response);
                         }).share();
-
     defer_response(move(reply_future));
   }
 
@@ -247,7 +244,6 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
            << "; Received request: " << ec << ".\n";
       if (ec)
         return;
-      clog << self->request;
       self->respond();
 
       if (!supports_websocket || !http::is_upgrade(self->request))
