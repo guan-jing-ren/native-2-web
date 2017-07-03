@@ -171,7 +171,7 @@ public:
 
   plugin(const char *dll)
       : basic_plugin(dll),
-        plugin_impl(static_cast<plugin_impl &&>(sym<plugin>("plugin"))) {}
+        plugin_impl(static_cast<plugin_impl>(sym<plugin>("plugin"))) {}
 };
 
 #define DECLARE_API(x) #x, x
