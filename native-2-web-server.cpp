@@ -39,8 +39,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
     operator()(const http::request<http::string_body> &request) {
       auto response = http::response<http::string_body>{};
       response.version = request.version;
-      response.status = 501;
-      response.reason = "Not Implemented";
+      response.result(501);
+      response.reason("Not Implemented");
       response.body = "n2w server does implement websocket handling";
       return response;
     }
@@ -64,7 +64,6 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
       !is_same<websocket_handler_type, false_type>::value;
   struct websocket_stuff {
     websocket_handler_type websocket_handler;
-    websocket::opcode op;
     istream stream;
     string text_response;
     vector<uint8_t> binary_response;
@@ -115,7 +114,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
             reply_future.get();
           } catch (...) {
             clog << "Exception thrown from void future\n";
-            self->ws.close({4000, "Exception thrown from void future"});
+            self->ws.close({websocket::close_code{4000},
+                            "Exception thrown from void future"});
           }
         });
   }
@@ -123,12 +123,13 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   template <typename R> auto create_writer(const R &response) {
     static constexpr const char *response_type =
         is_same<string, R>::value ? "text" : "binary";
-    static const auto message_type = websocket::message_type{
-        is_same<string, R>::value ? websocket::opcode::text
-                                  : websocket::opcode::binary};
+    static const auto message_type =
+        is_same<string, R>::value
+            ? static_cast<void (decltype(ws)::*)(bool)>(&decltype(ws)::text)
+            : static_cast<void (decltype(ws)::*)(bool)>(&decltype(ws)::binary);
 
     return [ self = this->shared_from_this(), &response ]() mutable {
-      self->ws.set_option(message_type);
+      (self->ws.*message_type)(true);
       self->ws.async_write(buffer(response), [self](auto ec) mutable {
         clog << "Thread: " << this_thread::get_id() << "; Written "
              << response_type << " websocket response:" << ec << ".\n";
@@ -148,7 +149,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                                        move(reply_future.get()));
       } catch (...) {
         clog << "Exception thrown from string future\n";
-        self->ws.close({4000, "Exception thrown from string future"});
+        self->ws.close({websocket::close_code{4000},
+                        "Exception thrown from string future"});
         return []() {};
       }
     }));
@@ -163,7 +165,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                                        move(reply_future.get()));
       } catch (...) {
         clog << "Exception thrown from binary future\n";
-        self->ws.close({4000, "Exception thrown from binary future"});
+        self->ws.close({websocket::close_code{4000},
+                        "Exception thrown from binary future"});
         return []() {};
       }
     }));
@@ -219,7 +222,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
     auto reply_future = async(launch::deferred, [
                           self = this->shared_from_this(), request = request
                         ]() mutable->function<void()> {
-                          if (http::is_upgrade(request)) {
+                          if (websocket::is_upgrade(request)) {
                             if (supports_websocket) {
                               self->accept_ws();
                               return [self = move(self)]() mutable {
@@ -230,7 +233,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                           } else
                             self->response = move(self->handler(request));
 
-                          prepare(self->response);
+                          self->response.prepare_payload();
                           clog << self->response;
 
                           return self->create_writer(self->response);
@@ -248,7 +251,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
         return;
       self->respond();
 
-      if (!supports_websocket || !http::is_upgrade(self->request))
+      if (!supports_websocket || !websocket::is_upgrade(self->request))
         self->serve();
     });
   }
@@ -283,42 +286,32 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
   template <bool B = supports_websocket> auto ws_serve() -> enable_if_t<!B> {}
   template <bool B = supports_websocket> auto ws_serve() -> enable_if_t<B> {
-    ws.async_read(
-        ws_stuff.op, buf, [self = this->shared_from_this()](auto ec) mutable {
-          clog << "Read something from websocket: " << ec << '\n';
-          if (ec)
-            return;
-          switch (self->ws_stuff.op) {
-          case websocket::opcode::close:
-            return;
-          default:
-            clog << "Unsupported WebSocket opcode: "
-                 << static_cast<underlying_type_t<decltype(self->ws_stuff.op)>>(
-                        self->ws_stuff.op)
-                 << '\n';
-            break;
-          case websocket::opcode::text: {
-            string message;
-            copy(istream_iterator<char>(self->ws_stuff.stream), {},
-                 back_inserter(message));
-            self->ws_stuff.stream.clear();
-            clog << "Text message received: " << message << '\n';
-            self->do_if_websocket_handles_text(self->ws_stuff.websocket_handler,
-                                               move(message));
-          } break;
-          case websocket::opcode::binary: {
-            vector<uint8_t> message;
-            copy(istream_iterator<char>(self->ws_stuff.stream), {},
-                 back_inserter(message));
-            self->ws_stuff.stream.clear();
-            clog << "Binary message received, size: " << message.size() << '\n';
-            self->do_if_websocket_handles_binary(
-                self->ws_stuff.websocket_handler, move(message));
-          } break;
-          }
+    ws.async_read(buf, [self = this->shared_from_this()](auto ec) mutable {
+      clog << "Read something from websocket: " << ec << '\n';
+      if (ec)
+        return;
+      if (self->ws.got_text()) {
+        string message;
+        copy(istream_iterator<char>(self->ws_stuff.stream), {},
+             back_inserter(message));
+        self->ws_stuff.stream.clear();
+        clog << "Text message received: " << message << '\n';
+        self->do_if_websocket_handles_text(self->ws_stuff.websocket_handler,
+                                           move(message));
+      } else if (self->ws.got_binary()) {
+        vector<uint8_t> message;
+        copy(istream_iterator<char>(self->ws_stuff.stream), {},
+             back_inserter(message));
+        self->ws_stuff.stream.clear();
+        clog << "Binary message received, size: " << message.size() << '\n';
+        self->do_if_websocket_handles_binary(self->ws_stuff.websocket_handler,
+                                             move(message));
+      } else {
+        clog << "Unsupported WebSocket opcode: " << '\n';
+      }
 
-          self->ws_serve();
-        });
+      self->ws_serve();
+    });
   }
 
   template <bool B = websocket_pushes_text || websocket_pushes_binary>
@@ -453,6 +446,7 @@ const filesystem::path web_root = filesystem::current_path();
 map<vector<string>, n2w::plugin> plugins;
 
 void reload_plugins() {
+  clog << "Reloading plugins\n";
   const regex lib_rx{"libn2w-.+"};
   plugins.clear();
   filesystem::recursive_directory_iterator it{
@@ -469,10 +463,10 @@ void reload_plugins() {
     if (path.extension() != ".so")
       continue;
     auto modfile = path.generic_u8string();
+    path.replace_extension("");
     vector<string> hierarchy;
     auto first = begin(path);
     advance(first, distance(cbegin(web_root), cend(web_root)));
-    path.replace_extension("");
     transform(first, end(path), back_inserter(hierarchy),
               mem_fn(&filesystem::path::generic_u8string));
     transform(
@@ -482,6 +476,7 @@ void reload_plugins() {
         });
     plugins.emplace(hierarchy, modfile.c_str());
   }
+  clog << "Plugins reloaded\n";
 }
 
 n2w::plugin server = []() {
@@ -491,6 +486,7 @@ n2w::plugin server = []() {
 }();
 
 string create_modules() {
+  clog << "Creating modules\n";
   reload_plugins();
   string modules = "var n2w = (function () {\nlet n2w = {};\n";
   modules += "n2w['$server'] = {};\n";
@@ -558,10 +554,11 @@ int main() {
 
     http::response<http::string_body>
     operator()(const http::request<http::string_body> &request) {
-      normalized_uri uri{request.url};
+      auto target = request.target();
+      normalized_uri uri{string{begin(target), end(target)}};
       auto path = web_root / uri.path;
       clog << "Thread: " << this_thread::get_id()
-           << "; Root directory: " << web_root << ", URI: " << request.url
+           << "; Root directory: " << web_root << ", URI: " << target
            << ", Path: " << path << '\n';
       std::error_code ec;
       if (equivalent(path, web_root, ec))
@@ -569,27 +566,27 @@ int main() {
 
       http::response<http::string_body> response;
       response.version = request.version;
-      response.status = 200;
-      response.reason = "OK";
+      response.result(200);
+      response.reason("OK");
 
       if (path == web_root / "modules.js") {
-        response.fields.insert("Content-Type", "javascript");
+        response.set(http::field::content_type, "text/javascript");
         response.body = create_modules();
         cerr << response.body;
       } else if (!filesystem::exists(path, ec)) {
-        response.status = 404;
-        response.reason = "Not Found";
+        response.result(404);
+        response.reason("Not Found");
         response.body = ec.message();
       } else if (!filesystem::is_regular_file(path, ec)) {
-        response.status = 403;
-        response.reason = "Forbidden";
+        response.result(403);
+        response.reason("Forbidden");
         response.body = ec ? ec.message() : "Path is not a regular file";
       } else {
         auto extension = path.extension();
         if (extension != ".html" && extension != ".htm" && extension != ".js" &&
             extension != ".css") {
-          response.status = 406;
-          response.reason = "Not Acceptable";
+          response.result(406);
+          response.reason("Not Acceptable");
           response.body = "Only htm[l], javascript and cascasding style sheet "
                           "files acceptable";
         } else {
@@ -606,7 +603,7 @@ int main() {
             type += "javascript";
           else
             type += "plain";
-          response.fields.insert("Content-Type", type);
+          response.set(http::field::content_type, type);
         }
       }
 

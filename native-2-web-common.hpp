@@ -10,6 +10,7 @@
 #include <forward_list>
 #include <list>
 #include <map>
+#include <numeric>
 #include <set>
 #include <string>
 #include <tuple>
