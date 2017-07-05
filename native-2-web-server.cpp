@@ -114,7 +114,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
             reply_future.get();
           } catch (...) {
             clog << "Exception thrown from void future\n";
-            self->ws.close({websocket::close_code{4000},
+            self->ws.close({static_cast<websocket::close_code>(4000),
                             "Exception thrown from void future"});
           }
         });
@@ -149,7 +149,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                                        move(reply_future.get()));
       } catch (...) {
         clog << "Exception thrown from string future\n";
-        self->ws.close({websocket::close_code{4000},
+        self->ws.close({static_cast<websocket::close_code>(4000),
                         "Exception thrown from string future"});
         return []() {};
       }
@@ -165,7 +165,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                                        move(reply_future.get()));
       } catch (...) {
         clog << "Exception thrown from binary future\n";
-        self->ws.close({websocket::close_code{4000},
+        self->ws.close({static_cast<websocket::close_code>(4000),
                         "Exception thrown from binary future"});
         return []() {};
       }
