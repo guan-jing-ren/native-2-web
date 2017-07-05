@@ -1,7 +1,14 @@
-CXX=clang++
+CL=LLV
+GCC=g++-5
+LLV=clang++
+CXX=$($(CL))
 OPFLAGS=-O3 -Os
-STDFLAGS=-std=c++1z -stdlib=libc++
-STDLIBFLAGS=-lc++experimental
+GCC_STDFLAGS=-std=c++1z
+LLV_STDFLAGS=-std=c++1z -stdlib=libc++
+GCC_STDLIBFLAGS=-lstdc++fs
+LLV_STDLIBFLAGS=-lc++experimental
+STDFLAGS=$($(CL)_STDFLAGS)
+STDLIBFLAGS=$($(CL)_STDLIBFLAGS)
 BOOST_INCLUDES=
 BEAST_INCLUDES=$(BOOST_INCLUDES) -I ../Beast/include/
 
