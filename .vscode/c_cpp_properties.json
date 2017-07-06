@@ -1,0 +1,73 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "${workspaceRoot}",
+                "/usr/include",
+                "/usr/local/include"
+            ],
+            "defines": [],
+            "intelliSenseMode": "clang-x64",
+            "browse": {
+                "path": [
+                    "/usr/include",
+                    "/usr/local/include"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            }
+        },
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceRoot}",
+                "~/Projects",
+                "~/clang+llvm-4.0.1-x86_64-linux-gnu-debian8/include/c++/v1/",
+                "~/Projects/Beast/include/",
+                "/usr/include/c++/5.4.0",
+                "/usr/include/x86_64-linux-gnu/c++/5.4.0",
+                "/usr/local/include",
+                "/usr/lib/clang/3.9.1/include",
+                "/usr/include",
+                "/usr/include/x86_64-linux-gnu"
+            ],
+            "defines": [],
+            "intelliSenseMode": "clang-x64",
+            "browse": {
+                "path": [
+                    "~/Projects",
+                    "~/clang+llvm-4.0.1-x86_64-linux-gnu-debian8/include/c++/v1/",
+                    "~/Projects/Beast/include/",
+                    "/usr/include/c++/5.4.0",
+                    "/usr/include/x86_64-linux-gnu/c++/5.4.0",
+                    "/usr/local/include",
+                    "/usr/lib/clang/3.9.1/include",
+                    "/usr/include",
+                    "/usr/include/x86_64-linux-gnu"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            }
+        },
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceRoot}",
+                "C:/Program Files (x86)/Microsoft Visual Studio 14.0/VC/include"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE"
+            ],
+            "intelliSenseMode": "msvc-x64",
+            "browse": {
+                "path": [
+                    "C:/Program Files (x86)/Microsoft Visual Studio 14.0/VC/include/*"
+                ],
+                "limitSymbolsToIncludedHeaders": true,
+                "databaseFilename": ""
+            }
+        }
+    ]
+}
