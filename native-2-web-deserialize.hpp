@@ -3,7 +3,7 @@
 
 #include "native-2-web-common.hpp"
 #include "native-2-web-manglespec.hpp"
-#include <locale>
+#include <codecvt>
 
 namespace n2w {
 using namespace std;
@@ -159,11 +159,16 @@ struct deserializer<basic_string<T, Traits...>> {
   static void deserialize(I &i, basic_string<T, Traits...> &t) {
     string utf8;
     deserialize_sequence<char>(i, back_inserter(utf8));
-    struct cvt : codecvt<T, char, mbstate_t> {};
-    wstring_convert<cvt, T> cvter{
-        "Could not convert from " + mangled<basic_string<char, Traits...>>() +
-        " to " + mangled<basic_string<T, Traits...>>()};
-    t = cvter.from_bytes(utf8);
+    if
+      constexpr(!is_same<T, char>{}) {
+        wstring_convert<codecvt_utf8<T>, T> cvter{
+            "Could not convert from " +
+            mangled<basic_string<char, Traits...>>() + " to " +
+            mangled<basic_string<T, Traits...>>()};
+        t = cvter.from_bytes(utf8);
+      }
+    else
+      t = utf8;
   }
 };
 template <typename T, typename... Traits>
