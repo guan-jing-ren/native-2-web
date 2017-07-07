@@ -36,7 +36,7 @@ template <typename T, typename... Ts> struct csv<T, Ts...> {
   }
 };
 template <typename T, typename U> struct kv {
-  static string value() { return mangled<T>() + "|" + mangled<U>(); }
+  static string value() { return mangled<T>() + "&" + mangled<U>(); }
 };
 }
 
@@ -112,6 +112,19 @@ template <typename S, typename T, typename... Ts, typename... Bs>
 struct mangle_prefix<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
   static string value() { return "{"; }
 };
+template <typename T> struct mangle_prefix<optional<T>> {
+  static string value() { return "?"; }
+};
+template <typename... Ts> struct mangle_prefix<variant<Ts...>> {
+  static string value() { return "|["; }
+};
+template <intmax_t N, intmax_t D> struct mangle_prefix<ratio<N, D>> {
+  static string value() { return "/"; }
+};
+template <typename R, intmax_t N, intmax_t D>
+struct mangle_prefix<chrono::duration<R, ratio<N, D>>> {
+  static string value() { return ":"; }
+};
 template <typename R, typename... Ts> struct mangle_prefix<R(Ts...)> {
   static string value() { return "^"; }
 };
@@ -169,6 +182,15 @@ template <> struct mangle<double> {
 };
 template <> struct mangle<long double> {
   static string value() { return "f7"; }
+};
+template <> struct mangle<complex<float>> {
+  static string value() { return "j5"; }
+};
+template <> struct mangle<complex<double>> {
+  static string value() { return "j6"; }
+};
+template <> struct mangle<complex<long double>> {
+  static string value() { return "j7"; }
 };
 
 template <typename T, size_t N> struct mangle<T[N]> {
@@ -280,13 +302,40 @@ struct mangle<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
 template <typename E> struct mangle<enumeration<E>> {
   static string value() {
     return mangle_prefixed<E>() + mangled<underlying_type_t<E>>() +
-           accumulate(
-               cbegin(enumeration<E>::e_to_str), cend(enumeration<E>::e_to_str),
-               string{}, [](auto &&s, auto e) {
-                 return s +=
-                        "|" +
-                        to_string(static_cast<underlying_type_t<E>>(e.first));
-               });
+           accumulate(cbegin(enumeration<E>::e_to_str),
+                      cend(enumeration<E>::e_to_str), string{},
+                      [](auto &&s, auto e) {
+                        return s += "," +
+                                    to_string(static_cast<underlying_type_t<E>>(
+                                        e.first));
+                      }) +
+           "]";
+  }
+};
+
+template <typename T> struct mangle<optional<T>> {
+  static string value() {
+    return mangle_prefixed<optional<T>>() + mangled<T>();
+  }
+};
+
+template <typename... Ts> struct mangle<variant<Ts...>> {
+  static string value() {
+    return mangle_prefixed<variant<Ts...>>() + csv<Ts...>::value() + "]";
+  }
+};
+
+template <intmax_t N, intmax_t D> struct mangle<ratio<N, D>> {
+  static string value() {
+    return mangle_prefixed<ratio<N, D>>() + to_string(N) + "," + to_string(D);
+  }
+};
+
+template <typename R, intmax_t N, intmax_t D>
+struct mangle<chrono::duration<R, ratio<N, D>>> {
+  static string value() {
+    return mangle_prefixed<chrono::duration<R, ratio<N, D>>>() + mangled<R>() +
+           mangled<ratio<N, D>>();
   }
 };
 
