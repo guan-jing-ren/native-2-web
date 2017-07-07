@@ -59,6 +59,7 @@
         "optional": "cpp",
         "unordered_set": "cpp",
         "forward_list": "cpp",
-        "set": "cpp"
+        "set": "cpp",
+        "regex": "cpp"
     }
 }

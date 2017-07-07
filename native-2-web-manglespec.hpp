@@ -128,6 +128,13 @@ struct mangle_prefix<chrono::duration<R, ratio<N, D>>> {
 template <typename R, typename... Ts> struct mangle_prefix<R(Ts...)> {
   static string value() { return "^"; }
 };
+template <typename T> struct mangle_prefix<atomic<T>> {
+  static string value() { return "%"; }
+};
+template <typename T, typename... Ts>
+struct mangle_prefix<basic_regex<T, Ts...>> {
+  static string value() { return "*"; }
+};
 
 template <> struct mangle<void> {
   static string value() { return "0"; }
@@ -336,6 +343,16 @@ struct mangle<chrono::duration<R, ratio<N, D>>> {
   static string value() {
     return mangle_prefixed<chrono::duration<R, ratio<N, D>>>() + mangled<R>() +
            mangled<ratio<N, D>>();
+  }
+};
+
+template <typename T> struct mangle<atomic<T>> {
+  static string value() { return mangle_prefixed<atomic<T>>() + mangled<T>(); }
+};
+
+template <typename T, typename... Ts> struct mangle<basic_regex<T, Ts...>> {
+  static string value() {
+    return mangle_prefixed<basic_regex<T, Ts...>>() + mangled<T>();
   }
 };
 
