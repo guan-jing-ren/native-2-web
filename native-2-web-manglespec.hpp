@@ -284,7 +284,7 @@ template <typename E> struct mangle<enumeration<E>> {
                cbegin(enumeration<E>::e_to_str), cend(enumeration<E>::e_to_str),
                string{}, [](auto &&s, auto e) {
                  return s +=
-                        '|' +
+                        "|" +
                         to_string(static_cast<underlying_type_t<E>>(e.first));
                });
   }
