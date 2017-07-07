@@ -36,7 +36,7 @@ template <typename T, typename... Ts> struct csv<T, Ts...> {
   }
 };
 template <typename T, typename U> struct kv {
-  static string value() { return mangled<T>() + ":" + mangled<U>(); }
+  static string value() { return mangled<T>() + "|" + mangled<U>(); }
 };
 }
 
