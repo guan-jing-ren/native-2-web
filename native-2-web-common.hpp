@@ -17,7 +17,6 @@
 #include <numeric>
 #include <optional>
 #include <ratio>
-#include <regex>
 #include <set>
 #include <string>
 #include <tuple>
