@@ -348,6 +348,20 @@ template <size_t N> struct mangle<bitset<N>> {
   static string value() { return mangle_prefixed<bitset<N>>() + to_string(N); }
 };
 
+using namespace std::experimental;
+template <> struct mangle<filesystem::path> {
+  static string value() { return "/p"; }
+};
+template <> struct mangle<filesystem::directory_entry> {
+  static string value() { return "/d"; }
+};
+template <> struct mangle<filesystem::file_status> {
+  static string value() { return "/f"; }
+};
+template <> struct mangle<filesystem::space_info> {
+  static string value() { return "/s"; }
+};
+
 #define N2W__MANGLE_SPEC(s, m, ...)                                            \
   namespace n2w {                                                              \
   template <> struct mangle<s> {                                               \
@@ -391,4 +405,40 @@ template <typename R, typename... Ts> string function_address(R (*f)(Ts...)) {
 }
 }
 
+using namespace std::experimental;
+using filesystem::file_type;
+using filesystem::perms;
+// using filesystem::perm_options;
+using filesystem::copy_options;
+using filesystem::directory_options;
+N2W__SPECIALIZE_ENUM(file_type,
+                     N2W__MEMBERS(file_type::none, file_type::not_found,
+                                  file_type::regular, file_type::directory,
+                                  file_type::symlink, file_type::block,
+                                  file_type::character, file_type::fifo,
+                                  file_type::socket, file_type::unknown));
+N2W__SPECIALIZE_ENUM(
+    perms,
+    N2W__MEMBERS(perms::none, perms::owner_read, perms::owner_write,
+                 perms::owner_exec, perms::owner_all, perms::group_read,
+                 perms::group_write, perms::group_exec, perms::group_all,
+                 perms::others_read, perms::others_write, perms::others_exec,
+                 perms::others_all, perms::all, perms::set_uid, perms::set_gid,
+                 perms::sticky_bit, perms::mask, perms::unknown));
+// N2W__SPECIALIZE_ENUM(perm_options,
+//                      N2W__MEMBERS(perm_options::replace, perm_options::add,
+//                                   perm_options::remove,
+//                                   perm_options::nofollow));
+N2W__SPECIALIZE_ENUM(
+    copy_options,
+    N2W__MEMBERS(copy_options::none, copy_options::skip_existing,
+                 copy_options::overwrite_existing,
+                 copy_options::update_existing, copy_options::recursive,
+                 copy_options::copy_symlinks, copy_options::skip_symlinks,
+                 copy_options::directories_only, copy_options::create_symlinks,
+                 copy_options::create_hard_links));
+N2W__SPECIALIZE_ENUM(directory_options,
+                     N2W__MEMBERS(directory_options::none,
+                                  directory_options::follow_directory_symlink,
+                                  directory_options::skip_permission_denied));
 #endif

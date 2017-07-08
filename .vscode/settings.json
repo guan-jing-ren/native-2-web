@@ -62,6 +62,7 @@
         "set": "cpp",
         "regex": "cpp",
         "complex": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "locale": "cpp"
     }
 }

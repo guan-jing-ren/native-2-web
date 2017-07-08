@@ -319,6 +319,50 @@ template <size_t N> struct serializer<bitset<N>> {
     serializer<string>::serialize(b.to_string(), i);
   }
 };
+template <> struct serializer<filesystem::space_info> {
+  template <typename I>
+  static void serialize(const filesystem::space_info &s, I &i) {
+    serializer<decltype(s.capacity)>::serialize(s.capacity, i);
+    serializer<decltype(s.free)>::serialize(s.free, i);
+    serializer<decltype(s.available)>::serialize(s.available, i);
+  }
+};
+template <> struct serializer<filesystem::file_status> {
+  template <typename I>
+  static void serialize(const filesystem::file_status &f, I &i) {
+    serializer<decltype(f.type())>::serialize(f.type(), i);
+    serializer<decltype(f.permissions())>::serialize(f.permissions(), i);
+  }
+};
+template <> struct serializer<filesystem::path> {
+  template <typename I> static void serialize(const filesystem::path &p, I &i) {
+    for (auto &s : p)
+      serializer<string>::serialize(s.generic_u8string(), i);
+    serializer<string>::serialize(p.stem().generic_u8string(), i);
+    serializer<string>::serialize(p.extension().generic_u8string(), i);
+    serializer<bool>::serialize(p.is_absolute(), i);
+  }
+};
+template <> struct serializer<filesystem::directory_entry> {
+  template <typename I>
+  static void serialize(const filesystem::directory_entry &d, I &i) {
+    serializer<filesystem::path>::serialize(d.path(), i);
+    // serializer<bool>::serialize(d.exists(), i);
+    serializer<bool>::serialize(filesystem::exists(d), i);
+    // serializer<decltype(d.file_size())>::serialize(d.file_size(), i);
+    serializer<decltype(filesystem::file_size(d.path()))>::serialize(
+        filesystem::file_size(d.path()), i);
+    // serializer<decltype(d.hard_link_count())>::serialize(d.hard_link_count(),
+    //                                                      i);
+    serializer<decltype(filesystem::hard_link_count(d.path()))>::serialize(
+        filesystem::hard_link_count(d.path()), i);
+    // serializer<decltype(d.last_write_time().time_since_epoch())>::serialize(
+    //     d.last_write_time().time_since_epoch(), i);
+    serializer<decltype(filesystem::last_write_time(d).time_since_epoch())>::
+        serialize(filesystem::last_write_time(d).time_since_epoch(), i);
+    serializer<filesystem::file_status>::serialize(d.symlink_status(), i);
+  }
+};
 
 #define N2W__SERIALIZE_SPEC(s, m, ...)                                         \
   namespace n2w {                                                              \
