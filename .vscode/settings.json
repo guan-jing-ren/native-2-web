@@ -63,6 +63,11 @@
         "regex": "cpp",
         "complex": "cpp",
         "random": "cpp",
-        "locale": "cpp"
+        "locale": "cpp",
+        "__functional_base": "cpp",
+        "__functional_base_03": "cpp",
+        "__hash_table": "cpp",
+        "__tree": "cpp",
+        "__split_buffer": "cpp"
     }
 }

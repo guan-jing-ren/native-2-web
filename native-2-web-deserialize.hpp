@@ -331,6 +331,14 @@ template <size_t N> struct deserializer<bitset<N>> {
     b = bitset<N>{s};
   }
 };
+template <> struct deserializer<filesystem::space_info> {
+  template <typename I>
+  static void deserialize(I &i, filesystem::space_info &s) {
+    deserializer<decltype(s.capacity)>::deserialize(i, s.capacity);
+    deserializer<decltype(s.free)>::deserialize(i, s.free);
+    deserializer<decltype(s.available)>::deserialize(i, s.available);
+  }
+};
 template <> struct deserializer<filesystem::file_status> {
   template <typename I>
   static void deserialize(I &i, filesystem::file_status &f) {
@@ -348,6 +356,34 @@ template <> struct deserializer<filesystem::path> {
     deserializer<decltype(segments)>::deserialize(i, segments);
     p = accumulate(cbegin(segments), cend(segments), filesystem::path{},
                    divides<>{});
+  }
+};
+template <> struct deserializer<filesystem::directory_entry> {
+  template <typename I>
+  static void deserialize(I &i, filesystem::directory_entry &d) {
+    filesystem::path path;
+    deserializer<filesystem::path>::deserialize(i, path);
+    bool exists;
+    // deserializer<bool>::deserialize(i,exists);
+    deserializer<bool>::deserialize(i, exists);
+    decltype(filesystem::file_size(d.path())) file_size;
+    // deserializer<decltype(d.file_size())>::deserialize(i,file_size);
+    deserializer<decltype(filesystem::file_size(d.path()))>::deserialize(
+        i, file_size);
+    decltype(filesystem::hard_link_count(d.path())) hard_link_count;
+    // deserializer<decltype(d.hard_link_count())>::deserialize(i,hard_link_count,
+    //                                                      i);
+    deserializer<decltype(filesystem::hard_link_count(d.path()))>::deserialize(
+        i, hard_link_count);
+    decltype(
+        filesystem::last_write_time(d).time_since_epoch()) time_since_epoch;
+    // deserializer<decltype(d.last_write_time().time_since_epoch())>::deserialize(i,
+    //     time_since_epoch);
+    deserializer<decltype(filesystem::last_write_time(d).time_since_epoch())>::
+        deserialize(i, time_since_epoch);
+    filesystem::file_status symlink_status;
+    deserializer<filesystem::file_status>::deserialize(i, symlink_status);
+    d = filesystem::directory_entry(path);
   }
 };
 
