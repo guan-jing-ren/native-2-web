@@ -119,7 +119,7 @@ template <typename... Ts> struct mangle_prefix<variant<Ts...>> {
   static string value() { return "|["; }
 };
 template <intmax_t N, intmax_t D> struct mangle_prefix<ratio<N, D>> {
-  static string value() { return "/"; }
+  static string value() { return "%"; }
 };
 template <typename R, intmax_t N, intmax_t D>
 struct mangle_prefix<chrono::duration<R, ratio<N, D>>> {
@@ -129,10 +129,6 @@ template <typename R, typename... Ts> struct mangle_prefix<R(Ts...)> {
   static string value() { return "^"; }
 };
 template <typename T> struct mangle_prefix<atomic<T>> {
-  static string value() { return "%"; }
-};
-template <typename T, typename... Ts>
-struct mangle_prefix<basic_regex<T, Ts...>> {
   static string value() { return "*"; }
 };
 
@@ -348,12 +344,6 @@ struct mangle<chrono::duration<R, ratio<N, D>>> {
 
 template <typename T> struct mangle<atomic<T>> {
   static string value() { return mangle_prefixed<atomic<T>>() + mangled<T>(); }
-};
-
-template <typename T, typename... Ts> struct mangle<basic_regex<T, Ts...>> {
-  static string value() {
-    return mangle_prefixed<basic_regex<T, Ts...>>() + mangled<T>();
-  }
 };
 
 #define N2W__MANGLE_SPEC(s, m, ...)                                            \
