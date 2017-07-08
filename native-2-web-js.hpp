@@ -556,4 +556,6 @@ std::string create_html(R (*f)(Args...), std::string name) {
 }
 }
 
+N2W__JS_CONV(filesystem::path, vector<string>);
+
 #endif
