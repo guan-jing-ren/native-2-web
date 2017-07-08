@@ -314,6 +314,11 @@ template <typename T> struct serializer<atomic<T>> {
     serializer<T>::serialize(a, i);
   }
 };
+template <size_t N> struct serializer<bitset<N>> {
+  template <typename I> static void serialize(const bitset<N> &b, I &i) {
+    serializer<string>::serialize(b.to_string(), i);
+  }
+};
 
 #define N2W__SERIALIZE_SPEC(s, m, ...)                                         \
   namespace n2w {                                                              \

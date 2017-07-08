@@ -60,6 +60,7 @@
         "unordered_set": "cpp",
         "forward_list": "cpp",
         "set": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "complex": "cpp"
     }
 }
