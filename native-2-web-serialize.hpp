@@ -336,11 +336,10 @@ template <> struct serializer<filesystem::file_status> {
 };
 template <> struct serializer<filesystem::path> {
   template <typename I> static void serialize(const filesystem::path &p, I &i) {
-    for (auto &s : p)
-      serializer<string>::serialize(s.generic_u8string(), i);
-    serializer<string>::serialize(p.stem().generic_u8string(), i);
-    serializer<string>::serialize(p.extension().generic_u8string(), i);
-    serializer<bool>::serialize(p.is_absolute(), i);
+    vector<string> segments;
+    transform(cbegin(p), cend(p), back_inserter(segments),
+              std::mem_fn(&filesystem::path::generic_u8string));
+    serializer<decltype(segments)>::serialize(segments, i);
   }
 };
 template <> struct serializer<filesystem::directory_entry> {

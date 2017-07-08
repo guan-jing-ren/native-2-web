@@ -331,6 +331,25 @@ template <size_t N> struct deserializer<bitset<N>> {
     b = bitset<N>{s};
   }
 };
+template <> struct deserializer<filesystem::file_status> {
+  template <typename I>
+  static void deserialize(I &i, filesystem::file_status &f) {
+    decltype(f.type()) type;
+    decltype(f.permissions()) permissions;
+    deserializer<decltype(type)>::deserialize(i, type);
+    deserializer<decltype(permissions)>::deserialize(i, permissions);
+    f.type(type);
+    f.permissions(permissions);
+  }
+};
+template <> struct deserializer<filesystem::path> {
+  template <typename I> static void deserialize(I &i, filesystem::path &p) {
+    vector<string> segments;
+    deserializer<decltype(segments)>::deserialize(i, segments);
+    p = accumulate(cbegin(segments), cend(segments), filesystem::path{},
+                   divides<>{});
+  }
+};
 
 #define N2W__DESERIALIZE_SPEC(s, m, ...)                                       \
   namespace n2w {                                                              \
