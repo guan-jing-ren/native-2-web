@@ -265,6 +265,72 @@ struct deserializer<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
     deserialize_heterogenous(i, t, make_index_sequence<sizeof...(Ts) + 1>{});
   }
 };
+template <typename T> struct deserializer<optional<T>> {
+  template <typename I> static void deserialize(I &i, optional<T> &o) {
+    bool b;
+    deserializer<bool>::deserialize(i, b);
+    if (b) {
+      o = T{};
+      deserializer<T>::deserialize(i, *o);
+    }
+  }
+};
+template <typename... Ts> struct deserializer<variant<Ts...>> {
+  template <decltype(variant_npos) N>
+  static int init_variant(decltype(N) i, variant<Ts...> &v) {
+    if (i != N)
+      return 0;
+    v = variant_alternative_t<N, variant<Ts...>>{};
+    return 0;
+  }
+  template <size_t... Ns>
+  static void init_variant(decltype(variant_npos) i, variant<Ts...> &v,
+                           index_sequence<Ns...>) {
+    initializer_list<int> rc = {init_variant<Ns>(i, v)...};
+    (void)rc;
+  }
+  template <typename I> static void deserialize(I &i, variant<Ts...> &v) {
+    auto index = variant_npos;
+    deserializer<decltype(index)>::deserialize(i, index);
+    init_variant(index, v, make_index_sequence<sizeof...(Ts)>{});
+    visit(
+        [&i](auto &t) {
+          deserializer<remove_reference_t<decltype(t)>>::deserialize(i, t);
+        },
+        v);
+  }
+};
+template <typename R, intmax_t N, intmax_t D>
+struct deserializer<chrono::duration<R, ratio<N, D>>> {
+  template <typename I>
+  static void deserialize(I &i, chrono::duration<R, ratio<N, D>> &t) {
+    R r;
+    deserializer<R>::deserialize(r, i);
+    t = chrono::duration<R, ratio<N, D>>{r};
+  }
+};
+template <typename T> struct deserializer<complex<T>> {
+  template <typename I> static void deserialize(I &i, complex<T> &c) {
+    T r, j;
+    deserializer<T>::deserialize(i, r);
+    deserializer<T>::deserialize(i, j);
+    c = complex<T>{r, j};
+  }
+};
+template <typename T> struct deserializer<atomic<T>> {
+  template <typename I> static void deserialize(I &i, atomic<T> &a) {
+    T t;
+    deserializer<T>::deserialize(i, t);
+    a = t;
+  }
+};
+template <size_t N> struct deserializer<bitset<N>> {
+  template <typename I> static void deserialize(I &i, bitset<N> &b) {
+    string s;
+    deserializer<string>::deserialize(i, s);
+    b = bitset<N>{s};
+  }
+};
 
 #define N2W__DESERIALIZE_SPEC(s, m, ...)                                       \
   namespace n2w {                                                              \

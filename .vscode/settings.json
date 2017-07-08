@@ -61,6 +61,7 @@
         "forward_list": "cpp",
         "set": "cpp",
         "regex": "cpp",
-        "complex": "cpp"
+        "complex": "cpp",
+        "random": "cpp"
     }
 }
