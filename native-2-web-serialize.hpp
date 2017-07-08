@@ -278,6 +278,42 @@ struct serializer<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
     serialize_heterogenous(t, make_index_sequence<sizeof...(Ts) + 1>{}, i);
   }
 };
+template <typename T> struct serializer<optional<T>> {
+  template <typename I> static void serialize(const optional<T> &o, I &i) {
+    serializer<bool>::serialize(o, i);
+    if (o)
+      serializer<T>::serialize(*o, i);
+  }
+};
+template <typename... Ts> struct serializer<variant<Ts...>> {
+  template <typename I> static void serialize(const variant<Ts...> &v, I &i) {
+    serializer<decltype(v.index())>::serialize(v.index(), i);
+    visit(
+        [&i](const auto &t) {
+          serializer<remove_cv_t<remove_reference_t<decltype(t)>>>::serialize(
+              t, i);
+        },
+        v);
+  }
+};
+template <typename R, intmax_t N, intmax_t D>
+struct serializer<chrono::duration<R, ratio<N, D>>> {
+  template <typename I>
+  static string serialize(const chrono::duration<R, ratio<N, D>> &t, I &i) {
+    serializer<R>::serialize(t.count(), i);
+  }
+};
+template <typename T> struct serializer<complex<T>> {
+  template <typename I> static string serialize(const complex<T> &c, I &i) {
+    serializer<T>::serialize(c.real(), i);
+    serializer<T>::serialize(c.imag(), i);
+  }
+};
+template <typename T> struct serializer<atomic<T>> {
+  template <typename I> static string serialize(const atomic<T> &a, I &i) {
+    serializer<T>::serialize(a, i);
+  }
+};
 
 #define N2W__SERIALIZE_SPEC(s, m, ...)                                         \
   namespace n2w {                                                              \
