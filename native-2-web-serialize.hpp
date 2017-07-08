@@ -299,18 +299,18 @@ template <typename... Ts> struct serializer<variant<Ts...>> {
 template <typename R, intmax_t N, intmax_t D>
 struct serializer<chrono::duration<R, ratio<N, D>>> {
   template <typename I>
-  static string serialize(const chrono::duration<R, ratio<N, D>> &t, I &i) {
+  static void serialize(const chrono::duration<R, ratio<N, D>> &t, I &i) {
     serializer<R>::serialize(t.count(), i);
   }
 };
 template <typename T> struct serializer<complex<T>> {
-  template <typename I> static string serialize(const complex<T> &c, I &i) {
+  template <typename I> static void serialize(const complex<T> &c, I &i) {
     serializer<T>::serialize(c.real(), i);
     serializer<T>::serialize(c.imag(), i);
   }
 };
 template <typename T> struct serializer<atomic<T>> {
-  template <typename I> static string serialize(const atomic<T> &a, I &i) {
+  template <typename I> static void serialize(const atomic<T> &a, I &i) {
     serializer<T>::serialize(a, i);
   }
 };
