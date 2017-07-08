@@ -125,11 +125,11 @@ template <typename R, intmax_t N, intmax_t D>
 struct mangle_prefix<chrono::duration<R, ratio<N, D>>> {
   static string value() { return ":"; }
 };
-template <typename R, typename... Ts> struct mangle_prefix<R(Ts...)> {
-  static string value() { return "^"; }
-};
 template <typename T> struct mangle_prefix<atomic<T>> {
   static string value() { return "*"; }
+};
+template <typename R, typename... Ts> struct mangle_prefix<R(Ts...)> {
+  static string value() { return "^"; }
 };
 
 template <> struct mangle<void> {
