@@ -287,7 +287,7 @@ template <typename T> struct serializer<optional<T>> {
 };
 template <typename... Ts> struct serializer<variant<Ts...>> {
   template <typename I> static void serialize(const variant<Ts...> &v, I &i) {
-    serializer<decltype(v.index())>::serialize(v.index(), i);
+    serializer<uint32_t>::serialize(v.index(), i);
     visit(
         [&i](const auto &t) {
           serializer<remove_cv_t<remove_reference_t<decltype(t)>>>::serialize(
@@ -322,9 +322,9 @@ template <size_t N> struct serializer<bitset<N>> {
 template <> struct serializer<filesystem::space_info> {
   template <typename I>
   static void serialize(const filesystem::space_info &s, I &i) {
-    serializer<decltype(s.capacity)>::serialize(s.capacity, i);
-    serializer<decltype(s.free)>::serialize(s.free, i);
-    serializer<decltype(s.available)>::serialize(s.available, i);
+    serializer<uint32_t>::serialize(s.capacity, i);
+    serializer<uint32_t>::serialize(s.free, i);
+    serializer<uint32_t>::serialize(s.available, i);
   }
 };
 template <> struct serializer<filesystem::file_status> {
@@ -348,13 +348,11 @@ template <> struct serializer<filesystem::directory_entry> {
     serializer<filesystem::path>::serialize(d.path(), i);
     // serializer<bool>::serialize(d.exists(), i);
     serializer<bool>::serialize(filesystem::exists(d), i);
-    // serializer<decltype(d.file_size())>::serialize(d.file_size(), i);
-    serializer<decltype(filesystem::file_size(d.path()))>::serialize(
-        filesystem::file_size(d.path()), i);
-    // serializer<decltype(d.hard_link_count())>::serialize(d.hard_link_count(),
+    // serializer<uint32_t>::serialize(d.file_size(), i);
+    serializer<uint32_t>::serialize(filesystem::file_size(d.path()), i);
+    // serializer<uint32_t>::serialize(d.hard_link_count(),
     //                                                      i);
-    serializer<decltype(filesystem::hard_link_count(d.path()))>::serialize(
-        filesystem::hard_link_count(d.path()), i);
+    serializer<uint32_t>::serialize(filesystem::hard_link_count(d.path()), i);
     // serializer<decltype(d.last_write_time().time_since_epoch())>::serialize(
     //     d.last_write_time().time_since_epoch(), i);
     serializer<decltype(filesystem::last_write_time(d).time_since_epoch())>::

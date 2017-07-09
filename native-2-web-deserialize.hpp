@@ -277,21 +277,21 @@ template <typename T> struct deserializer<optional<T>> {
 };
 template <typename... Ts> struct deserializer<variant<Ts...>> {
   template <decltype(variant_npos) N>
-  static int init_variant(decltype(N) i, variant<Ts...> &v) {
+  static int init_variant(uint32_t i, variant<Ts...> &v) {
     if (i != N)
       return 0;
     v = variant_alternative_t<N, variant<Ts...>>{};
     return 0;
   }
   template <size_t... Ns>
-  static void init_variant(decltype(variant_npos) i, variant<Ts...> &v,
+  static void init_variant(uint32_t i, variant<Ts...> &v,
                            index_sequence<Ns...>) {
     initializer_list<int> rc = {init_variant<Ns>(i, v)...};
     (void)rc;
   }
   template <typename I> static void deserialize(I &i, variant<Ts...> &v) {
     auto index = variant_npos;
-    deserializer<decltype(index)>::deserialize(i, index);
+    deserializer<uint32_t>::deserialize(i, index);
     init_variant(index, v, make_index_sequence<sizeof...(Ts)>{});
     visit(
         [&i](auto &t) {
@@ -334,9 +334,9 @@ template <size_t N> struct deserializer<bitset<N>> {
 template <> struct deserializer<filesystem::space_info> {
   template <typename I>
   static void deserialize(I &i, filesystem::space_info &s) {
-    deserializer<decltype(s.capacity)>::deserialize(i, s.capacity);
-    deserializer<decltype(s.free)>::deserialize(i, s.free);
-    deserializer<decltype(s.available)>::deserialize(i, s.available);
+    deserializer<uint32_t>::deserialize(i, s.capacity);
+    deserializer<uint32_t>::deserialize(i, s.free);
+    deserializer<uint32_t>::deserialize(i, s.available);
   }
 };
 template <> struct deserializer<filesystem::file_status> {
@@ -367,14 +367,11 @@ template <> struct deserializer<filesystem::directory_entry> {
     // deserializer<bool>::deserialize(i,exists);
     deserializer<bool>::deserialize(i, exists);
     decltype(filesystem::file_size(d.path())) file_size;
-    // deserializer<decltype(d.file_size())>::deserialize(i,file_size);
-    deserializer<decltype(filesystem::file_size(d.path()))>::deserialize(
-        i, file_size);
-    decltype(filesystem::hard_link_count(d.path())) hard_link_count;
-    // deserializer<decltype(d.hard_link_count())>::deserialize(i,hard_link_count,
-    //                                                      i);
-    deserializer<decltype(filesystem::hard_link_count(d.path()))>::deserialize(
-        i, hard_link_count);
+    // deserializer<uint32_t>::deserialize(i,file_size);
+    deserializer<uint32_t>::deserialize(i, file_size);
+    uint32_t hard_link_count;
+    // deserializer<uint32_t>::deserialize(i, hard_link_count, i);
+    deserializer<uint32_t>::deserialize(i, hard_link_count);
     decltype(
         filesystem::last_write_time(d).time_since_epoch()) time_since_epoch;
     // deserializer<decltype(d.last_write_time().time_since_epoch())>::deserialize(i,
