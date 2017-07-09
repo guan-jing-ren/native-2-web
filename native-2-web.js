@@ -187,6 +187,23 @@ function read_multiarray(data, offset, type, extents) {
   return [ dest, offset ];
   }
 
+function read_optional(data, offset, reader) {
+  let tag = false;
+  [tag, offset] = read_bool(data, offset);
+  if (tag)
+    [tag, offset] = reader(data, offset);
+  else
+    tag = null;
+  return [ tag, offset ];
+  }
+
+function read_variant(data, offset, index_reader, readers) {
+  let index = -1;
+  [index, offset] = index_reader(data, offset);
+  [index, offset] = readers[index](data, offset);
+  return [ index, offset ];
+  }
+
 //////////////////////////////////
 // Javascript to native writers //
 //////////////////////////////////
@@ -339,6 +356,19 @@ function write_multiarray(object, type, extents) {
   else
     array = write_structures_bounded(object, type, total);
   let buffer = concat_buffer(write_number(total, 'setUint32'), array);
+  return buffer;
+  }
+
+function write_optional(object, writer) {
+  let buffer = write_bool(object ? true : false);
+  if (object)
+    buffer = concat_buffer(buffer, writer(object));
+  return buffer;
+  }
+
+function write_variant(object, index, index_writer, writers) {
+  let buffer = index_writer(index);
+  buffer = concat_buffer(buffer, writers[index](object));
   return buffer;
   }
 
