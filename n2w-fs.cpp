@@ -1,9 +1,6 @@
 #include "native-2-web-plugin.hpp"
 
-#include <experimental/filesystem>
-#include <functional>
 #include <iostream>
-#include <string>
 
 using namespace std;
 using namespace experimental;

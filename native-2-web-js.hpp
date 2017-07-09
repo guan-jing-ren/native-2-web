@@ -532,6 +532,59 @@ const string to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>>::base_names =
                }) +
     "];\n";
 
+template <typename T> struct to_js<optional<T>> {
+  static string create_reader() { return R"()"; }
+  static string create_writer() { return R"()"; }
+  static string create_html() { return R"()"; }
+};
+
+template <typename... Ts> struct to_js<variant<Ts...>> {
+  static string create_reader() { return R"()"; }
+  static string create_writer() { return R"()"; }
+  static string create_html() { return R"()"; }
+};
+
+template <typename R, intmax_t N, intmax_t D>
+struct to_js<chrono::duration<R, ratio<N, D>>> : to_js<R> {
+  static string create_html() { return R"()"; }
+};
+
+template <typename T> struct to_js<complex<T>> : to_js<pair<T, T>> {
+  static string create_html() { return R"()"; }
+};
+
+template <typename T> struct to_js<atomic<T>> : to_js<T> {};
+
+template <size_t N> struct to_js<bitset<N>> : to_js<string> {
+  static string create_html() { return R"()"; }
+};
+
+template <>
+struct to_js<filesystem::space_info>
+    : to_js<tuple<uint32_t, uint32_t, uint32_t>> {
+  static string create_html() { return R"()"; }
+};
+
+template <>
+struct to_js<filesystem::file_status>
+    : to_js<pair<filesystem::file_type, filesystem::perms>> {
+  static string create_html() { return R"()"; }
+};
+
+template <> struct to_js<filesystem::path> : to_js<vector<string>> {
+  // static string create_html() { return R"()"; }
+};
+
+template <>
+struct to_js<filesystem::directory_entry>
+    : to_js<tuple<filesystem::path, bool, uint32_t, uint32_t,
+                  decltype(filesystem::last_write_time(
+                               declval<filesystem::directory_entry>())
+                               .time_since_epoch()),
+                  filesystem::file_status>> {
+  static string create_html() { return R"()"; }
+};
+
 #define N2W__JS_SPEC(s, m, ...)                                                \
   namespace n2w {                                                              \
   template <>                                                                  \
@@ -555,7 +608,5 @@ std::string create_html(R (*f)(Args...), std::string name) {
 })";
 }
 }
-
-N2W__JS_CONV(filesystem::path, vector<string>);
 
 #endif
