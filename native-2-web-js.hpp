@@ -550,25 +550,61 @@ struct to_js<chrono::duration<R, ratio<N, D>>> : to_js<R> {
 };
 
 template <typename T> struct to_js<complex<T>> : to_js<pair<T, T>> {
-  static string create_html() { return R"()"; }
+  static string create_html() {
+    return R"(function (parent, value, dispatcher) {
+  this.signature = ')" +
+           std::regex_replace(mangled<complex<T>>(), std::regex{"'"}, "\\'") +
+           R"(';
+  return (this.html_structure || html_structure)(parent, value, dispatcher, [)" +
+           to_js_heterogenous<T, T>::create_html() + R"(], ['real', 'imag']);
+}.bind(this))";
+  }
 };
 
 template <typename T> struct to_js<atomic<T>> : to_js<T> {};
 
 template <size_t N> struct to_js<bitset<N>> : to_js<string> {
-  static string create_html() { return R"()"; }
+  static string create_html() {
+    return R"(function (parent, value, dispatcher) {
+  this.signature = ')" +
+           std::regex_replace(mangled<bitset<N>>(), std::regex{"'"}, "\\'") +
+           R"(';
+  return (this.html_string || html_string)(parent, value, dispatcher);
+  }.bind(this))";
+  }
 };
 
 template <>
 struct to_js<filesystem::space_info>
     : to_js<tuple<uint32_t, uint32_t, uint32_t>> {
-  static string create_html() { return R"()"; }
+  static string create_html() {
+    return R"(function (parent, value, dispatcher) {
+  this.signature = ')" +
+           std::regex_replace(mangled<filesystem::space_info>(),
+                              std::regex{"'"}, "\\'") +
+           R"(';
+  return (this.html_structure || html_structure)(parent, value, dispatcher, [)" +
+           to_js_heterogenous<uint32_t, uint32_t, uint32_t>::create_html() +
+           R"(], ['capacity', 'free', 'available']);
+}.bind(this))";
+  }
 };
 
 template <>
 struct to_js<filesystem::file_status>
     : to_js<pair<filesystem::file_type, filesystem::perms>> {
-  static string create_html() { return R"()"; }
+  static string create_html() {
+    return R"(function (parent, value, dispatcher) {
+  this.signature = ')" +
+           std::regex_replace(mangled<filesystem::file_status>(),
+                              std::regex{"'"}, "\\'") +
+           R"(';
+  return (this.html_structure || html_structure)(parent, value, dispatcher, [)" +
+           to_js_heterogenous<filesystem::file_type,
+                              filesystem::perms>::create_html() +
+           R"(], ['file type', 'permissions']);
+}.bind(this))";
+  }
 };
 
 template <> struct to_js<filesystem::path> : to_js<vector<string>> {
@@ -582,7 +618,22 @@ struct to_js<filesystem::directory_entry>
                                declval<filesystem::directory_entry>())
                                .time_since_epoch()),
                   filesystem::file_status>> {
-  static string create_html() { return R"()"; }
+  static string create_html() {
+    return R"(function (parent, value, dispatcher) {
+  this.signature = ')" +
+           std::regex_replace(mangled<filesystem::directory_entry>(),
+                              std::regex{"'"}, "\\'") +
+           R"(';
+  return (this.html_structure || html_structure)(parent, value, dispatcher, [)" +
+           to_js_heterogenous<filesystem::path, bool, uint32_t, uint32_t,
+                              decltype(
+                                  filesystem::last_write_time(
+                                      declval<filesystem::directory_entry>())
+                                      .time_since_epoch()),
+                              filesystem::file_status>::create_html() +
+           R"(], ['path', 'exists', 'file size', 'hard link count', 'time since epoch', 'symlink status']);
+}.bind(this))";
+  }
 };
 
 #define N2W__JS_SPEC(s, m, ...)                                                \
