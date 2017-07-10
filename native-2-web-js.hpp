@@ -533,14 +533,34 @@ const string to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>>::base_names =
     "];\n";
 
 template <typename T> struct to_js<optional<T>> {
-  static string create_reader() { return R"()"; }
-  static string create_writer() { return R"()"; }
+  static string create_reader() {
+    return R"(function (data, offset) {
+    return read_optional(data, offset, )" +
+           to_js<T>::create_reader() + R"();
+  })";
+  }
+  static string create_writer() {
+    return R"(function (object) {
+    return write_optional(object, )" +
+           to_js<T>::create_writer() + R"();
+  })";
+  }
   static string create_html() { return R"()"; }
 };
 
 template <typename... Ts> struct to_js<variant<Ts...>> {
-  static string create_reader() { return R"()"; }
-  static string create_writer() { return R"()"; }
+  static string create_reader() {
+    return R"(function (data, offset) {
+    return read_variant(data, offset, [)" +
+           to_js_heterogenous<Ts...>::create_reader() + R"(]);
+  })";
+  }
+  static string create_writer() {
+    return R"(function (object) {
+    return write_variant(object, )" +
+           to_js_heterogenous<Ts...>::create_writer() + R"();
+  })";
+  }
   static string create_html() { return R"()"; }
 };
 
