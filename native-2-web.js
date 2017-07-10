@@ -199,9 +199,10 @@ function read_optional(data, offset, reader) {
 
 function read_variant(data, offset, readers) {
   let index = -1;
+  let object;
   [index, offset] = read_number(data, offset, 'getUint32');
-  [index, offset] = readers[index](data, offset);
-  return [ index, offset ];
+  [object, offset] = readers[index](data, offset);
+  return [ {index : index, object : object}, offset ];
   }
 
 //////////////////////////////////
@@ -366,9 +367,9 @@ function write_optional(object, writer) {
   return buffer;
   }
 
-function write_variant(object, index, writers) {
-  return concat_buffer(write_number(index, 'setUint32'),
-                       writers[index](object));
+function write_variant(object, writers) {
+  return concat_buffer(write_number(object.index, 'setUint32'),
+                       writers[object.index](object.object));
   }
 
 //////////////////////////////
