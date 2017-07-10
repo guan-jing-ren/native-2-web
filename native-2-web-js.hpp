@@ -545,7 +545,15 @@ template <typename T> struct to_js<optional<T>> {
            to_js<T>::create_writer() + R"();
   })";
   }
-  static string create_html() { return R"()"; }
+  static string create_html() {
+    return R"(function (parent, value, dispatch) {
+    this.signature = ')" +
+           std::regex_replace(mangled<optional<T>>(), std::regex{"'"}, "\\'") +
+           R"(';
+    return (this.html_optional || html_optional)(parent, value, dispatch, )" +
+           to_js<T>::create_html() + R"();
+  }.bind(this))";
+  }
 };
 
 template <typename... Ts> struct to_js<variant<Ts...>> {
@@ -561,7 +569,16 @@ template <typename... Ts> struct to_js<variant<Ts...>> {
            to_js_heterogenous<Ts...>::create_writer() + R"();
   })";
   }
-  static string create_html() { return R"()"; }
+  static string create_html() {
+    return R"(function (parent, value, dispatch) {
+    this.signature = ')" +
+           std::regex_replace(mangled<variant<Ts...>>(), std::regex{"'"},
+                              "\\'") +
+           R"(';
+    return (this.html_variant || html_variant)(parent, value, dispatch, [)" +
+           to_js_heterogenous<Ts...>::create_html() + R"(]);
+  }.bind(this))";
+  }
 };
 
 template <typename R, intmax_t N, intmax_t D>
