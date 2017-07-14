@@ -1052,6 +1052,38 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
   });
   }
 
+function persona_optional(persona, parent, switcher) {
+  let toggle_row = d3.select(parent)
+                       .append('table')
+                       .classed(persona, true)
+                       .attr('n2w-signature', this.signature)
+                       .append('tr');
+  toggle_row.append('td')
+      .append('input')
+      .attr('type', 'checkbox')
+      .attr('value', false)
+      .on('click', () => {
+        switcher(this.value);
+        toggle_row.select('td:last-child')
+            .style('visibility', this.value ? 'visible' : 'collapse');
+      });
+  return toggle_row.append('td').style('visibility', 'collapse').node();
+  }
+
+function html_optional(parent, value, dispatcher, html) {
+  let switch_value = false;
+  let switch_node = (this.persona_optional || persona_optional)
+                        .bind(this)('n2w-persona-optional-switch', parent,
+                                    v => switch_value = v);
+  let subdispatcher = (this.create_gatherer || create_gatherer)();
+  let optional_value = null;
+  html.bind(this)(switch_node, v => optional_value = switch_value ? v : null,
+                  dispatcher);
+
+  (this.subdispatch || subdispatch)(dispatcher, [ subdispatcher ],
+                                    () => { value(optional_value); });
+  }
+  }
 function html_function(parent, html_args, html_return, name, executor) {
   let value = [], dispatcher = (this.create_gatherer || create_gatherer)();
   let args_node = (this.persona_function_args ||
@@ -1127,6 +1159,7 @@ function N2WGenerator() {
   this.persona_map_key = persona_map_key.bind(this);
   this.persona_map_value = persona_map_value.bind(this);
   this.persona_map_element_deleter = persona_map_element_deleter.bind(this);
+  this.persona_optional = persona_optional.bind(this);
   this.persona_function_args = persona_function_args.bind(this);
   this.persona_function_exec = persona_function_exec.bind(this);
   this.persona_function_return = persona_function_return.bind(this);
@@ -1152,6 +1185,7 @@ function N2WGenerator() {
   this.html_bounded = html_bounded.bind(this);
   this.html_sequence = html_sequence.bind(this);
   this.html_associative = html_associative.bind(this);
+  this.html_optional = html_optional.bind(this);
   this.html_function = html_function.bind(this);
   this.html_module_directory = html_module_directory.bind(this);
   return this;
