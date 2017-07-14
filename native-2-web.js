@@ -1083,7 +1083,49 @@ function html_optional(parent, value, dispatcher, html) {
   (this.subdispatch || subdispatch)(dispatcher, [ subdispatcher ],
                                     () => { value(optional_value); });
   }
+
+function persona_variant(persona, parent, switcher, size) {
+  let toggle_row = d3.select(parent)
+                       .append('table')
+                       .classed(persona, true)
+                       .attr('n2w-signature', this.signature)
+                       .append('tr');
+  let toggler = toggle_row.append('td')
+                    .append('input')
+                    .attr('type', 'range')
+                    .attr('min', 0)
+                    .attr('max', size)
+                    .attr('step', 1)
+                    .attr('value', 0);
+  let toggled = toggle_row.append('td');
+  for (let i = 0; i < size; ++i)
+    toggled.append('div');
+  let divs = toggled.selectAll('div').nodes();
+  toggler.on('input', () => {
+    switcher(this.value);
+    divs.map(d3.select).forEach(v => v.attr('display', 'none'));
+    d3.select(divs[toggler.node().value]).attr('display', null);
+  });
+  return divs;
   }
+
+function html_variant(parent, value, dispatcher, html) {
+  let switch_value = 0;
+  let switch_nodes = (this.persona_variant || persona_variant)
+                         .bind(this)('n2w-persona-variant', parent,
+                                     v => switch_value = v, html.length);
+  let subdispatchers = [];
+  let values = [];
+  html.forEach((h, i) => {
+    let subdispatcher = (this.create_gatherer || create_gatherer);
+    h.bind(this)(switch_nodes[i], v => values[i] = v, subdispatcher);
+    subdispatchers[i] = subdispatcher;
+  });
+  (this.subdispatch || subdispatch)(
+      dispatcher, subdispatchers,
+      () => value({index : switch_value, object : values[switch_value]}));
+  }
+
 function html_function(parent, html_args, html_return, name, executor) {
   let value = [], dispatcher = (this.create_gatherer || create_gatherer)();
   let args_node = (this.persona_function_args ||
@@ -1160,6 +1202,7 @@ function N2WGenerator() {
   this.persona_map_value = persona_map_value.bind(this);
   this.persona_map_element_deleter = persona_map_element_deleter.bind(this);
   this.persona_optional = persona_optional.bind(this);
+  this.persona_variant = persona_variant.bind(this);
   this.persona_function_args = persona_function_args.bind(this);
   this.persona_function_exec = persona_function_exec.bind(this);
   this.persona_function_return = persona_function_return.bind(this);
@@ -1186,6 +1229,7 @@ function N2WGenerator() {
   this.html_sequence = html_sequence.bind(this);
   this.html_associative = html_associative.bind(this);
   this.html_optional = html_optional.bind(this);
+  this.html_variant = html_variant.bind(this);
   this.html_function = html_function.bind(this);
   this.html_module_directory = html_module_directory.bind(this);
   return this;
