@@ -1061,13 +1061,15 @@ function persona_optional(persona, parent, switcher) {
   toggle_row.append('td')
       .append('input')
       .attr('type', 'checkbox')
-      .attr('value', false)
+      .attr('value', this.prefill ? true : false)
       .on('click', () => {
         switcher(this.value);
-        toggle_row.select('td:last-child')
-            .style('visibility', this.value ? 'visible' : 'collapse');
+        d3.select(this.parentElement.nextElementSibling)
+            .style('visibility', this.value ? null : 'collapse');
       });
-  return toggle_row.append('td').style('visibility', 'collapse').node();
+  return toggle_row.append('td')
+      .style('visibility', this.prefill ? null : 'collapse')
+      .node();
   }
 
 function html_optional(parent, value, dispatcher, html) {
