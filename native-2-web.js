@@ -1117,8 +1117,12 @@ function html_variant(parent, value, dispatcher, html) {
   let subdispatchers = [];
   let values = [];
   html.forEach((h, i) => {
+    let prefill_saved = this.prefill;
+    if (this.prefill)
+      this.prefill = this.prefill.index == i ? this.prefill.object : null;
     let subdispatcher = (this.create_gatherer || create_gatherer);
     h.bind(this)(switch_nodes[i], v => values[i] = v, subdispatcher);
+    this.prefill = prefill_saved;
     subdispatchers[i] = subdispatcher;
   });
   (this.subdispatch || subdispatch)(
