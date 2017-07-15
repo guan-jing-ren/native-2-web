@@ -1138,6 +1138,17 @@ function html_variant(parent, value, dispatcher, html) {
   (this.subdispatch || subdispatch)(
       dispatcher, subdispatchers,
       () => value({index : switch_value, object : values[switch_value]}));
+
+  (this.persona_extracter || persona_extracter)
+      .bind(this)(
+          'n2w-persona-extracter', switch_nodes,
+          extract_doer(dispatcher, () => {
+            return {index : switch_value, object : values[switch_value]};
+          }));
+  (this.persona_inserter || persona_inserter)
+      .bind(this)('n2w-persona-inserter', switch_nodes,
+                  insert_doer.bind(this)(this.html_variant, [...arguments ],
+                                         this.signature));
   }
 
 function html_function(parent, html_args, html_return, name, executor) {
