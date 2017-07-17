@@ -659,6 +659,10 @@ function persona_extracter(persona, parent, extracter) {
                   .attr('colspan', 2);
   } else if (parent.tagName == 'TD') {
     extract = d3.select(parent);
+  } else if (Array.isArray(parent)) {
+    extract = d3.select(parent[0].parentElement.parentElement).append('td');
+  } else if (parent.tagName == 'DIV') {
+    extract = d3.select(parent.parentElement.parentElement).append('td');
     }
   return extract.append('input')
       .classed(persona, true)
@@ -1069,6 +1073,7 @@ function persona_optional(persona, parent, switcher) {
       });
   return toggle_row.append('td')
       .style('visibility', this.prefill ? null : 'collapse')
+      .append('div')
       .node();
   }
 
