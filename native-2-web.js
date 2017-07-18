@@ -692,6 +692,10 @@ function persona_inserter(persona, parent, inserter) {
                  .attr('colspan', 2);
   } else if (parent.tagName == 'TD') {
     insert = d3.select(parent);
+  } else if (Array.isArray(parent)) {
+    insert = d3.select(parent[0].parentElement.parentElement).append('td');
+  } else if (parent.tagName == 'DIV') {
+    insert = d3.select(parent.parentElement.parentElement).append('td');
     }
 
   return insert.append('input')
