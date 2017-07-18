@@ -1088,8 +1088,8 @@ function html_optional(parent, value, dispatcher, html) {
                                     v => switch_value = v);
   let subdispatcher = (this.create_gatherer || create_gatherer)();
   let optional_value = null;
-  html.bind(this)(switch_node, v => optional_value = switch_value ? v : null,
-                  dispatcher);
+  html.bind(this)(switch_node, v => optional_value = (switch_value ? v : null),
+                  subdispatcher);
 
   (this.subdispatch || subdispatch)(dispatcher, [ subdispatcher ],
                                     () => { value(optional_value); });
