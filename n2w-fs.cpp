@@ -18,6 +18,7 @@ auto set_current_working_directory(const filesystem::path &path) {
 // - Show hidden files
 // - Column order, sort order
 // - Directory size if directory
+// - Filter names and properties
 auto list_files(optional<vector<filesystem::path>> paths) {
   cerr << "Listing files\n";
   vector<filesystem::directory_entry> list;
