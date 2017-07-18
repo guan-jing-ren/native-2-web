@@ -300,7 +300,7 @@ template <typename R, intmax_t N, intmax_t D>
 struct serializer<chrono::duration<R, ratio<N, D>>> {
   template <typename I>
   static void serialize(const chrono::duration<R, ratio<N, D>> &t, I &i) {
-    serializer<R>::serialize(t.count(), i);
+    serializer<double>::serialize(t.count(), i);
   }
 };
 template <typename T> struct serializer<complex<T>> {
