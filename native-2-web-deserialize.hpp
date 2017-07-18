@@ -304,7 +304,7 @@ template <typename R, intmax_t N, intmax_t D>
 struct deserializer<chrono::duration<R, ratio<N, D>>> {
   template <typename I>
   static void deserialize(I &i, chrono::duration<R, ratio<N, D>> &t) {
-    R r;
+    double r;
     deserializer<double>::deserialize(r, i);
     t = chrono::duration<R, ratio<N, D>>{r};
   }

@@ -300,7 +300,7 @@ template <typename R, intmax_t N, intmax_t D>
 struct serializer<chrono::duration<R, ratio<N, D>>> {
   template <typename I>
   static void serialize(const chrono::duration<R, ratio<N, D>> &t, I &i) {
-    serializer<double>::serialize(t.count(), i);
+    serializer<double>::serialize(static_cast<double>(t.count()), i);
   }
 };
 template <typename T> struct serializer<complex<T>> {
@@ -350,11 +350,12 @@ template <> struct serializer<filesystem::directory_entry> {
     error_code ec;
     serializer<bool>::serialize(filesystem::exists(d, ec), i);
     // serializer<uint32_t>::serialize(d.file_size(), i);
-    serializer<uint32_t>::serialize(filesystem::file_size(d.path(), ec), i);
+    serializer<uint32_t>::serialize(
+        static_cast<uint32_t>(filesystem::file_size(d.path(), ec)), i);
     // serializer<uint32_t>::serialize(d.hard_link_count(),
     //                                                      i);
-    serializer<uint32_t>::serialize(filesystem::hard_link_count(d.path(), ec),
-                                    i);
+    serializer<uint32_t>::serialize(
+        static_cast<uint32_t>(filesystem::hard_link_count(d.path(), ec)), i);
     // serializer<decltype(d.last_write_time().time_since_epoch())>::serialize(
     //     d.last_write_time().time_since_epoch(), i);
     serializer<decltype(filesystem::last_write_time(d).time_since_epoch())>::
