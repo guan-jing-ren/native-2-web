@@ -347,17 +347,19 @@ template <> struct serializer<filesystem::directory_entry> {
   static void serialize(const filesystem::directory_entry &d, I &i) {
     serializer<filesystem::path>::serialize(d.path(), i);
     // serializer<bool>::serialize(d.exists(), i);
-    serializer<bool>::serialize(filesystem::exists(d), i);
+    error_code ec;
+    serializer<bool>::serialize(filesystem::exists(d, ec), i);
     // serializer<uint32_t>::serialize(d.file_size(), i);
-    serializer<uint32_t>::serialize(filesystem::file_size(d.path()), i);
+    serializer<uint32_t>::serialize(filesystem::file_size(d.path(), ec), i);
     // serializer<uint32_t>::serialize(d.hard_link_count(),
     //                                                      i);
-    serializer<uint32_t>::serialize(filesystem::hard_link_count(d.path()), i);
+    serializer<uint32_t>::serialize(filesystem::hard_link_count(d.path(), ec),
+                                    i);
     // serializer<decltype(d.last_write_time().time_since_epoch())>::serialize(
     //     d.last_write_time().time_since_epoch(), i);
     serializer<decltype(filesystem::last_write_time(d).time_since_epoch())>::
-        serialize(filesystem::last_write_time(d).time_since_epoch(), i);
-    serializer<filesystem::file_status>::serialize(d.symlink_status(), i);
+        serialize(filesystem::last_write_time(d, ec).time_since_epoch(), i);
+    serializer<filesystem::file_status>::serialize(d.symlink_status(ec), i);
   }
 };
 
