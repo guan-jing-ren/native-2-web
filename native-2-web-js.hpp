@@ -173,29 +173,46 @@ template <typename T, typename U> struct to_js<pair<T, U>> {
 };
 
 template <typename T, typename... Ts> struct to_js<tuple<T, Ts...>> {
-  static string create_reader() {
-    return R"(function (data, offset, names, base_readers, base_names) {
+  static string create_reader(optional<string> names = nullopt) {
+    string name_args = names ? "" : "names, ";
+    if (names)
+      *names += ", ";
+    else
+      *names = "names, ";
+    return R"(function (data, offset, )" + name_args +
+           R"(base_readers, base_names) {
   return read_structure(data, offset, [)" +
            to_js_heterogenous<T, Ts...>::create_reader() +
-           R"(], names, base_readers, base_names);
+           R"(], )" + *names + R"(base_readers, base_names);
 })";
   }
-  static string create_writer() {
-    return R"(function (object, names, base_writers, base_names) {
+  static string create_writer(optional<string> names = nullopt) {
+    string name_args = names ? "" : "names, ";
+    if (names)
+      *names += ", ";
+    else
+      *names = "names, ";
+    return R"(function (object, )" + name_args + R"(base_writers, base_names) {
   return write_structure(object, [)" +
            to_js_heterogenous<T, Ts...>::create_writer() +
-           R"(], names, base_writers, base_names);
+           R"(], )" + *names + R"(base_writers, base_names);
 })";
   }
-  static string create_html() {
-    return R"(function (parent, value, dispatcher, names, base_html, base_names) {
+  static string create_html(optional<string> names = nullopt) {
+    string name_args = names ? "" : "names, ";
+    if (names)
+      *names += ", ";
+    else
+      *names = "names, ";
+    return R"(function (parent, value, dispatcher, )" + name_args +
+           R"(base_html, base_names) {
   this.signature = ')" +
            std::regex_replace(mangled<tuple<T, Ts...>>(), std::regex{"'"},
                               "\\'") +
            R"(';
   return (this.html_structure || html_structure)(parent, value, dispatcher, [)" +
            to_js_heterogenous<T, Ts...>::create_html() +
-           R"(], names, base_html, base_names);
+           R"(], )" + *names + R"(base_html, base_names);
 }.bind(this))";
   }
 };
@@ -627,51 +644,36 @@ struct to_js<filesystem::space_info>
   }
 };
 
-template <>
-struct to_js<filesystem::file_status>
-    : to_js<pair<filesystem::file_type, filesystem::perms>> {
-  static string create_html() {
-    return R"(function (parent, value, dispatcher) {
-  this.signature = ')" +
-           std::regex_replace(mangled<filesystem::file_status>(),
-                              std::regex{"'"}, "\\'") +
-           R"(';
-  return (this.html_structure || html_structure)(parent, value, dispatcher, [)" +
-           to_js_heterogenous<filesystem::file_type,
-                              filesystem::perms>::create_html() +
-           R"(], ['file type', 'permissions']);
-}.bind(this))";
-  }
+template <> struct to_js<filesystem::file_status> {
+  using underlying = to_js<tuple<filesystem::file_type, filesystem::perms>>;
+  const static string names;
+  static string create_reader() { return underlying::create_reader(names); }
+  static string create_writer() { return underlying::create_writer(names); }
+  static string create_html() { return underlying::create_html(names); }
 };
+const string to_js<filesystem::file_status>::names =
+    "['file type', 'permissions']";
 
 template <> struct to_js<filesystem::path> : to_js<vector<string>> {
   // static string create_html() { return R"()"; }
 };
 
-template <>
-struct to_js<filesystem::directory_entry>
-    : to_js<tuple<filesystem::path, bool, uint32_t, uint32_t,
+template <> struct to_js<filesystem::directory_entry> {
+  using underlying =
+      to_js<tuple<filesystem::path, bool, uint32_t, uint32_t,
                   decltype(filesystem::last_write_time(
                                declval<filesystem::directory_entry>())
                                .time_since_epoch()),
-                  filesystem::file_status>> {
-  static string create_html() {
-    return R"(function (parent, value, dispatcher) {
-  this.signature = ')" +
-           std::regex_replace(mangled<filesystem::directory_entry>(),
-                              std::regex{"'"}, "\\'") +
-           R"(';
-  return (this.html_structure || html_structure)(parent, value, dispatcher, [)" +
-           to_js_heterogenous<filesystem::path, bool, uint32_t, uint32_t,
-                              decltype(
-                                  filesystem::last_write_time(
-                                      declval<filesystem::directory_entry>())
-                                      .time_since_epoch()),
-                              filesystem::file_status>::create_html() +
-           R"(], ['path', 'exists', 'file size', 'hard link count', 'time since epoch', 'symlink status']);
-}.bind(this))";
-  }
+                  filesystem::file_status>>;
+  const static string names;
+  static string create_reader() { return underlying::create_reader(names); }
+  static string create_writer() { return underlying::create_writer(names); }
+  static string create_html() { return underlying::create_html(names); }
 };
+
+const string to_js<filesystem::directory_entry>::names =
+    "['path', 'exists', 'file size', 'hard link "
+    "count', 'time since epoch', 'symlink status']";
 
 #define N2W__JS_SPEC(s, m, ...)                                                \
   namespace n2w {                                                              \
