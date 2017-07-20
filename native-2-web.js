@@ -711,6 +711,9 @@ function persona_inserter(persona, parent, inserter) {
               d3.select(parent).remove();
             else if (parent.tagName == 'TD') {
               d3.select(parent).selectAll('*').remove();
+            } else if (parent.tagName == 'DIV') {
+              d3.select(parent.parentElement.parentElement.parentElement)
+                  .remove();
             }
             inserter(clipboard);
           })
@@ -1069,14 +1072,14 @@ function persona_optional(persona, parent, switcher) {
   toggle_row.append('td')
       .append('input')
       .attr('type', 'checkbox')
-      .attr('value', this.prefill ? true : false)
-      .on('click', () => {
-        switcher(this.value);
-        d3.select(this.parentElement.nextElementSibling)
-            .style('visibility', this.value ? null : 'collapse');
+      .attr('checked', this.prefill ? true : false)
+      .on('click', (d, i, n) => {
+        switcher(n[0].checked);
+        d3.select(n[0].parentElement.nextElementSibling)
+            .style('display', n[0].checked ? null : 'none');
       });
   return toggle_row.append('td')
-      .style('visibility', this.prefill ? null : 'collapse')
+      .style('display', this.prefill ? null : 'none')
       .append('div')
       .node();
   }
@@ -1096,7 +1099,7 @@ function html_optional(parent, value, dispatcher, html) {
 
   (this.persona_extracter || persona_extracter)
       .bind(this)('n2w-persona-extracter', switch_node,
-                  extract_doer(dispatcher, () => optional_value));
+                  extract_doer(subdispatcher, () => optional_value));
   (this.persona_inserter || persona_inserter)
       .bind(this)('n2w-persona-inserter', switch_node,
                   insert_doer.bind(this)(this.html_optional, [...arguments ],
