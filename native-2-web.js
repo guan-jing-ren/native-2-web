@@ -1072,7 +1072,7 @@ function persona_optional(persona, parent, switcher) {
   toggle_row.append('td')
       .append('input')
       .attr('type', 'checkbox')
-      .attr('checked', this.prefill ? true : false)
+      .attr('checked', this.prefill ? true : null)
       .on('click', (d, i, n) => {
         switcher(n[0].checked);
         d3.select(n[0].parentElement.nextElementSibling)
