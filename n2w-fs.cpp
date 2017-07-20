@@ -16,7 +16,10 @@ auto set_current_working_directory(const filesystem::path &path) {
 // Options:
 // - Show . and ..
 // - Show hidden files
-// - Column order, sort order
+// - Show special files
+// - Column order, sort order, natural sorting (alpha vs numeric vs symbolic
+// 'fields')
+// - Directories first in list or don't separate directories
 // - Directory size if directory
 // - Filter names and properties
 auto list_files(optional<vector<filesystem::path>> paths) {
