@@ -68,6 +68,16 @@ auto convert_to_canonical_path(filesystem::path path,
 //   base.value_or(filesystem::currentpath()), ec);
 // }
 
+auto copy_entity(filesystem::path from, filesystem::path to,
+                 optional<vector<filesystem::copy_options>> options) {
+  error_code ec;
+  auto option = filesystem::copy_options::none;
+  if (options)
+    option = accumulate(cbegin(*options), cend(*options), option, bit_or<>{});
+  filesystem::copy(from, to, option, ec);
+  return ec.message();
+}
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
@@ -77,5 +87,6 @@ plugin plugin = []() {
   plugin.register_service(DECLARE_API(convert_to_canonical_path), "");
   // plugin.register_service(DECLARE_API(convert_to_relative_path), "");
   // plugin.register_service(DECLARE_API(convert_to_proximate_path), "");
+  plugin.register_service(DECLARE_API(copy_entity), "");
   return plugin;
 }();
