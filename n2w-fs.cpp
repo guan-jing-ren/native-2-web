@@ -54,6 +54,20 @@ auto convert_to_canonical_path(filesystem::path path,
   return filesystem::canonical(path);
 }
 
+// auto convert_to_relative_path(filesystem::path path,
+//                               optional<filesystem::path> base) {
+//   error_code ec;
+//   return filesystem::relative(path,
+//   base.value_or(filesystem::currentpath()), ec);
+// }
+
+// auto convert_to_proximate_path(filesystem::path path,
+//                                optional<filesystem::path> base) {
+//   error_code ec;
+//   return filesystem::proximate(path,
+//   base.value_or(filesystem::currentpath()), ec);
+// }
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
@@ -61,5 +75,7 @@ plugin plugin = []() {
   plugin.register_service(DECLARE_API(list_files), "");
   plugin.register_service(DECLARE_API(convert_to_absolute_path), "");
   plugin.register_service(DECLARE_API(convert_to_canonical_path), "");
+  // plugin.register_service(DECLARE_API(convert_to_relative_path), "");
+  // plugin.register_service(DECLARE_API(convert_to_proximate_path), "");
   return plugin;
 }();
