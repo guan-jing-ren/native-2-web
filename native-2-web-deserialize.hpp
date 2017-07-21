@@ -122,7 +122,7 @@ template <typename T> struct deserializer {
   }
   template <typename U = T, typename I>
   static auto deserialize(I &i, U &t) -> enable_if_t<is_enum<U>{}> {
-    deserialize(i, static_cast<underlying_type_t<U> &>(t));
+    deserialize(i, t);
   }
 };
 template <> struct deserializer<void *> {
