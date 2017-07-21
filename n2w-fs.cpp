@@ -22,6 +22,8 @@ auto set_current_working_directory(const filesystem::path &path) {
 // - Directories first in list or don't separate directories
 // - Directory size if directory
 // - Filter names and properties
+// - Recursive
+// - Directory options
 auto list_files(optional<vector<filesystem::path>> paths) {
   cerr << "Listing files\n";
   vector<filesystem::directory_entry> list;
@@ -39,10 +41,25 @@ auto list_files(optional<vector<filesystem::path>> paths) {
   return list;
 }
 
+auto convert_to_absolute_path(filesystem::path path) {
+  error_code ec;
+  return filesystem::absolute(path, filesystem::current_path());
+}
+
+enum class canonicality : bool { STRONG, WEAK };
+N2W__SPECIALIZE_ENUM(canonicality,
+                     N2W__MEMBERS(canonicality::STRONG, canonicality::WEAK));
+auto convert_to_canonical_path(filesystem::path path,
+                               optional<canonicality> canonical) {
+  return filesystem::canonical(path);
+}
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
   plugin.register_service(DECLARE_API(set_current_working_directory), "");
   plugin.register_service(DECLARE_API(list_files), "");
+  plugin.register_service(DECLARE_API(convert_to_absolute_path), "");
+  plugin.register_service(DECLARE_API(convert_to_canonical_path), "");
   return plugin;
 }();
