@@ -711,6 +711,9 @@ function persona_inserter(persona, parent, inserter) {
               d3.select(parent).remove();
             else if (parent.tagName == 'TD') {
               d3.select(parent).selectAll('*').remove();
+            } else if (Array.isArray(parent)) {
+              d3.select(parent[0].parentElement.parentElement.parentElement)
+                  .remove();
             } else if (parent.tagName == 'DIV') {
               d3.select(parent.parentElement.parentElement.parentElement)
                   .remove();
