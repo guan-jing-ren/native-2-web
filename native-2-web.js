@@ -1119,7 +1119,7 @@ function persona_variant(persona, parent, switcher, size) {
                     .append('input')
                     .attr('type', 'range')
                     .attr('min', 0)
-                    .attr('max', size)
+                    .attr('max', size - 1)
                     .attr('step', 1)
                     .attr('value', 0);
   let toggled = toggle_row.append('td');
