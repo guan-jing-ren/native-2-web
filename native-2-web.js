@@ -1102,7 +1102,7 @@ function html_optional(parent, value, dispatcher, html) {
 
   (this.persona_extracter || persona_extracter)
       .bind(this)('n2w-persona-extracter', switch_node,
-                  extract_doer(subdispatcher, () => optional_value));
+                  extract_doer(dispatcher, () => optional_value));
   (this.persona_inserter || persona_inserter)
       .bind(this)('n2w-persona-inserter', switch_node,
                   insert_doer.bind(this)(this.html_optional, [...arguments ],
