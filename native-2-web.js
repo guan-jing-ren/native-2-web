@@ -1121,15 +1121,17 @@ function persona_variant(persona, parent, switcher, size) {
                     .attr('min', 0)
                     .attr('max', size - 1)
                     .attr('step', 1)
-                    .attr('value', 0);
+                    .attr('value', this.prefill ? this.prefill.index : 0);
   let toggled = toggle_row.append('td');
   for (let i = 0; i < size; ++i)
-    toggled.append('div');
+    toggled.append('div').style(
+        'display',
+        this.prefill ? (this.prefill.index == i ? null : 'none') : 'none');
   let divs = toggled.selectAll('div').nodes();
-  toggler.on('input', () => {
-    switcher(this.value);
-    divs.map(d3.select).forEach(v => v.attr('display', 'none'));
-    d3.select(divs[toggler.node().value]).attr('display', null);
+  toggler.on('input', (d, i, n) => {
+    switcher(+n[0].value);
+    divs.map(d3.select).forEach(v => v.style('display', 'none'));
+    d3.select(divs[+n[0].value]).style('display', null);
   });
   return divs;
   }
