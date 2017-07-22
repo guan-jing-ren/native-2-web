@@ -6,11 +6,16 @@ using namespace std;
 using namespace experimental;
 using namespace n2w;
 
-auto current_working_directory() { return filesystem::current_path(); }
+auto current_working_directory() {
+  error_code ec;
+  return filesystem::current_path(ec);
+}
 
 auto set_current_working_directory(const filesystem::path &path) {
   cerr << "Setting current path: " << path << '\n';
-  filesystem::current_path(path);
+  error_code ec;
+  filesystem::current_path(path, ec);
+  return ec.message();
 }
 
 // Options:
@@ -43,7 +48,7 @@ auto list_files(optional<vector<filesystem::path>> paths) {
 
 auto convert_to_absolute_path(filesystem::path path) {
   error_code ec;
-  return filesystem::absolute(path, filesystem::current_path());
+  return filesystem::absolute(path, filesystem::current_path(ec));
 }
 
 enum class canonicality : bool { STRONG, WEAK };
