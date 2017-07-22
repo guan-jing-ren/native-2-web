@@ -83,6 +83,25 @@ auto copy_entity(filesystem::path from, filesystem::path to,
   return ec.message();
 }
 
+enum class recursivity : bool { RECURSIVE, NOT_RECURSIVE };
+N2W__SPECIALIZE_ENUM(recursivity, N2W__MEMBERS(recursivity::RECURSIVE,
+                                               recursivity::NOT_RECURSIVE));
+auto create_directory(
+    filesystem::path path,
+    optional<variant<filesystem::path, recursivity>> existing_or_recursive) {
+  error_code ec;
+  if (existing_or_recursive)
+    switch (existing_or_recursive->index()) {
+    case 0:
+      return filesystem::create_directory(
+          path, std::get<0>(*existing_or_recursive), ec);
+    case 1:
+      if (std::get<1>(*existing_or_recursive) != recursivity::RECURSIVE)
+        return filesystem::create_directory(path, ec);
+    }
+  return filesystem::create_directories(path, ec);
+}
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
@@ -93,5 +112,6 @@ plugin plugin = []() {
   // plugin.register_service(DECLARE_API(convert_to_relative_path), "");
   // plugin.register_service(DECLARE_API(convert_to_proximate_path), "");
   plugin.register_service(DECLARE_API(copy_entity), "");
+  plugin.register_service(DECLARE_API(create_directory), "");
   return plugin;
 }();
