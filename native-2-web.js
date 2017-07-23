@@ -1141,6 +1141,7 @@ function html_variant(parent, value, dispatcher, html) {
   let switch_nodes = (this.persona_variant || persona_variant)
                          .bind(this)('n2w-persona-variant', parent,
                                      v => switch_value = v, html.length);
+  let sig = this.signature;
   let subdispatchers = [];
   let values = [];
   html.forEach((h, i) => {
@@ -1156,6 +1157,7 @@ function html_variant(parent, value, dispatcher, html) {
       dispatcher, subdispatchers,
       () => value({index : switch_value, object : values[switch_value]}));
 
+  this.signature = sig;
   (this.persona_extracter || persona_extracter)
       .bind(this)(
           'n2w-persona-extracter', switch_nodes,
