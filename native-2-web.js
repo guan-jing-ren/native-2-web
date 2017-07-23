@@ -660,7 +660,7 @@ function persona_extracter(persona, parent, extracter) {
   } else if (parent.tagName == 'TD') {
     extract = d3.select(parent);
   } else if (Array.isArray(parent)) {
-    extract = d3.select(parent[0].parentElement.parentElement).append('td');
+    extract = d3.select(parent[0].parentElement);
   } else if (parent.tagName == 'DIV') {
     extract = d3.select(parent.parentElement.parentElement).append('td');
     }
@@ -693,7 +693,7 @@ function persona_inserter(persona, parent, inserter) {
   } else if (parent.tagName == 'TD') {
     insert = d3.select(parent);
   } else if (Array.isArray(parent)) {
-    insert = d3.select(parent[0].parentElement.parentElement).append('td');
+    insert = d3.select(parent[0].parentElement);
   } else if (parent.tagName == 'DIV') {
     insert = d3.select(parent.parentElement.parentElement).append('td');
     }
@@ -1124,9 +1124,10 @@ function persona_variant(persona, parent, switcher, size) {
                     .attr('value', this.prefill ? this.prefill.index : 0);
   let toggled = toggle_row.append('td');
   for (let i = 0; i < size; ++i)
-    toggled.append('div').style(
-        'display',
-        this.prefill ? (this.prefill.index == i ? null : 'none') : 'none');
+    toggled.append('div').style('display',
+                                this.prefill
+                                    ? (this.prefill.index == i ? null : 'none')
+                                    : (i ? 'none' : null));
   let divs = toggled.selectAll('div').nodes();
   toggler.on('input', (d, i, n) => {
     switcher(+n[0].value);
