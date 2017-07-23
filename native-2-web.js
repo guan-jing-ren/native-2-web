@@ -125,7 +125,7 @@ function read_structure(data, offset, readers, names, base_readers,
     });
 
   if (base_names && base_names.length > 0)
-    object.__bases = bases;
+    object['#bases'] = bases;
   return [ object, offset ];
   }
 
@@ -294,7 +294,7 @@ function write_structure(object, writers, names, base_writers, base_names) {
     buffer = writers.map((v, i) => v(object[names ? names[i] : i]))
                  .reduce((p, c) => concat_buffer(p, c));
   if (base_names && base_names.length > 0) {
-    let bases = base_writers.map((w, i) => w(object.__bases[base_names[i]]))
+    let bases = base_writers.map((w, i) => w(object['#bases'][base_names[i]]))
                     .reduce((p, c) => concat_buffer(p, c), []);
     buffer = concat_buffer(bases, buffer);
     }
@@ -466,7 +466,7 @@ function persona_structure_baseslabel(persona, parent) {
   return d3.select(parent)
       .append('td')
       .classed(persona, true)
-      .text('__bases:')
+      .text('#bases:')
       .node();
   }
 
@@ -865,7 +865,7 @@ function html_structure(parent, value, dispatcher, html, names, base_html,
               'n2w-persona-structure-base-label', base_holder, base_names[i]);
           let prefill_saved = this.prefill;
           if (this.prefill)
-            this.prefill = this.prefill.__bases[base_names[i]];
+            this.prefill = this.prefill['#bases'][base_names[i]];
           h.bind(this)((this.persona_structure_base || persona_structure_base)(
                            'n2w-persona-structure-base', base_holder),
                        v => bases[base_names[i]] = v, basedispatcher);
@@ -902,7 +902,7 @@ function html_structure(parent, value, dispatcher, html, names, base_html,
   (this.subdispatch ||
    subdispatch)(dispatcher, basedispatchers.concat(subdispatchers), () => {
     if (base_names && base_names.length > 0)
-      subvalue.__bases = bases;
+      subvalue['#bases'] = bases;
     value(subvalue);
   });
 
