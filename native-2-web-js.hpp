@@ -582,8 +582,8 @@ template <typename... Ts> struct to_js<variant<Ts...>> {
   }
   static string create_writer() {
     return R"(function (object) {
-    return write_variant(object, )" +
-           to_js_heterogenous<Ts...>::create_writer() + R"();
+    return write_variant(object, [)" +
+           to_js_heterogenous<Ts...>::create_writer() + R"(]);
   })";
   }
   static string create_html() {
