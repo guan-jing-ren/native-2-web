@@ -1092,6 +1092,7 @@ function html_optional(parent, value, dispatcher, html) {
   let switch_node = (this.persona_optional || persona_optional)
                         .bind(this)('n2w-persona-optional-switch', parent,
                                     v => switch_value = v);
+  let sig = this.signature;
   let subdispatcher = (this.create_gatherer || create_gatherer)();
   let optional_value = null;
   html.bind(this)(switch_node, v => optional_value = (switch_value ? v : null),
@@ -1100,6 +1101,7 @@ function html_optional(parent, value, dispatcher, html) {
   (this.subdispatch || subdispatch)(dispatcher, [ subdispatcher ],
                                     () => { value(optional_value); });
 
+  this.signature = sig;
   (this.persona_extracter || persona_extracter)
       .bind(this)('n2w-persona-extracter', switch_node,
                   extract_doer(dispatcher, () => optional_value));
