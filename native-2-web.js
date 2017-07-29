@@ -1075,28 +1075,32 @@ function persona_optional(persona, parent, switcher) {
   toggle_row.append('td')
       .append('input')
       .attr('type', 'checkbox')
-      .attr('checked', this.prefill ? true : null)
+      .attr('checked', this.prefill && this.prefill.object ? true : null)
       .on('click', (d, i, n) => {
         switcher(n[0].checked);
         d3.select(n[0].parentElement.nextElementSibling)
             .style('display', n[0].checked ? null : 'none');
       });
   return toggle_row.append('td')
-      .style('display', this.prefill ? null : 'none')
+      .style('display', this.prefill && this.prefill.object ? null : 'none')
       .append('div')
       .node();
   }
 
 function html_optional(parent, value, dispatcher, html) {
-  let switch_value = false;
+  let switch_value = this.prefill && this.prefill.object;
   let switch_node = (this.persona_optional || persona_optional)
                         .bind(this)('n2w-persona-optional-switch', parent,
                                     v => switch_value = v);
   let sig = this.signature;
   let subdispatcher = (this.create_gatherer || create_gatherer)();
-  let optional_value = null;
-  html.bind(this)(switch_node, v => optional_value = (switch_value ? v : null),
+  let optional_value = {object : null};
+  let prefill_saved = this.prefill;
+  this.prefill = this.prefill ? this.prefill.object : null;
+  html.bind(this)(switch_node,
+                  v => optional_value.object = (switch_value ? v : null),
                   subdispatcher);
+  this.prefll = prefill_saved;
 
   (this.subdispatch || subdispatch)(dispatcher, [ subdispatcher ],
                                     () => { value(optional_value); });
@@ -1140,7 +1144,7 @@ function persona_variant(persona, parent, switcher, size) {
   }
 
 function html_variant(parent, value, dispatcher, html) {
-  let switch_value = 0;
+  let switch_value = this.prefill ? this.prefill.index : 0;
   let switch_nodes = (this.persona_variant || persona_variant)
                          .bind(this)('n2w-persona-variant', parent,
                                      v => switch_value = v, html.length);
