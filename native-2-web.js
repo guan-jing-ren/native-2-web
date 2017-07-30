@@ -194,7 +194,7 @@ function read_optional(data, offset, reader) {
     [tag, offset] = reader(data, offset);
   else
     tag = null;
-  return [ tag, offset ];
+  return [ {object : tag}, offset ];
   }
 
 function read_variant(data, offset, readers) {
@@ -361,9 +361,9 @@ function write_multiarray(object, type, extents) {
   }
 
 function write_optional(object, writer) {
-  let buffer = write_bool(object ? true : false);
-  if (object)
-    buffer = concat_buffer(buffer, writer(object));
+  let buffer = write_bool(object.object ? true : false);
+  if (object.object)
+    buffer = concat_buffer(buffer, writer(object.object));
   return buffer;
   }
 
