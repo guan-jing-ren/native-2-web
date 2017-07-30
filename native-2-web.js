@@ -1066,39 +1066,43 @@ function html_associative(parent, value, dispatcher, html_key, html_value) {
   });
   }
 
-function persona_optional(persona, parent, switcher) {
+function persona_optional(persona, parent) {
   let toggle_row = d3.select(parent)
                        .append('table')
                        .classed(persona, true)
                        .attr('n2w-signature', this.signature)
                        .append('tr');
-  toggle_row.append('td')
-      .append('input')
-      .attr('type', 'checkbox')
-      .attr('checked', this.prefill && this.prefill.object ? true : null)
-      .on('click', (d, i, n) => {
-        switcher(n[0].checked);
-        d3.select(n[0].parentElement.nextElementSibling)
-            .style('display', n[0].checked ? null : 'none');
-      });
-  return toggle_row.append('td')
-      .style('display', this.prefill && this.prefill.object ? null : 'none')
-      .append('div')
-      .node();
+  let toggle =
+      toggle_row.append('td')
+          .append('input')
+          .attr('type', 'checkbox')
+          .attr('checked', this.prefill && this.prefill.object ? true : null)
+          .on('click',
+              (d, i, n) => {
+                d3.select(n[0].parentElement.nextElementSibling)
+                    .style('display', n[0].checked ? null : 'none');
+              })
+          .node();
+  return [
+    () => toggle.checked,
+    toggle_row.append('td')
+        .style('display', this.prefill && this.prefill.object ? null : 'none')
+        .append('div')
+        .node()
+  ];
   }
 
 function html_optional(parent, value, dispatcher, html) {
-  let switch_value = this.prefill && this.prefill.object;
-  let switch_node = (this.persona_optional || persona_optional)
-                        .bind(this)('n2w-persona-optional-switch', parent,
-                                    v => switch_value = v);
+  let [switcher, switch_node] =
+      (this.persona_optional || persona_optional)
+          .bind(this)('n2w-persona-optional-switch', parent);
   let sig = this.signature;
   let subdispatcher = (this.create_gatherer || create_gatherer)();
   let optional_value = {object : null};
   let prefill_saved = this.prefill;
   this.prefill = this.prefill ? this.prefill.object : null;
   html.bind(this)(switch_node,
-                  v => optional_value.object = (switch_value ? v : null),
+                  v => optional_value.object = (switcher() ? v : null),
                   subdispatcher);
   this.prefll = prefill_saved;
 
@@ -1115,7 +1119,7 @@ function html_optional(parent, value, dispatcher, html) {
                                          this.signature));
   }
 
-function persona_variant(persona, parent, switcher, size) {
+function persona_variant(persona, parent, size) {
   let toggle_row = d3.select(parent)
                        .append('table')
                        .classed(persona, true)
@@ -1135,19 +1139,21 @@ function persona_variant(persona, parent, switcher, size) {
                                     ? (this.prefill.index == i ? null : 'none')
                                     : (i ? 'none' : null));
   let divs = toggled.selectAll('div').nodes();
-  toggler.on('input', (d, i, n) => {
-    switcher(+n[0].value);
-    divs.map(d3.select).forEach(v => v.style('display', 'none'));
-    d3.select(divs[+n[0].value]).style('display', null);
-  });
-  return divs;
+  let toggle =
+      toggler
+          .on('input',
+              (d, i, n) => {
+                divs.map(d3.select).forEach(v => v.style('display', 'none'));
+                d3.select(divs[+n[0].value]).style('display', null);
+              })
+          .node();
+  return [ () => toggle.value, divs ];
   }
 
 function html_variant(parent, value, dispatcher, html) {
-  let switch_value = this.prefill ? this.prefill.index : 0;
-  let switch_nodes = (this.persona_variant || persona_variant)
-                         .bind(this)('n2w-persona-variant', parent,
-                                     v => switch_value = v, html.length);
+  let [switcher, switch_nodes] =
+      (this.persona_variant || persona_variant)
+          .bind(this)('n2w-persona-variant', parent, html.length);
   let sig = this.signature;
   let subdispatchers = [];
   let values = [];
@@ -1162,15 +1168,14 @@ function html_variant(parent, value, dispatcher, html) {
   });
   (this.subdispatch || subdispatch)(
       dispatcher, subdispatchers,
-      () => value({index : switch_value, object : values[switch_value]}));
+      () => value({index : +switcher(), object : values[switcher()]}));
 
   this.signature = sig;
   (this.persona_extracter || persona_extracter)
-      .bind(this)(
-          'n2w-persona-extracter', switch_nodes,
-          extract_doer(dispatcher, () => {
-            return {index : switch_value, object : values[switch_value]};
-          }));
+      .bind(this)('n2w-persona-extracter', switch_nodes,
+                  extract_doer(dispatcher, () => {
+                    return {index : +switcher(), object : values[switcher()]};
+                  }));
   (this.persona_inserter || persona_inserter)
       .bind(this)('n2w-persona-inserter', switch_nodes,
                   insert_doer.bind(this)(this.html_variant, [...arguments ],
