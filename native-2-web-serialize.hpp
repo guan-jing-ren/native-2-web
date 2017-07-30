@@ -287,7 +287,7 @@ template <typename T> struct serializer<optional<T>> {
 };
 template <typename... Ts> struct serializer<variant<Ts...>> {
   template <typename I> static void serialize(const variant<Ts...> &v, I &i) {
-    serializer<uint32_t>::serialize(v.index(), i);
+    serializer<uint32_t>::serialize(static_cast<uint32_t>(v.index()), i);
     visit(
         [&i](const auto &t) {
           serializer<remove_cv_t<remove_reference_t<decltype(t)>>>::serialize(

@@ -292,7 +292,7 @@ template <typename... Ts> struct deserializer<variant<Ts...>> {
     (void)rc;
   }
   template <typename I> static void deserialize(I &i, variant<Ts...> &v) {
-    auto index = variant_npos;
+    uint32_t index = static_cast<uint32_t>(variant_npos);
     deserializer<uint32_t>::deserialize(i, index);
     init_variant(index, v, make_index_sequence<sizeof...(Ts)>{});
     visit(
