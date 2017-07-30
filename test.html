@@ -33,7 +33,7 @@
         ws1.addEventListener('close', reconnect);
         let ws2 = new WebSocket('ws://localhost:9002');
         let count = 0;
-        ws2.addEventListener('message', ev => { console.log(ev.data); if (count++ > 20) ws2.close(); });
+        ws2.addEventListener('message', ev => { console.log(ev.data); if (count++ > 2) ws2.close(); });
         ws2.addEventListener('error', ev => console.log(ev.reason));
         ws2.addEventListener('close', ev => console.log(ev.reason));
     </script>
