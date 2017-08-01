@@ -166,6 +166,11 @@ auto set_permissions(filesystem::path path, filesystem::perms permissions) {
   return ec.message();
 }
 
+auto get_symbolic_link_target(filesystem::path path) {
+  error_code ec;
+  return filesystem::read_symlink(path, ec);
+}
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
