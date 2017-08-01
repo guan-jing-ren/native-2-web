@@ -188,6 +188,12 @@ auto rename_path(filesystem::path from, filesystem::path to) {
   return ec.message();
 }
 
+auto resize_file(filesystem::path file, uint32_t size) {
+  error_code ec;
+  filesystem::resize_file(file, size, ec);
+  return ec.message();
+}
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
