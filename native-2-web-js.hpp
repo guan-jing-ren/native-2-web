@@ -599,9 +599,7 @@ template <typename... Ts> struct to_js<variant<Ts...>> {
 };
 
 template <typename R, intmax_t N, intmax_t D>
-struct to_js<chrono::duration<R, ratio<N, D>>> : to_js<double> {
-  static string create_html() { return R"()"; }
-};
+struct to_js<chrono::duration<R, ratio<N, D>>> : to_js<double> {};
 
 template <typename C, typename D>
 struct to_js<chrono::time_point<C, D>> : to_js<D> {};
