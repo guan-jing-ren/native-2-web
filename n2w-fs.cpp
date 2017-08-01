@@ -199,6 +199,20 @@ auto space_information(filesystem::path path) {
   return filesystem::space(path, ec);
 }
 
+enum class symlink_action { NO_FOLLOW, FOLLOW };
+N2W__SPECIALIZE_ENUM(symlink_action, N2W__MEMBERS(symlink_action::NO_FOLLOW,
+                                                  symlink_action::FOLLOW));
+auto path_status(filesystem::path path, optional<symlink_action> action) {
+  error_code ec;
+  auto act = action.value_or(symlink_action::NO_FOLLOW);
+  switch (act) {
+  case symlink_action::NO_FOLLOW:
+    return filesystem::symlink_status(path, ec);
+  case symlink_action::FOLLOW:
+    return filesystem::status(path, ec);
+  }
+}
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
