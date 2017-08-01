@@ -138,6 +138,11 @@ auto paths_equivalent(filesystem::path l, filesystem::path r) {
   return filesystem::equivalent(l, r, ec);
 }
 
+auto file_size(filesystem::path path) {
+  error_code ec;
+  return static_cast<uint32_t>(filesystem::file_size(path, ec));
+}
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
