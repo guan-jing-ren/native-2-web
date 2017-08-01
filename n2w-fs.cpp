@@ -121,6 +121,18 @@ auto create_symbolic_link(filesystem::path target, filesystem::path link,
   return ec.message();
 }
 
+auto path_exists(
+    variant<filesystem::path, filesystem::file_status> path_or_status) {
+  error_code ec;
+  switch (path_or_status.index()) {
+  case 0:
+    return filesystem::exists(std::get<0>(path_or_status), ec);
+  case 1:
+    return filesystem::exists(std::get<1>(path_or_status));
+  }
+  return false;
+}
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
