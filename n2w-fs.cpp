@@ -143,6 +143,11 @@ auto file_size(filesystem::path path) {
   return static_cast<uint32_t>(filesystem::file_size(path, ec));
 }
 
+auto hard_link_count(filesystem::path path) {
+  error_code ec;
+  return static_cast<uint32_t>(filesystem::hard_link_count(path, ec));
+}
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
