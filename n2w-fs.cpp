@@ -171,6 +171,17 @@ auto get_symbolic_link_target(filesystem::path path) {
   return filesystem::read_symlink(path, ec);
 }
 
+uint32_t remove_path(filesystem::path path, optional<recursivity> recursive) {
+  error_code ec;
+  auto recurse = recursive.value_or(recursivity::NOT_RECURSIVE);
+  switch (recurse) {
+  case recursivity::NOT_RECURSIVE:
+    return filesystem::remove(path, ec);
+  case recursivity::RECURSIVE:
+    return filesystem::remove_all(path, ec);
+  }
+}
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
