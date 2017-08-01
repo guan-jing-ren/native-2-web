@@ -102,6 +102,12 @@ auto create_directory(
   return filesystem::create_directories(path, ec);
 }
 
+auto create_hard_link(filesystem::path target, filesystem::path link) {
+  error_code ec;
+  filesystem::create_hard_link(target, link, ec);
+  return ec.message();
+}
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
