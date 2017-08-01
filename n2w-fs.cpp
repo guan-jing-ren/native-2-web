@@ -194,6 +194,11 @@ auto resize_file(filesystem::path file, uint32_t size) {
   return ec.message();
 }
 
+auto space_information(filesystem::path path) {
+  error_code ec;
+  return filesystem::space(path, ec);
+}
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
