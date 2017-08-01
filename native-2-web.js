@@ -660,9 +660,14 @@ function persona_extracter(persona, parent, extracter) {
   } else if (parent.tagName == 'TD') {
     extract = d3.select(parent);
   } else if (Array.isArray(parent)) {
-    extract = d3.select(parent[0].parentElement);
+    return persona_extracter.bind(this)(
+        persona, parent[0].parentElement.parentElement.parentElement,
+        extracter);
   } else if (parent.tagName == 'DIV') {
-    extract = d3.select(parent.parentElement.parentElement).append('td');
+    if (!d3.select(parent).classed('n2w-terminal'))
+      return persona_extracter.bind(this)(
+          persona, parent.parentElement.parentElement.parentElement, extracter);
+    extract = d3.select(parent);
     }
   return extract.append('input')
       .classed(persona, true)
@@ -693,9 +698,13 @@ function persona_inserter(persona, parent, inserter) {
   } else if (parent.tagName == 'TD') {
     insert = d3.select(parent);
   } else if (Array.isArray(parent)) {
-    insert = d3.select(parent[0].parentElement);
+    return persona_inserter.bind(this)(
+        persona, parent[0].parentElement.parentElement.parentElement, inserter);
   } else if (parent.tagName == 'DIV') {
-    insert = d3.select(parent.parentElement.parentElement).append('td');
+    if (!d3.select(parent).classed('n2w-terminal'))
+      return persona_inserter.bind(this)(
+          persona, parent.parentElement.parentElement.parentElement, inserter);
+    insert = d3.select(parent);
     }
 
   return insert.append('input')
@@ -711,11 +720,10 @@ function persona_inserter(persona, parent, inserter) {
               d3.select(parent).remove();
             else if (parent.tagName == 'TD') {
               d3.select(parent).selectAll('*').remove();
-            } else if (Array.isArray(parent)) {
-              d3.select(parent[0].parentElement.parentElement).remove();
-            } else if (parent.tagName == 'DIV') {
-              d3.select(parent.parentElement.parentElement.parentElement)
-                  .remove();
+              }
+            else if (parent.tagName == 'DIV' &&
+                     d3.select(parent).classed('n2w-terminal')) {
+              d3.select(parent).selectAll('*').remove();
             }
             inserter(clipboard);
           })
