@@ -213,6 +213,11 @@ auto path_status(filesystem::path path, optional<symlink_action> action) {
   }
 }
 
+auto temporary_directory_location() {
+  error_code ec;
+  return filesystem::temp_directory_path(ec);
+}
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
