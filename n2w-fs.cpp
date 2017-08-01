@@ -182,6 +182,12 @@ uint32_t remove_path(filesystem::path path, optional<recursivity> recursive) {
   }
 }
 
+auto rename_path(filesystem::path from, filesystem::path to) {
+  error_code ec;
+  filesystem::rename(from, to, ec);
+  return ec.message();
+}
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
