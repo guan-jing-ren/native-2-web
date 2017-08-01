@@ -133,6 +133,11 @@ auto path_exists(
   return false;
 }
 
+auto paths_equivalent(filesystem::path l, filesystem::path r) {
+  error_code ec;
+  return filesystem::equivalent(l, r, ec);
+}
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
