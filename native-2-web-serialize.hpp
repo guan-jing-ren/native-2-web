@@ -303,6 +303,12 @@ struct serializer<chrono::duration<R, ratio<N, D>>> {
     serializer<double>::serialize(static_cast<double>(t.count()), i);
   }
 };
+template <typename C, typename D> struct serializer<chrono::time_point<C, D>> {
+  template <typename I>
+  static void serialize(const chrono::time_point<C, D> &t, I &i) {
+    serializer<D>::serialize(t.time_since_epoch(), i);
+  }
+};
 template <typename T> struct serializer<complex<T>> {
   template <typename I> static void serialize(const complex<T> &c, I &i) {
     serializer<T>::serialize(c.real(), i);

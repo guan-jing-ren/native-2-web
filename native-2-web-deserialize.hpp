@@ -311,6 +311,15 @@ struct deserializer<chrono::duration<R, ratio<N, D>>> {
     t = chrono::duration<R, ratio<N, D>>{r};
   }
 };
+template <typename C, typename D>
+struct deserializer<chrono::time_point<C, D>> {
+  template <typename I>
+  static void deserialize(I &i, chrono::time_point<C, D> &t) {
+    auto d = remove_reference_t<decltype(t)>::min();
+    deserializer<D>::deserialize(i, d);
+    t = d;
+  }
+};
 template <typename T> struct deserializer<complex<T>> {
   template <typename I> static void deserialize(I &i, complex<T> &c) {
     T r, j;

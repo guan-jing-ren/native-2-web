@@ -603,6 +603,9 @@ struct to_js<chrono::duration<R, ratio<N, D>>> : to_js<double> {
   static string create_html() { return R"()"; }
 };
 
+template <typename C, typename D>
+struct to_js<chrono::time_point<C, D>> : to_js<D> {};
+
 template <typename T> struct to_js<complex<T>> : to_js<pair<T, T>> {
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
