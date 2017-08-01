@@ -160,6 +160,12 @@ auto set_last_write_time(filesystem::path path,
   return ec.message();
 }
 
+auto set_permissions(filesystem::path path, filesystem::perms permissions) {
+  error_code ec;
+  filesystem::permissions(path, permissions, ec);
+  return ec.message();
+}
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
