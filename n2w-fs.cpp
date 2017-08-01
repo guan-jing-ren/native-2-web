@@ -108,6 +108,19 @@ auto create_hard_link(filesystem::path target, filesystem::path link) {
   return ec.message();
 }
 
+enum class target_type { DIRECTORY, FILE };
+N2W__SPECIALIZE_ENUM(target_type,
+                     N2W__MEMBERS(target_type::DIRECTORY, target_type::FILE));
+auto create_symbolic_link(filesystem::path target, filesystem::path link,
+                          optional<target_type> type) {
+  error_code ec;
+  if (type && *type == target_type::DIRECTORY)
+    filesystem::create_directory_symlink(target, link, ec);
+  else
+    filesystem::create_symlink(target, link, ec);
+  return ec.message();
+}
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
