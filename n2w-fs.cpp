@@ -148,6 +148,18 @@ auto hard_link_count(filesystem::path path) {
   return static_cast<uint32_t>(filesystem::hard_link_count(path, ec));
 }
 
+auto last_write_time(filesystem::path path) {
+  error_code ec;
+  return filesystem::last_write_time(path, ec);
+}
+
+auto set_last_write_time(filesystem::path path,
+                         filesystem::file_time_type time) {
+  error_code ec;
+  filesystem::last_write_time(path, time, ec);
+  return ec.message();
+}
+
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(DECLARE_API(current_working_directory), "");
