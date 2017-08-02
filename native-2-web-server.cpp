@@ -205,17 +205,17 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
         [reply_future]() mutable { reply_future.get(); });
   }
 
-  template <bool B = supports_websocket> auto accept_ws() -> enable_if_t<!B> {}
-  template <bool B = supports_websocket> auto accept_ws() -> enable_if_t<B> {
-    ws.async_accept(
-        request, [self = this->shared_from_this()](auto ec) mutable {
-          clog << "Accepted websocket connection: " << ec << '\n';
-          if (ec)
-            return;
-          self->ws_stuff.stream >> noskipws;
-          self->register_websocket_pusher();
-          self->ws_serve();
-        });
+  auto accept_ws() {
+    if
+      constexpr(supports_websocket) ws.async_accept(
+          request, [self = this->shared_from_this()](auto ec) mutable {
+            clog << "Accepted websocket connection: " << ec << '\n';
+            if (ec)
+              return;
+            self->ws_stuff.stream >> noskipws;
+            self->register_websocket_pusher();
+            self->ws_serve();
+          });
   }
 
   void respond() {
@@ -266,84 +266,79 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
         .share();
   }
 
-  template <typename H, bool B = websocket_handles_text>
-  auto do_if_websocket_handles_text(H &&, string &&message) -> enable_if_t<!B> {
+  template <typename H>
+  auto do_if_websocket_handles_text(H &&, string &&message) {
+    if
+      constexpr(websocket_handles_text) defer_response(
+          handle_websocket_request(ws_stuff.websocket_handler, move(message)));
   }
-  template <typename H, bool B = websocket_handles_text>
-  auto do_if_websocket_handles_text(H &&, string &&message) -> enable_if_t<B> {
-    defer_response(
-        handle_websocket_request(ws_stuff.websocket_handler, move(message)));
-  }
-  template <typename H, bool B = websocket_handles_binary>
-  auto do_if_websocket_handles_binary(H &&, vector<uint8_t> &&message)
-      -> enable_if_t<!B> {}
-  template <typename H, bool B = websocket_handles_binary>
-  auto do_if_websocket_handles_binary(H &&, vector<uint8_t> &&message)
-      -> enable_if_t<B> {
-    defer_response(
-        handle_websocket_request(ws_stuff.websocket_handler, move(message)));
+  template <typename H>
+  auto do_if_websocket_handles_binary(H &&, vector<uint8_t> &&message) {
+    if
+      constexpr(websocket_handles_binary) defer_response(
+          handle_websocket_request(ws_stuff.websocket_handler, move(message)));
   }
 
-  template <bool B = supports_websocket> auto ws_serve() -> enable_if_t<!B> {}
-  template <bool B = supports_websocket> auto ws_serve() -> enable_if_t<B> {
-    ws.async_read(buf, [self = this->shared_from_this()](auto ec) mutable {
-      clog << "Read something from websocket: " << ec << '\n';
-      if (ec)
-        return;
-      if (self->ws.got_text()) {
-        string message;
-        copy(istream_iterator<char>(self->ws_stuff.stream), {},
-             back_inserter(message));
-        self->ws_stuff.stream.clear();
-        clog << "Text message received: " << message << '\n';
-        self->do_if_websocket_handles_text(self->ws_stuff.websocket_handler,
-                                           move(message));
-      } else if (self->ws.got_binary()) {
-        vector<uint8_t> message;
-        copy(istream_iterator<char>(self->ws_stuff.stream), {},
-             back_inserter(message));
-        self->ws_stuff.stream.clear();
-        clog << "Binary message received, size: " << message.size() << '\n';
-        self->do_if_websocket_handles_binary(self->ws_stuff.websocket_handler,
-                                             move(message));
-      } else {
-        clog << "Unsupported WebSocket opcode: " << '\n';
+  void ws_serve() {
+    if
+      constexpr(supports_websocket) ws.async_read(
+          buf, [self = this->shared_from_this()](auto ec) mutable {
+            clog << "Read something from websocket: " << ec << '\n';
+            if (ec)
+              return;
+            if (self->ws.got_text()) {
+              string message;
+              copy(istream_iterator<char>(self->ws_stuff.stream), {},
+                   back_inserter(message));
+              self->ws_stuff.stream.clear();
+              clog << "Text message received: " << message << '\n';
+              self->do_if_websocket_handles_text(
+                  self->ws_stuff.websocket_handler, move(message));
+            } else if (self->ws.got_binary()) {
+              vector<uint8_t> message;
+              copy(istream_iterator<char>(self->ws_stuff.stream), {},
+                   back_inserter(message));
+              self->ws_stuff.stream.clear();
+              clog << "Binary message received, size: " << message.size()
+                   << '\n';
+              self->do_if_websocket_handles_binary(
+                  self->ws_stuff.websocket_handler, move(message));
+            } else {
+              clog << "Unsupported WebSocket opcode: " << '\n';
+            }
+
+            self->ws_serve();
+          });
+  }
+
+  auto register_websocket_pusher() {
+    if
+      constexpr(websocket_pushes_text || websocket_pushes_binary) {
+        register_websocket_pusher_text();
+        register_websocket_pusher_binary();
       }
-
-      self->ws_serve();
-    });
   }
 
-  template <bool B = websocket_pushes_text || websocket_pushes_binary>
-  auto register_websocket_pusher() -> enable_if_t<!B> {}
-  template <bool B = websocket_pushes_text || websocket_pushes_binary>
-  auto register_websocket_pusher() -> enable_if_t<B> {
-    register_websocket_pusher_text();
-    register_websocket_pusher_binary();
+  auto register_websocket_pusher_text() {
+    if
+      constexpr(websocket_pushes_text)
+          ws_stuff.websocket_handler([self = this->shared_from_this()](
+              string message) mutable {
+            promise<string> p;
+            p.set_value(move(message));
+            self->defer_response(p.get_future());
+          });
   }
 
-  template <bool B = websocket_pushes_text>
-  auto register_websocket_pusher_text() -> enable_if_t<!B> {}
-  template <bool B = websocket_pushes_text>
-  auto register_websocket_pusher_text() -> enable_if_t<B> {
-    ws_stuff.websocket_handler([self = this->shared_from_this()](
-        string message) mutable {
-      promise<string> p;
-      p.set_value(move(message));
-      self->defer_response(p.get_future());
-    });
-  }
-
-  template <bool B = websocket_pushes_binary>
-  auto register_websocket_pusher_binary() -> enable_if_t<!B> {}
-  template <bool B = websocket_pushes_binary>
-  auto register_websocket_pusher_binary() -> enable_if_t<B> {
-    websocket_handler([self = this->shared_from_this()](
-        vector<uint8_t> message) mutable {
-      promise<vector<uint8_t>> p;
-      p.set_value(move(message));
-      self->defer_response(p.get_future());
-    });
+  auto register_websocket_pusher_binary() {
+    if
+      constexpr(websocket_pushes_binary)
+          websocket_handler([self = this->shared_from_this()](
+              vector<uint8_t> message) mutable {
+            promise<vector<uint8_t>> p;
+            p.set_value(move(message));
+            self->defer_response(p.get_future());
+          });
   }
 
 public:
