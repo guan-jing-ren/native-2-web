@@ -345,9 +345,9 @@ template <size_t N> struct deserializer<bitset<N>> {
 template <> struct deserializer<filesystem::space_info> {
   template <typename I>
   static void deserialize(I &i, filesystem::space_info &s) {
-    deserializer<uint32_t>::deserialize(i, s.capacity);
-    deserializer<uint32_t>::deserialize(i, s.free);
-    deserializer<uint32_t>::deserialize(i, s.available);
+    deserializer<double>::deserialize<double>(i, s.capacity);
+    deserializer<double>::deserialize<double>(i, s.free);
+    deserializer<double>::deserialize<double>(i, s.available);
   }
 };
 template <> struct deserializer<filesystem::file_status> {

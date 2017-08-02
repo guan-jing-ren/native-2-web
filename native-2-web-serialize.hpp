@@ -328,9 +328,9 @@ template <size_t N> struct serializer<bitset<N>> {
 template <> struct serializer<filesystem::space_info> {
   template <typename I>
   static void serialize(const filesystem::space_info &s, I &i) {
-    serializer<uint32_t>::serialize(s.capacity, i);
-    serializer<uint32_t>::serialize(s.free, i);
-    serializer<uint32_t>::serialize(s.available, i);
+    serializer<double>::serialize<double>(s.capacity, i);
+    serializer<double>::serialize<double>(s.free, i);
+    serializer<double>::serialize<double>(s.available, i);
   }
 };
 template <> struct serializer<filesystem::file_status> {

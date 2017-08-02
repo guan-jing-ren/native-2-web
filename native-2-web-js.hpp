@@ -629,21 +629,15 @@ template <size_t N> struct to_js<bitset<N>> : to_js<string> {
   }
 };
 
-template <>
-struct to_js<filesystem::space_info>
-    : to_js<tuple<uint32_t, uint32_t, uint32_t>> {
-  static string create_html() {
-    return R"(function (parent, value, dispatcher) {
-  this.signature = ')" +
-           std::regex_replace(mangled<filesystem::space_info>(),
-                              std::regex{"'"}, "\\'") +
-           R"(';
-  return (this.html_structure || html_structure)(parent, value, dispatcher, [)" +
-           to_js_heterogenous<uint32_t, uint32_t, uint32_t>::create_html() +
-           R"(], ['capacity', 'free', 'available']);
-}.bind(this))";
-  }
+template <> struct to_js<filesystem::space_info> {
+  using underlying = to_js<tuple<double, double, double>>;
+  const static string names;
+  static string create_reader() { return underlying::create_reader(names); }
+  static string create_writer() { return underlying::create_writer(names); }
+  static string create_html() { return underlying::create_html(names); }
 };
+const string to_js<filesystem::space_info>::names =
+    "['capacity', 'free', 'available']";
 
 template <> struct to_js<filesystem::file_status> {
   using underlying = to_js<tuple<filesystem::file_type, filesystem::perms>>;
