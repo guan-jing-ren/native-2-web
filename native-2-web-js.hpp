@@ -604,17 +604,15 @@ struct to_js<chrono::duration<R, ratio<N, D>>> : to_js<double> {};
 template <typename C, typename D>
 struct to_js<chrono::time_point<C, D>> : to_js<D> {};
 
-template <typename T> struct to_js<complex<T>> : to_js<pair<T, T>> {
-  static string create_html() {
-    return R"(function (parent, value, dispatcher) {
-  this.signature = ')" +
-           std::regex_replace(mangled<complex<T>>(), std::regex{"'"}, "\\'") +
-           R"(';
-  return (this.html_structure || html_structure)(parent, value, dispatcher, [)" +
-           to_js_heterogenous<T, T>::create_html() + R"(], ['real', 'imag']);
-}.bind(this))";
-  }
+template <typename T> struct to_js<complex<T>> {
+  using underlying = to_js<pair<T, T>>;
+  const static string names;
+  static string create_reader() { return underlying::create_reader(names); }
+  static string create_writer() { return underlying::create_writer(names); }
+  static string create_html() { return underlying::create_html(names); }
 };
+template <typename T>
+const string to_js<complex<T>>::names = "['real', 'imag']";
 
 template <typename T> struct to_js<atomic<T>> : to_js<T> {};
 
