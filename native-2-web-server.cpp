@@ -6,6 +6,8 @@ inline bool operator!=(boost::system::error_code ec, int i) { return ec != i; }
 #include <beast/http.hpp>
 #include <beast/websocket.hpp>
 #include <boost/asio.hpp>
+#define BOOST_COROUTINES_UNIDIRECT
+#include <boost/asio/spawn.hpp>
 
 #include <algorithm>
 #include <experimental/filesystem>
@@ -347,7 +349,7 @@ public:
 };
 
 template <typename Handler>
-void check_use_count(reference_wrapper<io_service> &service,
+void check_use_count(reference_wrapper<io_service> service,
                      weak_ptr<n2w_connection<Handler>> conn,
                      uintptr_t conn_id) {
   static basic_waitable_timer<chrono::system_clock> timer{service};
@@ -372,19 +374,20 @@ void check_use_count(reference_wrapper<io_service> &service,
 template <typename Handler>
 void accept(reference_wrapper<io_service> service,
             reference_wrapper<ip::tcp::acceptor> acceptor) {
-  auto connection = make_shared<n2w_connection<Handler>>(service);
-  auto &socket_ref = connection->socket;
-  acceptor.get().async_accept(
-      connection->socket, [service, acceptor, connection](auto ec) mutable {
-        clog << "Thread: " << this_thread::get_id()
-             << "; Accepted connection: " << ec << '\n';
-        if (ec)
-          return;
-        accept<Handler>(service, acceptor);
-        connection->serve();
-        check_use_count<Handler>(service, connection,
-                                 reinterpret_cast<uintptr_t>(connection.get()));
-      });
+  spawn(service.get(), [service, acceptor](yield_context yield) {
+    while (true) {
+      boost::system::error_code ec;
+      auto connection = make_shared<n2w_connection<Handler>>(service);
+      acceptor.get().async_accept(connection->socket, yield[ec]);
+      clog << "Thread: " << this_thread::get_id()
+           << "; Accepted connection: " << ec << '\n';
+      if (ec)
+        break;
+      connection->serve();
+      check_use_count<Handler>(service, connection,
+                               reinterpret_cast<uintptr_t>(connection.get()));
+    }
+  });
 }
 
 struct normalized_uri {
