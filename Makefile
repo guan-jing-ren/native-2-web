@@ -16,7 +16,7 @@ libn2w-fs.so: n2w-fs.cpp native-2-web-plugin.hpp native-2-web-manglespec.hpp nat
 	time -p $(CXX) $(OPFLAGS) $(STDFLAGS) $(BOOST_INCLUDES) -shared -fPIC -pthread -o libn2w-fs.so n2w-fs.cpp -ldl $(STDLIBFLAGS)
 
 n2w-server: native-2-web-server.cpp native-2-web-plugin.hpp libn2w-fs.so
-	time -p $(CXX) $(OPFLAGS) $(STDFLAGS) $(BEAST_INCLUDES) -pthread -o n2w-server native-2-web-server.cpp -ldl $(STDLIBFLAGS)
+	time -p $(CXX) $(OPFLAGS) $(STDFLAGS) $(BEAST_INCLUDES) -pthread -o n2w-server native-2-web-server.cpp -ldl -lboost_system -lboost_coroutine $(STDLIBFLAGS)
 
 all:
 	time -p $(CXX) $(OPFLAGS) $(STDFLAGS) -I ../preprocessor/include/ -o n2w native-2-web.cpp &
