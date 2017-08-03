@@ -138,6 +138,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
         ws.async_write(buffer(ws_stuff.text_response = reply_future.get()),
                        yield[ec]);
         response_type = "text websocket";
+        if (ec)
+          ws_stuff.websocket_handler = websocket_handler_type{};
       }
     else if
       constexpr(is_same<R, decltype(ws_stuff.binary_response)>::value) {
@@ -145,11 +147,11 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
         ws.async_write(buffer(ws_stuff.binary_response = reply_future.get()),
                        yield[ec]);
         response_type = "binary_websocket";
+        if (ec)
+          ws_stuff.websocket_handler = websocket_handler_type{};
       }
     else if
       constexpr(is_void<R>::value) reply_future.get();
-    else
-      return;
 
     clog << "Thread: " << this_thread::get_id() << "; Written " << response_type
          << " response:" << ec << ".\n";
@@ -210,7 +212,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
         if (ec)
           return;
         ws_stuff.stream >> noskipws;
-        // register_websocket_pusher();
+        register_websocket_pusher();
 
         auto save_stream = [this](auto &message) {
           copy(istream_iterator<char>(ws_stuff.stream), {},
@@ -254,24 +256,22 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
       }
   }
 
-  // auto register_websocket_pusher() {
-  //   if
-  //     constexpr(websocket_pushes_text)
-  //         ws_stuff.websocket_handler([self = this->shared_from_this()](
-  //             string message) mutable {
-  //           promise<string> p;
-  //           p.set_value(move(message));
-  //           self->defer_response<STRING>(p.get_future());
-  //         });
-  //   if
-  //     constexpr(websocket_pushes_binary)
-  //         websocket_handler([self = this->shared_from_this()](
-  //             vector<uint8_t> message) mutable {
-  //           promise<vector<uint8_t>> p;
-  //           p.set_value(move(message));
-  //           self->defer_response<VECTOR>(p.get_future());
-  //         });
-  // }
+  auto register_websocket_pusher() {
+    auto pusher = [self = this->shared_from_this()](auto message) {
+      promise<decltype(message)> p;
+      p.set_value(move(message));
+      spawn(self->socket.get_io_service(),
+            [ self, future = p.get_future(),
+              ticket = self->ticket++ ](yield_context yield) mutable {
+              self->write_response(yield, move(future), ticket);
+            });
+    };
+
+    if
+      constexpr(websocket_pushes_text) ws_stuff.websocket_handler(pusher);
+    if
+      constexpr(websocket_pushes_binary) ws_stuff.websocket_handler(pusher);
+  }
 
 public:
   n2w_connection(io_service &service)
