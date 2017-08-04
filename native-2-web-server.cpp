@@ -11,6 +11,7 @@ inline bool operator!=(boost::system::error_code ec, int i) { return ec != i; }
 #include <boost/asio/spawn.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <experimental/filesystem>
 #include <fstream>
 #include <future>
@@ -34,8 +35,6 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   atomic_uintmax_t serving{0};
 
   boost::asio::streambuf buf;
-  http::request<http::string_body> request;
-  http::response<http::string_body> response;
 
   struct NullHandler {
     http::response<http::string_body>
@@ -69,8 +68,6 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   struct websocket_stuff {
     websocket_handler_type websocket_handler;
     istream stream;
-    string text_response;
-    vector<uint8_t> binary_response;
     websocket_stuff(boost::asio::streambuf *buf) : stream(buf) {}
   };
   conditional_t<supports_websocket, websocket_stuff, void *> ws_stuff{&buf};
@@ -107,57 +104,73 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   friend void accept(reference_wrapper<io_service> service, Args &&... args);
 
   template <typename R>
-  void write_response(yield_context yield, future<R> reply_future,
-                      uintmax_t tkt) {
-    while (reply_future.wait_for(chrono::milliseconds(50)) ==
-               future_status::timeout ||
-           serving != tkt) {
-      clog << "Waiting for ticket: " << tkt
-           << ", currently serving: " << serving
-           << ", has future: " << boolalpha << reply_future.valid()
-           << noboolalpha << '\n';
-      socket.get_io_service().dispatch(yield);
+  void write_response(yield_context yield, R reply, uintmax_t tkt) {
+    basic_waitable_timer<chrono::steady_clock> timer{socket.get_io_service()};
+    while (tkt != serving) {
+      clog << "Waiting to serve: " << tkt << ", currently serving: " << serving
+           << '\n';
+      timer.expires_from_now(chrono::milliseconds{10});
+      timer.async_wait(yield);
     }
 
     boost::system::error_code ec;
     string response_type;
     if
-      constexpr(is_same<R, decltype(response)>::value) {
-        response = reply_future.get();
-        response.prepare_payload();
-        http::async_write(socket, response, yield[ec]);
+      constexpr(is_same<R, http::response<http::string_body>>::value) {
+        reply.prepare_payload();
+        http::async_write(socket, reply, yield[ec]);
         response_type = "HTTP";
       }
     else if
-      constexpr(is_same<R, decltype(ws_stuff.text_response)>::value) {
-        ws.text(true);
-        ws.async_write(buffer(ws_stuff.text_response = reply_future.get()),
-                       yield[ec]);
-        response_type = "text websocket";
+      constexpr(!is_same<R, nullptr_t>::value && supports_websocket) {
+        if
+          constexpr(is_same<R, string>::value) {
+            ws.text(true);
+            response_type = "text websocket";
+          }
+        else if
+          constexpr(is_same<R, vector<uint8_t>>::value) {
+            ws.binary(true);
+            response_type = "binary_websocket";
+          }
+        ws.async_write(buffer(reply), yield[ec]);
         if (ec)
           ws_stuff.websocket_handler = websocket_handler_type{};
       }
-    else if
-      constexpr(is_same<R, decltype(ws_stuff.binary_response)>::value) {
-        ws.binary(true);
-        ws.async_write(buffer(ws_stuff.binary_response = reply_future.get()),
-                       yield[ec]);
-        response_type = "binary_websocket";
-        if (ec)
-          ws_stuff.websocket_handler = websocket_handler_type{};
-      }
-    else if
-      constexpr(is_void<R>::value) reply_future.get();
 
     clog << "Thread: " << this_thread::get_id() << "; Written " << response_type
          << " response:" << ec << ".\n";
     ++serving;
   }
 
+  template <typename T> auto async(T t) {
+    if
+      constexpr(is_same<T, http::response<http::string_body>>::value ||
+                is_same<T, string>::value ||
+                is_same<T, vector<uint8_t>>::value) {
+        spawn(socket.get_io_service(), [
+          self = this->shared_from_this(), t = forward<T>(t), tkt = ticket++
+        ](yield_context yield) { self->write_response(yield, move(t), tkt); });
+      }
+    else {
+      spawn(socket.get_io_service(), [
+        self = this->shared_from_this(), t = forward<T>(t), tkt = ticket++
+      ](yield_context yield) {
+        if
+          constexpr(is_void<result_of_t<T()>>::value) {
+            t();
+            self->write_response(yield, nullptr, tkt);
+          }
+        else
+          self->write_response(yield, t(), tkt);
+      });
+    }
+  }
+
   void serve(yield_context yield) {
     while (true) {
       boost::system::error_code ec;
-      request = decltype(request)();
+      http::request<http::string_body> request;
       http::async_read(socket, buf, request, yield[ec]);
       clog << "Thread: " << this_thread::get_id()
            << "; Received request: " << ec << ".\n";
@@ -166,66 +179,36 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
       if (websocket::is_upgrade(request)) {
         if
-          constexpr(supports_websocket) goto do_upgrade;
+          constexpr(supports_websocket) {
+            ws.async_accept(request, yield[ec]);
+            clog << "Accepted websocket connection: " << ec << '\n';
+            if (ec)
+              return;
+            ws_stuff.stream >> noskipws;
+            register_websocket_pusher();
+            goto do_upgrade;
+          }
         else
-          spawn(socket.get_io_service(),
-                [ self = this->shared_from_this(),
-                  ticket = ticket++ ](yield_context yield) {
-                  promise<decltype(self->response)> promise;
-                  promise.set_value(NullHandler{}(self->request));
-                  self->write_response(yield, promise.get_future(), ticket);
-                });
+          async(NullHandler{}(request));
         return;
       }
 
-      spawn(socket.get_io_service(),
-            [ self = this->shared_from_this(),
-              ticket = ticket++ ](yield_context yield) {
-              promise<decltype(self->response)> promise;
-              promise.set_value(self->handler(self->request));
-              self->write_response(yield, promise.get_future(), ticket);
-            });
+      async([ this, request = move(request) ]() { return handler(request); });
     }
 
   do_upgrade:
     ws_serve(yield);
   }
 
-  template <typename H, typename T> auto handle_websocket_request(H &&, T &&t) {
-    return async(launch::deferred,
-                 [self = this->shared_from_this()](T && t) mutable {
-                   return self->ws_stuff.websocket_handler(t);
-                 },
-                 move(t));
-  }
-
   void ws_serve(yield_context yield) {
     if
       constexpr(supports_websocket) {
         boost::system::error_code ec;
-        ws.async_accept(request, yield[ec]);
-        clog << "Accepted websocket connection: " << ec << '\n';
-        if (ec)
-          return;
-        ws_stuff.stream >> noskipws;
-        register_websocket_pusher();
 
         auto save_stream = [this](auto &message) {
           copy(istream_iterator<char>(ws_stuff.stream), {},
                back_inserter(message));
           ws_stuff.stream.clear();
-        };
-        auto spawn_reply = [this](auto message) {
-          spawn(socket.get_io_service(), [
-            self = this->shared_from_this(), message = move(message),
-            ticket = ticket++
-          ](yield_context yield) {
-            self->write_response(
-                yield,
-                self->handle_websocket_request(self->ws_stuff.websocket_handler,
-                                               move(message)),
-                ticket);
-          });
         };
 
         while (true) {
@@ -238,13 +221,20 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
             save_stream(message);
             clog << "Text message received: " << message << '\n';
             if
-              constexpr(websocket_handles_text) { spawn_reply(message); }
+              constexpr(websocket_handles_text)
+                  async([ this, message = move(message) ] {
+                    return ws_stuff.websocket_handler(message);
+                  });
+
           } else if (ws.got_binary()) {
             vector<uint8_t> message;
             save_stream(message);
             clog << "Binary message received, size: " << message.size() << '\n';
             if
-              constexpr(websocket_handles_binary) { spawn_reply(message); }
+              constexpr(websocket_handles_binary)
+                  async([ this, message = move(message) ] {
+                    return ws_stuff.websocket_handler(message);
+                  });
           } else {
             clog << "Unsupported WebSocket opcode: " << '\n';
           }
@@ -254,13 +244,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
   auto register_websocket_pusher() {
     auto pusher = [self = this->shared_from_this()](auto message) {
-      promise<decltype(message)> p;
-      p.set_value(move(message));
-      spawn(self->socket.get_io_service(),
-            [ self, future = p.get_future(),
-              ticket = self->ticket++ ](yield_context yield) mutable {
-              self->write_response(yield, move(future), ticket);
-            });
+      self->async(message);
     };
 
     if
