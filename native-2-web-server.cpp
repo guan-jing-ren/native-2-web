@@ -103,9 +103,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                    websocket_pushes<vector<uint8_t>>(declval<Handler *>())),
                false_type>::value;
 
-  template <typename>
-  friend void accept(reference_wrapper<io_service>,
-                     reference_wrapper<ip::tcp::acceptor>);
+  template <typename, typename... Args>
+  friend void accept(reference_wrapper<io_service> service, Args &&... args);
 
   template <typename R>
   void write_response(yield_context yield, future<R> reply_future,
@@ -298,14 +297,16 @@ void check_use_count(reference_wrapper<io_service> service,
   });
 }
 
-template <typename Handler>
-void accept(reference_wrapper<io_service> service,
-            reference_wrapper<ip::tcp::acceptor> acceptor) {
-  spawn(service.get(), [service, acceptor](yield_context yield) {
+template <typename Handler, typename... Args>
+void accept(reference_wrapper<io_service> service, Args &&... args) {
+  spawn(service.get(), [ service, endpoint = ip::tcp::endpoint(args...) ](
+                           yield_context yield) {
+    ip::tcp::acceptor acceptor{service, endpoint, true};
+    acceptor.listen();
     while (true) {
       boost::system::error_code ec;
       auto connection = make_shared<n2w_connection<Handler>>(service);
-      acceptor.get().async_accept(connection->socket, yield[ec]);
+      acceptor.async_accept(connection->socket, yield[ec]);
       clog << "Thread: " << this_thread::get_id()
            << "; Accepted connection: " << ec << '\n';
       if (ec)
@@ -452,9 +453,6 @@ string create_modules() {
 int main() {
   io_service service;
   io_service::work work{service};
-  ip::tcp::endpoint endpoint{ip::address_v4::from_string("0.0.0.0"), 9001};
-  ip::tcp::acceptor acceptor{service, endpoint, true};
-  acceptor.listen();
 
   static function<vector<uint8_t>(const vector<uint8_t> &)> null_ref;
   struct websocket_handler {
@@ -537,7 +535,7 @@ int main() {
     }
   };
 
-  accept<http_handler>(service, acceptor);
+  accept<http_handler>(service, ip::address_v4::from_string("0.0.0.0"), 9001);
 
   // struct dummy_handler {};
   // accept<dummy_handler>(service, acceptor);
@@ -562,10 +560,8 @@ int main() {
     };
   };
 
-  ip::tcp::endpoint wsendpoint{ip::address_v4::from_string("0.0.0.0"), 9002};
-  ip::tcp::acceptor wsacceptor{service, wsendpoint, true};
-  wsacceptor.listen();
-  accept<ws_only_handler>(service, wsacceptor);
+  accept<ws_only_handler>(service, ip::address_v4::from_string("0.0.0.0"),
+                          9002);
 
   vector<future<void>> threadpool;
   generate_n(back_inserter(threadpool), 10, [&service]() {
