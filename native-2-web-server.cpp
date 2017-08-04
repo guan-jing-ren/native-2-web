@@ -52,19 +52,20 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   static auto http_support(...) -> false_type;
   template <typename T = Handler>
   static auto http_support(T *)
-      -> decltype(T{}(http::request<http::string_body>{}));
+      -> result_of_t<T(http::request<http::string_body>)>;
   static constexpr bool supports_http =
-      !is_same<decltype(http_support(static_cast<Handler *>(nullptr))),
-               false_type>::value;
+      !is_same<decltype(http_support(declval<Handler *>())), false_type>::value;
+
   conditional_t<supports_http, Handler, NullHandler> handler;
 
   static auto websocket_support(...) -> false_type;
   template <typename T = Handler>
   static auto websocket_support(T *) -> typename T::websocket_handler_type;
   using websocket_handler_type =
-      decltype(websocket_support(static_cast<Handler *>(nullptr)));
+      decltype(websocket_support(declval<Handler *>()));
   static constexpr bool supports_websocket =
       !is_same<websocket_handler_type, false_type>::value;
+
   struct websocket_stuff {
     websocket_handler_type websocket_handler;
     istream stream;
@@ -77,33 +78,29 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   template <typename> static auto websocket_handles(...) -> false_type;
   template <typename V, typename T = Handler>
   static auto websocket_handles(T *)
-      -> decltype(async(launch::deferred, typename T::websocket_handler_type{},
-                        V{}));
+      -> result_of_t<typename T::websocket_handler_type(V)>;
   static constexpr bool websocket_handles_text =
       supports_websocket &&
-      !is_same<decltype(
-                   websocket_handles<string>(static_cast<Handler *>(nullptr))),
+      !is_same<decltype(websocket_handles<string>(declval<Handler *>())),
                false_type>::value;
   static constexpr bool websocket_handles_binary =
       supports_websocket &&
-      !is_same<decltype(websocket_handles<vector<uint8_t>>(
-                   static_cast<Handler *>(nullptr))),
+      !is_same<decltype(
+                   websocket_handles<vector<uint8_t>>(declval<Handler *>())),
                false_type>::value;
 
   template <typename> static auto websocket_pushes(...) -> false_type;
   template <typename V, typename T = Handler>
   static auto websocket_pushes(T *)
-      -> decltype(async(launch::deferred, typename T::websocket_handler_type{},
-                        function<void(V)>{}));
+      -> result_of_t<typename T::websocket_handler_type(function<void(V)>)>;
   static constexpr bool websocket_pushes_text =
       supports_websocket &&
-      !is_same<decltype(
-                   websocket_pushes<string>(static_cast<Handler *>(nullptr))),
+      !is_same<decltype(websocket_pushes<string>(declval<Handler *>())),
                false_type>::value;
   static constexpr bool websocket_pushes_binary =
       supports_websocket &&
-      !is_same<decltype(websocket_pushes<vector<uint8_t>>(
-                   static_cast<Handler *>(nullptr))),
+      !is_same<decltype(
+                   websocket_pushes<vector<uint8_t>>(declval<Handler *>())),
                false_type>::value;
 
   template <typename>
