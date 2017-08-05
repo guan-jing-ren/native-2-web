@@ -53,7 +53,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   static auto http_support(T *)
       -> result_of_t<T(http::request<http::string_body>)>;
   static constexpr bool supports_http =
-      !is_same<decltype(http_support(declval<Handler *>())), false_type>::value;
+      !is_same_v<decltype(http_support(declval<Handler *>())), false_type>;
 
   conditional_t<supports_http, Handler, NullHandler> handler;
 
@@ -63,7 +63,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   using websocket_handler_type =
       decltype(websocket_support(declval<Handler *>()));
   static constexpr bool supports_websocket =
-      !is_same<websocket_handler_type, false_type>::value;
+      !is_same_v<websocket_handler_type, false_type>;
 
   struct websocket_stuff {
     websocket_handler_type websocket_handler;
@@ -78,13 +78,13 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
       -> result_of_t<typename T::websocket_handler_type(V)>;
   static constexpr bool websocket_handles_text =
       supports_websocket &&
-      !is_same<decltype(websocket_handles<string>(declval<Handler *>())),
-               false_type>::value;
+      !is_same_v<decltype(websocket_handles<string>(declval<Handler *>())),
+                 false_type>;
   static constexpr bool websocket_handles_binary =
       supports_websocket &&
-      !is_same<decltype(
-                   websocket_handles<vector<uint8_t>>(declval<Handler *>())),
-               false_type>::value;
+      !is_same_v<decltype(
+                     websocket_handles<vector<uint8_t>>(declval<Handler *>())),
+                 false_type>;
 
   template <typename> static auto websocket_pushes(...) -> false_type;
   template <typename V, typename T = Handler>
@@ -92,13 +92,13 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
       -> result_of_t<typename T::websocket_handler_type(function<void(V)>)>;
   static constexpr bool websocket_pushes_text =
       supports_websocket &&
-      !is_same<decltype(websocket_pushes<string>(declval<Handler *>())),
-               false_type>::value;
+      !is_same_v<decltype(websocket_pushes<string>(declval<Handler *>())),
+                 false_type>;
   static constexpr bool websocket_pushes_binary =
       supports_websocket &&
-      !is_same<decltype(
-                   websocket_pushes<vector<uint8_t>>(declval<Handler *>())),
-               false_type>::value;
+      !is_same_v<decltype(
+                     websocket_pushes<vector<uint8_t>>(declval<Handler *>())),
+                 false_type>;
 
   template <typename, typename... Args>
   friend void accept(reference_wrapper<io_service> service, Args &&... args);
@@ -116,20 +116,20 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
     boost::system::error_code ec;
     string response_type;
     if
-      constexpr(is_same<R, http::response<http::string_body>>::value) {
+      constexpr(is_same_v<R, http::response<http::string_body>>) {
         reply.prepare_payload();
         http::async_write(socket, reply, yield[ec]);
         response_type = "HTTP";
       }
     else if
-      constexpr(!is_same<R, nullptr_t>::value && supports_websocket) {
+      constexpr(!is_same_v<R, nullptr_t> && supports_websocket) {
         if
-          constexpr(is_same<R, string>::value) {
+          constexpr(is_same_v<R, string>) {
             ws.text(true);
             response_type = "text websocket";
           }
         else if
-          constexpr(is_same<R, vector<uint8_t>>::value) {
+          constexpr(is_same_v<R, vector<uint8_t>>) {
             ws.binary(true);
             response_type = "binary_websocket";
           }
@@ -175,7 +175,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
       clog << "Thread: " << this_thread::get_id()
            << "; Received request: " << ec << ".\n";
       if (ec)
-        return;
+        break;
 
       if (websocket::is_upgrade(request)) {
         if
@@ -183,7 +183,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
             ws.async_accept(request, yield[ec]);
             clog << "Accepted websocket connection: " << ec << '\n';
             if (ec)
-              return;
+              break;
             ws_stuff.stream >> noskipws;
             register_websocket_pusher();
             goto do_upgrade;
@@ -196,6 +196,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
       async([ this, request = move(request) ]() { return handler(request); });
     }
 
+    return;
   do_upgrade:
     ws_serve(yield);
   }
@@ -215,7 +216,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
           ws.async_read(buf, yield[ec]);
           clog << "Read something from websocket: " << ec << '\n';
           if (ec)
-            return;
+            break;
           if (ws.got_text()) {
             string message;
             save_stream(message);
@@ -237,6 +238,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                   });
           } else {
             clog << "Unsupported WebSocket opcode: " << '\n';
+            break;
           }
         }
       }
