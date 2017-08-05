@@ -94,13 +94,37 @@ void deserialize_heterogenous(I &i, T &t, index_sequence<Is...>) {
 template <typename T> struct deserializer {
   template <typename U = T, typename I> static auto deserialize(I &i, U &t) {
     if
-      constexpr(is_arithmetic_v<U>) t = deserialize_number<U>(i);
+      constexpr(is_same_v<U, void> || is_same_v<U, void *>) {}
+    else if
+      constexpr(is_same_v<U, char16_t>) {
+        struct cvt32 : codecvt<char32_t, char, mbstate_t> {};
+        wstring_convert<cvt32, char32_t> cvter32;
+        u32string c32s;
+        c32s += deserialize_number<char32_t>(i);
+        auto cs = cvter32.to_bytes(c32s);
+
+        struct cvt16 : codecvt<char16_t, char, mbstate_t> {};
+        wstring_convert<cvt16, char16_t> cvter16;
+        auto ts = cvter16.from_bytes(cs);
+        t = ts[0];
+      }
+    else if
+      constexpr(is_same_v<U, wchar_t>) {
+        char s[sizeof(char32_t)];
+        auto n = min(utflen(*i), sizeof(s));
+        copy_n(i, n, s);
+        i += n;
+        mbstate_t state;
+        mbrtowc(&t, s, n, &state);
+      }
     else if
       constexpr(is_enum_v<U>) {
         underlying_type_t<U> u;
         deserializer<decltype(u)>::deserialize(i, u);
         t = static_cast<U>(u);
       }
+    else if
+      constexpr(is_arithmetic_v<U>) t = deserialize_number<U>(i);
     else if
       constexpr(is_sequence<U>) {
         if
@@ -110,33 +134,6 @@ template <typename T> struct deserializer {
           deserialize_sequence<typename U::value_type>(i, inserter(t, end(t)));
       }
   }
-  template <typename U = T, typename I>
-  static auto deserialize(I &i, char16_t &t)
-      -> enable_if_t<is_same<U, char16_t>::value> {
-    struct cvt32 : codecvt<char32_t, char, mbstate_t> {};
-    wstring_convert<cvt32, char32_t> cvter32;
-    u32string c32s;
-    c32s += deserialize_number<char32_t>(i);
-    auto cs = cvter32.to_bytes(c32s);
-
-    struct cvt16 : codecvt<char16_t, char, mbstate_t> {};
-    wstring_convert<cvt16, char16_t> cvter16;
-    auto ts = cvter16.from_bytes(cs);
-    t = ts[0];
-  }
-  template <typename U = T, typename I>
-  static auto deserialize(I &i, wchar_t &t)
-      -> enable_if_t<is_same<U, wchar_t>::value> {
-    char s[sizeof(char32_t)];
-    auto n = min(utflen(*i), sizeof(s));
-    copy_n(i, n, s);
-    i += n;
-    mbstate_t state;
-    mbrtowc(&t, s, n, &state);
-  }
-};
-template <> struct deserializer<void *> {
-  template <typename I> static auto deserialize(I &i, void *) {}
 };
 template <typename T, size_t N> struct deserializer<T[N]> {
   template <typename I> static void deserialize(I &i, T (&t)[N]) {
