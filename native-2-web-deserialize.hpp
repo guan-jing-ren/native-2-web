@@ -92,9 +92,23 @@ void deserialize_heterogenous(I &i, T &t, index_sequence<Is...>) {
 }
 
 template <typename T> struct deserializer {
-  template <typename U = T, typename I>
-  static auto deserialize(I &i, U &t) -> enable_if_t<is_arithmetic<U>::value> {
-    t = deserialize_number<U>(i);
+  template <typename U = T, typename I> static auto deserialize(I &i, U &t) {
+    if
+      constexpr(is_arithmetic_v<U>) t = deserialize_number<U>(i);
+    else if
+      constexpr(is_enum_v<U>) {
+        underlying_type_t<U> u;
+        deserializer<decltype(u)>::deserialize(i, u);
+        t = static_cast<U>(u);
+      }
+    else if
+      constexpr(is_sequence<U>) {
+        if
+          constexpr(is_pushback_sequence<U>)
+              deserialize_sequence<typename U::value_type>(i, back_inserter(t));
+        else
+          deserialize_sequence<typename U::value_type>(i, inserter(t, end(t)));
+      }
   }
   template <typename U = T, typename I>
   static auto deserialize(I &i, char16_t &t)
@@ -119,12 +133,6 @@ template <typename T> struct deserializer {
     i += n;
     mbstate_t state;
     mbrtowc(&t, s, n, &state);
-  }
-  template <typename U = T, typename I>
-  static auto deserialize(I &i, U &t) -> enable_if_t<is_enum<U>{}> {
-    underlying_type_t<U> u;
-    deserialize(i, u);
-    t = static_cast<U>(u);
   }
 };
 template <> struct deserializer<void *> {
@@ -173,48 +181,10 @@ struct deserializer<basic_string<T, Traits...>> {
       t = utf8;
   }
 };
-template <typename T, typename... Traits>
-struct deserializer<vector<T, Traits...>> {
-  template <typename I> static void deserialize(I &i, vector<T, Traits...> &t) {
-    deserialize_sequence<T>(i, back_inserter(t));
-  }
-};
-template <typename T, typename... Traits>
-struct deserializer<list<T, Traits...>> {
-  template <typename I> static void deserialize(I &i, list<T, Traits...> &t) {
-    deserialize_sequence<T>(i, back_inserter(t));
-  }
-};
-template <typename T, typename... Traits>
-struct deserializer<forward_list<T, Traits...>> {
-  template <typename I>
-  static void deserialize(I &i, forward_list<T, Traits...> &t) {
-    deserialize_sequence<T>(i, back_inserter(t));
-  }
-};
-template <typename T, typename... Traits>
-struct deserializer<deque<T, Traits...>> {
-  template <typename I> static void deserialize(I &i, deque<T, Traits...> &t) {
-    deserialize_sequence<T>(i, back_inserter(t));
-  }
-};
-template <typename T, typename... Traits>
-struct deserializer<set<T, Traits...>> {
-  template <typename I> static void deserialize(I &i, set<T, Traits...> &t) {
-    deserialize_sequence<T>(i, inserter(t, begin(t)));
-  }
-};
 template <typename T, typename U, typename... Traits>
 struct deserializer<map<T, U, Traits...>> {
   template <typename I> static void deserialize(I &i, map<T, U, Traits...> &t) {
     deserialize_associative<T, U>(i, t);
-  }
-};
-template <typename T, typename... Traits>
-struct deserializer<unordered_set<T, Traits...>> {
-  template <typename I>
-  static void deserialize(I &i, unordered_set<T, Traits...> &t) {
-    deserialize_sequence<T>(i, inserter(t, begin(t)));
   }
 };
 template <typename T, typename U, typename... Traits>
@@ -224,25 +194,11 @@ struct deserializer<unordered_map<T, U, Traits...>> {
     deserialize_associative<T, U>(i, t);
   }
 };
-template <typename T, typename... Traits>
-struct deserializer<multiset<T, Traits...>> {
-  template <typename I>
-  static void deserialize(I &i, multiset<T, Traits...> &t) {
-    deserialize_sequence<T>(i, inserter(t, begin(t)));
-  }
-};
 template <typename T, typename U, typename... Traits>
 struct deserializer<multimap<T, U, Traits...>> {
   template <typename I>
   static void deserialize(I &i, multimap<T, U, Traits...> &t) {
     deserialize_associative<T, U>(i, t);
-  }
-};
-template <typename T, typename... Traits>
-struct deserializer<unordered_multiset<T, Traits...>> {
-  template <typename I>
-  static void deserialize(I &i, unordered_multiset<T, Traits...> &t) {
-    deserialize_sequence<T>(i, inserter(t, begin(t)));
   }
 };
 template <typename T, typename U, typename... Traits>
