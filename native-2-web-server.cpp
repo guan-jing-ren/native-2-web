@@ -29,24 +29,10 @@ using namespace beast;
 
 template <typename Handler>
 class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
-  ip::tcp::socket socket;
-  websocket::stream<ip::tcp::socket &> ws;
-  atomic_uintmax_t ticket{0};
-  atomic_uintmax_t serving{0};
 
-  boost::asio::streambuf buf;
-
-  struct NullHandler {
-    http::response<http::string_body>
-    operator()(const http::request<http::string_body> &request) {
-      auto response = http::response<http::string_body>{};
-      response.version = request.version;
-      response.result(501);
-      response.reason("Not Implemented");
-      response.body = "n2w server does implement websocket handling";
-      return response;
-    }
-  };
+  /***************************/
+  /* HTTP SFINAE DEFINITIONS */
+  /***************************/
 
   static auto http_support(...) -> false_type;
   template <typename T = Handler>
@@ -55,7 +41,9 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   static constexpr bool supports_http =
       !is_same_v<decltype(http_support(declval<Handler *>())), false_type>;
 
-  conditional_t<supports_http, Handler, NullHandler> handler;
+  /**************************************/
+  /* BASIC WEBSOCKET SFINAE DEFINITIONS */
+  /**************************************/
 
   static auto websocket_support(...) -> false_type;
   template <typename T = Handler>
@@ -64,13 +52,6 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
       decltype(websocket_support(declval<Handler *>()));
   static constexpr bool supports_websocket =
       !is_same_v<websocket_handler_type, false_type>;
-
-  struct websocket_stuff {
-    websocket_handler_type websocket_handler;
-    istream stream;
-    websocket_stuff(boost::asio::streambuf *buf) : stream(buf) {}
-  };
-  conditional_t<supports_websocket, websocket_stuff, void *> ws_stuff{&buf};
 
   template <typename> static auto websocket_handles(...) -> false_type;
   template <typename V, typename T = Handler>
@@ -86,6 +67,10 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                      websocket_handles<vector<uint8_t>>(declval<Handler *>())),
                  false_type>;
 
+  /*****************************************/
+  /* EXTENDED WEBSOCKET SFINAE DEFINITIONS */
+  /*****************************************/
+
   template <typename> static auto websocket_pushes(...) -> false_type;
   template <typename V, typename T = Handler>
   static auto websocket_pushes(T *)
@@ -100,8 +85,44 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                      websocket_pushes<vector<uint8_t>>(declval<Handler *>())),
                  false_type>;
 
-  template <typename, typename... Args>
-  friend void accept(reference_wrapper<io_service> service, Args &&... args);
+  /**********************************/
+  /* INTERNAL STRUCTURE DEFINITIONS */
+  /**********************************/
+
+  struct NullHandler {
+    http::response<http::string_body>
+    operator()(const http::request<http::string_body> &request) {
+      auto response = http::response<http::string_body>{};
+      response.version = request.version;
+      response.result(501);
+      response.reason("Not Implemented");
+      response.body = "n2w server does implement websocket handling";
+      return response;
+    }
+  };
+
+  struct websocket_stuff {
+    websocket_handler_type websocket_handler;
+    istream stream;
+    websocket_stuff(boost::asio::streambuf *buf) : stream(buf) {}
+  };
+
+  /*******************/
+  /* INTERNAL LAYOUT */
+  /*******************/
+
+  ip::tcp::socket socket;
+  websocket::stream<ip::tcp::socket &> ws;
+  atomic_uintmax_t ticket{0};
+  atomic_uintmax_t serving{0};
+
+  boost::asio::streambuf buf;
+  conditional_t<supports_http, Handler, NullHandler> handler;
+  conditional_t<supports_websocket, websocket_stuff, void *> ws_stuff{&buf};
+
+  /***********************/
+  /* INTERNAL OPERATIONS */
+  /***********************/
 
   template <typename R>
   void write_response(yield_context yield, R reply, uintmax_t tkt) {
@@ -257,9 +278,15 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
       constexpr(websocket_pushes_binary) ws_stuff.websocket_handler(pusher);
   }
 
-public:
+  /***********************/
+  /* EXTERNAL INTERFACES */
+  /***********************/
+
   n2w_connection(io_service &service)
       : socket{service}, ws{socket}, ws_stuff(&buf) {}
+
+  template <typename, typename... Args>
+  friend void accept(reference_wrapper<io_service> service, Args &&... args);
 };
 
 template <typename Handler, typename... Args>
@@ -270,7 +297,8 @@ void accept(reference_wrapper<io_service> service, Args &&... args) {
     acceptor.listen();
     while (true) {
       boost::system::error_code ec;
-      auto connection = make_shared<n2w_connection<Handler>>(service);
+      shared_ptr<n2w_connection<Handler>> connection{
+          new n2w_connection<Handler>{service}};
       acceptor.async_accept(connection->socket, yield[ec]);
       clog << "Thread: " << this_thread::get_id()
            << "; Accepted connection: " << ec << '\n';
@@ -502,8 +530,8 @@ int main() {
 
   accept<http_handler>(service, ip::address_v4::from_string("0.0.0.0"), 9001);
 
-  // struct dummy_handler {};
-  // accept<dummy_handler>(service, acceptor);
+  struct dummy_handler {};
+  accept<dummy_handler>(service, ip::address_v4::from_string("0.0.0.0"), 9003);
 
   struct ws_only_handler {
     struct websocket_handler_type {
