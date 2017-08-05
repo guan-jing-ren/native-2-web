@@ -108,7 +108,7 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
     basic_waitable_timer<chrono::steady_clock> timer{socket.get_io_service()};
     while (tkt != serving) {
       clog << "Waiting to serve: " << tkt << ", currently serving: " << serving
-           << '\n';
+           << ", is open: " << boolalpha << socket.is_open() << '\n';
       timer.expires_from_now(chrono::milliseconds{10});
       timer.async_wait(yield);
     }
@@ -195,10 +195,12 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
       async([ this, request = move(request) ]() { return handler(request); });
     }
+    clog << "Finished serving socket\n";
 
     return;
   do_upgrade:
     ws_serve(yield);
+    clog << "Finished serving websocket\n";
   }
 
   void ws_serve(yield_context yield) {
@@ -260,29 +262,6 @@ public:
       : socket{service}, ws{socket}, ws_stuff(&buf) {}
 };
 
-template <typename Handler>
-void check_use_count(reference_wrapper<io_service> service,
-                     weak_ptr<n2w_connection<Handler>> conn,
-                     uintptr_t conn_id) {
-  spawn(service.get(), [service, conn, conn_id](yield_context yield) {
-    basic_waitable_timer<chrono::system_clock> timer{service};
-
-    while (true) {
-      timer.expires_from_now(chrono::seconds{1});
-
-      clog << "Connection " << conn_id << " use count: " << conn.use_count()
-           << '\n';
-      if (conn.expired() || conn.use_count() < 2)
-        return;
-
-      boost::system::error_code ec;
-      timer.async_wait(yield[ec]);
-      if (ec == error::operation_aborted)
-        break;
-    }
-  });
-}
-
 template <typename Handler, typename... Args>
 void accept(reference_wrapper<io_service> service, Args &&... args) {
   spawn(service.get(), [ service, endpoint = ip::tcp::endpoint(args...) ](
@@ -297,10 +276,10 @@ void accept(reference_wrapper<io_service> service, Args &&... args) {
            << "; Accepted connection: " << ec << '\n';
       if (ec)
         break;
-      spawn(service.get(),
-            [connection](yield_context yield) { connection->serve(yield); });
-      check_use_count<Handler>(service, connection,
-                               reinterpret_cast<uintptr_t>(connection.get()));
+      spawn(
+          service.get(), [connection = move(connection)](yield_context yield) {
+            connection->serve(yield);
+          });
     }
   });
 }
