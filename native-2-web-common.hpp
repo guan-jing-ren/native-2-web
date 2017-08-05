@@ -94,6 +94,12 @@ template <typename... Ts> constexpr bool is_pushback_sequence<std::set<Ts...>> =
 template <typename... Ts> constexpr bool is_pushback_sequence<std::unordered_set<Ts...>> = false;
 template <typename... Ts> constexpr bool is_pushback_sequence<std::multiset<Ts...>> = false;
 template <typename... Ts> constexpr bool is_pushback_sequence<std::unordered_multiset<Ts...>> = false;
+
+template <typename> constexpr bool is_associative = false;
+template <typename... Ts> constexpr bool is_associative<std::map<Ts...>> = true;
+template <typename... Ts> constexpr bool is_associative<std::unordered_map<Ts...>> = true;
+template <typename... Ts> constexpr bool is_associative<std::multimap<Ts...>> = true;
+template <typename... Ts> constexpr bool is_associative<std::unordered_multimap<Ts...>> = true;
 // clang-format on
 
 template <typename S, typename M, typename B> struct structure;
