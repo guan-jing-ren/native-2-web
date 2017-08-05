@@ -75,6 +75,27 @@ template <typename T> constexpr auto serial_size = sizeof(T);
 // template <> constexpr auto serial_size<wchar_t> = sizeof(char32_t);
 
 namespace n2w {
+
+// clang-format off
+template <typename T> constexpr bool is_sequence = false;
+template <typename T, size_t N> constexpr bool is_sequence<T[N]> = true;
+template <typename T, size_t N> constexpr bool is_sequence<std::array<T, N>> = true;
+template <typename... Ts> constexpr bool is_sequence<std::vector<Ts...>> = true;
+template <typename... Ts> constexpr bool is_sequence<std::list<Ts...>> = true;
+template <typename... Ts> constexpr bool is_sequence<std::forward_list<Ts...>> = true;
+template <typename... Ts> constexpr bool is_sequence<std::deque<Ts...>> = true;
+template <typename... Ts> constexpr bool is_sequence<std::set<Ts...>> = true;
+template <typename... Ts> constexpr bool is_sequence<std::unordered_set<Ts...>> = true;
+template <typename... Ts> constexpr bool is_sequence<std::multiset<Ts...>> = true;
+template <typename... Ts> constexpr bool is_sequence<std::unordered_multiset<Ts...>> = true;
+
+template <typename T> constexpr bool is_pushback_sequence = is_sequence<T>;
+template <typename... Ts> constexpr bool is_pushback_sequence<std::set<Ts...>> = false;
+template <typename... Ts> constexpr bool is_pushback_sequence<std::unordered_set<Ts...>> = false;
+template <typename... Ts> constexpr bool is_pushback_sequence<std::multiset<Ts...>> = false;
+template <typename... Ts> constexpr bool is_pushback_sequence<std::unordered_multiset<Ts...>> = false;
+// clang-format on
+
 template <typename S, typename M, typename B> struct structure;
 
 template <typename S, typename T, typename... Ts, typename... Bs>
