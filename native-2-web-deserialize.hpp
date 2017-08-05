@@ -133,6 +133,10 @@ template <typename T> struct deserializer {
         else
           deserialize_sequence<typename U::value_type>(i, inserter(t, end(t)));
       }
+    else if
+      constexpr(is_associative<U>)
+          deserialize_associative<typename U::key_type,
+                                  typename U::mapped_type>(i, t);
   }
 };
 template <typename T, size_t N> struct deserializer<T[N]> {
@@ -176,33 +180,6 @@ struct deserializer<basic_string<T, Traits...>> {
       }
     else
       t = utf8;
-  }
-};
-template <typename T, typename U, typename... Traits>
-struct deserializer<map<T, U, Traits...>> {
-  template <typename I> static void deserialize(I &i, map<T, U, Traits...> &t) {
-    deserialize_associative<T, U>(i, t);
-  }
-};
-template <typename T, typename U, typename... Traits>
-struct deserializer<unordered_map<T, U, Traits...>> {
-  template <typename I>
-  static void deserialize(I &i, unordered_map<T, U, Traits...> &t) {
-    deserialize_associative<T, U>(i, t);
-  }
-};
-template <typename T, typename U, typename... Traits>
-struct deserializer<multimap<T, U, Traits...>> {
-  template <typename I>
-  static void deserialize(I &i, multimap<T, U, Traits...> &t) {
-    deserialize_associative<T, U>(i, t);
-  }
-};
-template <typename T, typename U, typename... Traits>
-struct deserializer<unordered_multimap<T, U, Traits...>> {
-  template <typename I>
-  static void deserialize(I &i, unordered_multimap<T, U, Traits...> &t) {
-    deserialize_associative<T, U>(i, t);
   }
 };
 template <typename S, typename T, typename... Ts, typename... Bs>
