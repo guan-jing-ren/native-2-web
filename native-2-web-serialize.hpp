@@ -199,7 +199,7 @@ template <typename T> struct serializer<optional<T>> {
 };
 template <typename... Ts> struct serializer<variant<Ts...>> {
   template <typename I> static void serialize(const variant<Ts...> &v, I &i) {
-    serializer<uint32_t>::serialize(static_cast<uint32_t>(v.index()), i);
+    serializer<uint32_t>::serialize(v.index(), i);
     visit(
         [&i](const auto &t) {
           serializer<remove_cv_t<remove_reference_t<decltype(t)>>>::serialize(
@@ -212,7 +212,7 @@ template <typename R, intmax_t N, intmax_t D>
 struct serializer<chrono::duration<R, ratio<N, D>>> {
   template <typename I>
   static void serialize(const chrono::duration<R, ratio<N, D>> &t, I &i) {
-    serializer<double>::serialize(static_cast<double>(t.count()), i);
+    serializer<double>::serialize(t.count(), i);
   }
 };
 template <typename C, typename D> struct serializer<chrono::time_point<C, D>> {
@@ -223,8 +223,7 @@ template <typename C, typename D> struct serializer<chrono::time_point<C, D>> {
 };
 template <typename T> struct serializer<complex<T>> {
   template <typename I> static void serialize(const complex<T> &c, I &i) {
-    serializer<T>::serialize(c.real(), i);
-    serializer<T>::serialize(c.imag(), i);
+    serializer<pair<T, T>>::serialize(make_pair(c.real(), c.imag()), i);
   }
 };
 template <typename T> struct serializer<atomic<T>> {
@@ -240,16 +239,15 @@ template <size_t N> struct serializer<bitset<N>> {
 template <> struct serializer<filesystem::space_info> {
   template <typename I>
   static void serialize(const filesystem::space_info &s, I &i) {
-    serializer<double>::serialize<double>(s.capacity, i);
-    serializer<double>::serialize<double>(s.free, i);
-    serializer<double>::serialize<double>(s.available, i);
+    serializer<tuple<double, double, double>>::serialize(
+        make_tuple(s.capacity, s.free, s.available), i);
   }
 };
 template <> struct serializer<filesystem::file_status> {
   template <typename I>
   static void serialize(const filesystem::file_status &f, I &i) {
-    serializer<decltype(f.type())>::serialize(f.type(), i);
-    serializer<decltype(f.permissions())>::serialize(f.permissions(), i);
+    serializer<pair<filesystem::file_type, filesystem::perms>>::serialize(
+        make_pair(f.type(), f.permissions()), i);
   }
 };
 template <> struct serializer<filesystem::path> {
@@ -263,22 +261,24 @@ template <> struct serializer<filesystem::path> {
 template <> struct serializer<filesystem::directory_entry> {
   template <typename I>
   static void serialize(const filesystem::directory_entry &d, I &i) {
-    serializer<filesystem::path>::serialize(d.path(), i);
-    // serializer<bool>::serialize(d.exists(), i);
     error_code ec;
-    serializer<bool>::serialize(filesystem::exists(d, ec), i);
+    serializer<
+        tuple<filesystem::path, bool, uint32_t, uint32_t,
+              decltype(filesystem::last_write_time(d).time_since_epoch()),
+              filesystem::file_status>>::
+        serialize(
+            make_tuple(d.path(), filesystem::exists(d, ec),
+                       filesystem::file_size(d.path(), ec),
+                       filesystem::hard_link_count(d.path(), ec),
+                       filesystem::last_write_time(d, ec).time_since_epoch(),
+                       d.symlink_status(ec)),
+            i);
+    // serializer<bool>::serialize(d.exists(), i);
     // serializer<uint32_t>::serialize(d.file_size(), i);
-    serializer<uint32_t>::serialize(
-        static_cast<uint32_t>(filesystem::file_size(d.path(), ec)), i);
     // serializer<uint32_t>::serialize(d.hard_link_count(),
     //                                                      i);
-    serializer<uint32_t>::serialize(
-        static_cast<uint32_t>(filesystem::hard_link_count(d.path(), ec)), i);
     // serializer<decltype(d.last_write_time().time_since_epoch())>::serialize(
     //     d.last_write_time().time_since_epoch(), i);
-    serializer<decltype(filesystem::last_write_time(d).time_since_epoch())>::
-        serialize(filesystem::last_write_time(d, ec).time_since_epoch(), i);
-    serializer<filesystem::file_status>::serialize(d.symlink_status(ec), i);
   }
 };
 
