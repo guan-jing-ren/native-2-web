@@ -94,7 +94,7 @@ template <typename I, typename T, size_t... Is>
 void serialize_heterogenous(const T &t, index_sequence<Is...>, I &i) {
   using std::get;
   using n2w::get;
-  for (auto rc : {serialize_index(get<Is>(t), i)...})
+  for (auto rc : initializer_list<int>{serialize_index(get<Is>(t), i)...})
     (void)rc;
 }
 
@@ -151,11 +151,6 @@ template <typename T, size_t N> struct serializer<T[N]> {
 template <typename T, size_t M, size_t N> struct serializer<T[M][N]> {
   template <typename I> static void serialize(const T (&t)[M][N], I &i) {
     serializer<T[M * N]>::serialize(reinterpret_cast<const T(&)[M * N]>(t), i);
-  }
-};
-template <typename T, size_t N> struct serializer<array<T, N>> {
-  template <typename I> static void serialize(const array<T, N> &t, I &i) {
-    serialize_sequence_bounded<T>(N, cbegin(t), i);
   }
 };
 template <typename T, typename... Traits>

@@ -87,7 +87,7 @@ template <typename I, typename T, size_t... Is>
 void deserialize_heterogenous(I &i, T &t, index_sequence<Is...>) {
   using std::get;
   using n2w::get;
-  for (auto rc : {deserialize_index(i, get<Is>(t))...})
+  for (auto rc : initializer_list<int>{deserialize_index(i, get<Is>(t))...})
     (void)rc;
 }
 
@@ -150,11 +150,6 @@ template <typename T, size_t N> struct deserializer<T[N]> {
 template <typename T, size_t M, size_t N> struct deserializer<T[M][N]> {
   template <typename I> static void deserialize(I &i, T (&t)[M][N]) {
     deserializer<T[M * N]>::deserialize(i, reinterpret_cast<T(&)[M * N]>(t));
-  }
-};
-template <typename T, size_t N> struct deserializer<array<T, N>> {
-  template <typename I> static void deserialize(I &i, array<T, N> &t) {
-    deserialize_sequence<T>(N, i, begin(t), is_arithmetic<T>{});
   }
 };
 template <typename T, typename... Traits>

@@ -79,7 +79,6 @@ namespace n2w {
 // clang-format off
 template <typename T> constexpr bool is_sequence = false;
 template <typename T, size_t N> constexpr bool is_sequence<T[N]> = true;
-template <typename T, size_t N> constexpr bool is_sequence<std::array<T, N>> = true;
 template <typename... Ts> constexpr bool is_sequence<std::vector<Ts...>> = true;
 template <typename... Ts> constexpr bool is_sequence<std::list<Ts...>> = true;
 template <typename... Ts> constexpr bool is_sequence<std::forward_list<Ts...>> = true;
@@ -104,6 +103,7 @@ template <typename... Ts> constexpr bool is_associative<std::unordered_multimap<
 template <typename> constexpr bool is_heterogenous = false;
 template <typename T, typename U> constexpr bool is_heterogenous<std::pair<T, U>> = true;
 template <typename... Ts> constexpr bool is_heterogenous<std::tuple<Ts...>> = true;
+template <typename T, size_t N> constexpr bool is_heterogenous<std::array<T, N>> = true;
 // clang-format on
 
 template <typename S, typename M, typename B> struct structure;
