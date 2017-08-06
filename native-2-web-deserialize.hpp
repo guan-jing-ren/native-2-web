@@ -126,6 +126,9 @@ template <typename T> struct deserializer {
     else if
       constexpr(is_arithmetic_v<U>) t = deserialize_number<U>(i);
     else if
+      constexpr(is_heterogenous<U>) deserialize_heterogenous(
+          i, t, make_index_sequence<tuple_size_v<U>>{});
+    else if
       constexpr(is_sequence<U>) {
         if
           constexpr(is_pushback_sequence<U>)
@@ -152,16 +155,6 @@ template <typename T, size_t M, size_t N> struct deserializer<T[M][N]> {
 template <typename T, size_t N> struct deserializer<array<T, N>> {
   template <typename I> static void deserialize(I &i, array<T, N> &t) {
     deserialize_sequence<T>(N, i, begin(t), is_arithmetic<T>{});
-  }
-};
-template <typename T, typename U> struct deserializer<pair<T, U>> {
-  template <typename I> static void deserialize(I &i, pair<T, U> &t) {
-    deserialize_heterogenous(i, t, make_index_sequence<2>{});
-  }
-};
-template <typename T, typename... Ts> struct deserializer<tuple<T, Ts...>> {
-  template <typename I> static void deserialize(I &i, tuple<T, Ts...> &t) {
-    deserialize_heterogenous(i, t, make_index_sequence<sizeof...(Ts) + 1>{});
   }
 };
 template <typename T, typename... Traits>

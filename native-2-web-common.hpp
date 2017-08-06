@@ -100,6 +100,10 @@ template <typename... Ts> constexpr bool is_associative<std::map<Ts...>> = true;
 template <typename... Ts> constexpr bool is_associative<std::unordered_map<Ts...>> = true;
 template <typename... Ts> constexpr bool is_associative<std::multimap<Ts...>> = true;
 template <typename... Ts> constexpr bool is_associative<std::unordered_multimap<Ts...>> = true;
+
+template <typename> constexpr bool is_heterogenous = false;
+template <typename T, typename U> constexpr bool is_heterogenous<std::pair<T, U>> = true;
+template <typename... Ts> constexpr bool is_heterogenous<std::tuple<Ts...>> = true;
 // clang-format on
 
 template <typename S, typename M, typename B> struct structure;
