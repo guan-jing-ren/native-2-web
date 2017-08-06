@@ -126,15 +126,13 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
   template <typename R>
   void write_response(yield_context yield, R reply, uintmax_t tkt) {
-    basic_waitable_timer<chrono::steady_clock> timer{socket.get_io_service()};
+    boost::system::error_code ec;
     while (tkt != serving) {
       clog << "Waiting to serve: " << tkt << ", currently serving: " << serving
            << ", is open: " << boolalpha << socket.is_open() << '\n';
-      timer.expires_from_now(chrono::milliseconds{10});
-      timer.async_wait(yield);
+      socket.get_io_service().post(yield[ec]);
     }
 
-    boost::system::error_code ec;
     string response_type;
     if
       constexpr(is_same_v<R, http::response<http::string_body>>) {
@@ -190,8 +188,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   }
 
   void serve(yield_context yield) {
+    boost::system::error_code ec;
     while (true) {
-      boost::system::error_code ec;
       http::request<http::string_body> request;
       http::async_read(socket, buf, request, yield[ec]);
       clog << "Thread: " << this_thread::get_id()
@@ -221,15 +219,13 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
 
     return;
   do_upgrade:
-    ws_serve(yield);
+    ws_serve(ec, yield);
     clog << "Finished serving websocket\n";
   }
 
-  void ws_serve(yield_context yield) {
+  void ws_serve(boost::system::error_code ec, yield_context yield) {
     if
       constexpr(supports_websocket) {
-        boost::system::error_code ec;
-
         auto save_stream = [this](auto &message) {
           copy(istream_iterator<char>(ws_stuff.stream), {},
                back_inserter(message));
@@ -294,10 +290,14 @@ template <typename Handler, typename... Args>
 void accept(reference_wrapper<io_service> service, Args &&... args) {
   spawn(service.get(), [ service, endpoint = ip::tcp::endpoint(args...) ](
                            yield_context yield) {
+    boost::system::error_code ec;
     ip::tcp::acceptor acceptor{service, endpoint, true};
-    acceptor.listen();
+    acceptor.listen(socket_base::max_connections, ec);
+    clog << "Thread: " << this_thread::get_id()
+         << "; Start listening for connections: " << ec << '\n';
+    if (ec)
+      return;
     while (true) {
-      boost::system::error_code ec;
       shared_ptr<n2w_connection<Handler>> connection{
           new n2w_connection<Handler>{service}};
       acceptor.async_accept(connection->socket, yield[ec]);
