@@ -99,12 +99,11 @@ void serialize_heterogenous(const T &t, index_sequence<Is...>, I &i) {
 }
 
 template <typename T> struct serializer {
-  template <typename U = T, typename I>
-  static auto serialize(const U &t, I &i) {
+  template <typename I> static auto serialize(const T &t, I &i) {
     if
-      constexpr(is_void_v<U> || is_same_v<U, void *>);
+      constexpr(is_void_v<T> || is_same_v<T, void *>);
     else if
-      constexpr(is_same_v<U, char16_t>) {
+      constexpr(is_same_v<T, char16_t>) {
         u16string ts;
         ts += t;
         struct cvt16 : codecvt<char16_t, char, mbstate_t> {};
@@ -116,7 +115,7 @@ template <typename T> struct serializer {
         serialize_number<char32_t>(c32s[0], i);
       }
     else if
-      constexpr(is_same_v<U, wchar_t>) {
+      constexpr(is_same_v<T, wchar_t>) {
         wstring ts;
         ts += t;
         struct wcvt : codecvt<wchar_t, char, mbstate_t> {};
@@ -128,19 +127,19 @@ template <typename T> struct serializer {
         serialize_number<char32_t>(c32s[0], i);
       }
     else if
-      constexpr(is_enum_v<U>)
-          serialize(static_cast<underlying_type_t<U>>(t), i);
+      constexpr(is_enum_v<T>) serializer<underlying_type_t<T>>::serialize(
+          static_cast<underlying_type_t<T>>(t), i);
     else if
-      constexpr(is_arithmetic_v<U>) serialize_number(t, i);
+      constexpr(is_arithmetic_v<T>) serialize_number(t, i);
     else if
-      constexpr(is_heterogenous<U>)
-          serialize_heterogenous(t, make_index_sequence<tuple_size_v<U>>{}, i);
+      constexpr(is_heterogenous<T>)
+          serialize_heterogenous(t, make_index_sequence<tuple_size_v<T>>{}, i);
     else if
-      constexpr(is_sequence<U>)
-          serialize_sequence<typename U::value_type>(t.size(), cbegin(t), i);
+      constexpr(is_sequence<T>)
+          serialize_sequence<typename T::value_type>(t.size(), cbegin(t), i);
     else if
-      constexpr(is_associative<U>)
-          serialize_associative<typename U::key_type, typename U::mapped_type>(
+      constexpr(is_associative<T>)
+          serialize_associative<typename T::key_type, typename T::mapped_type>(
               t, i);
   }
 };

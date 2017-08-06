@@ -92,11 +92,11 @@ void deserialize_heterogenous(I &i, T &t, index_sequence<Is...>) {
 }
 
 template <typename T> struct deserializer {
-  template <typename U = T, typename I> static auto deserialize(I &i, U &t) {
+  template <typename I> static auto deserialize(I &i, T &t) {
     if
-      constexpr(is_void_v<U> || is_same_v<U, void *>);
+      constexpr(is_void_v<T> || is_same_v<T, void *>);
     else if
-      constexpr(is_same_v<U, char16_t>) {
+      constexpr(is_same_v<T, char16_t>) {
         struct cvt32 : codecvt<char32_t, char, mbstate_t> {};
         wstring_convert<cvt32, char32_t> cvter32;
         u32string c32s;
@@ -109,7 +109,7 @@ template <typename T> struct deserializer {
         t = ts[0];
       }
     else if
-      constexpr(is_same_v<U, wchar_t>) {
+      constexpr(is_same_v<T, wchar_t>) {
         char s[sizeof(char32_t)];
         auto n = min(utflen(*i), sizeof(s));
         copy_n(i, n, s);
@@ -118,28 +118,28 @@ template <typename T> struct deserializer {
         mbrtowc(&t, s, n, &state);
       }
     else if
-      constexpr(is_enum_v<U>) {
-        underlying_type_t<U> u;
+      constexpr(is_enum_v<T>) {
+        underlying_type_t<T> u;
         deserializer<decltype(u)>::deserialize(i, u);
-        t = static_cast<U>(u);
+        t = static_cast<T>(u);
       }
     else if
-      constexpr(is_arithmetic_v<U>) t = deserialize_number<U>(i);
+      constexpr(is_arithmetic_v<T>) t = deserialize_number<T>(i);
     else if
-      constexpr(is_heterogenous<U>) deserialize_heterogenous(
-          i, t, make_index_sequence<tuple_size_v<U>>{});
+      constexpr(is_heterogenous<T>) deserialize_heterogenous(
+          i, t, make_index_sequence<tuple_size_v<T>>{});
     else if
-      constexpr(is_sequence<U>) {
+      constexpr(is_sequence<T>) {
         if
-          constexpr(is_pushback_sequence<U>)
-              deserialize_sequence<typename U::value_type>(i, back_inserter(t));
+          constexpr(is_pushback_sequence<T>)
+              deserialize_sequence<typename T::value_type>(i, back_inserter(t));
         else
-          deserialize_sequence<typename U::value_type>(i, inserter(t, end(t)));
+          deserialize_sequence<typename T::value_type>(i, inserter(t, end(t)));
       }
     else if
-      constexpr(is_associative<U>)
-          deserialize_associative<typename U::key_type,
-                                  typename U::mapped_type>(i, t);
+      constexpr(is_associative<T>)
+          deserialize_associative<typename T::key_type,
+                                  typename T::mapped_type>(i, t);
   }
 };
 template <typename T, size_t N> struct deserializer<T[N]> {
