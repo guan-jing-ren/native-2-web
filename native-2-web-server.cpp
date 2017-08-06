@@ -170,20 +170,21 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
                 is_same<T, string>::value ||
                 is_same<T, vector<uint8_t>>::value) {
         spawn(socket.get_io_service(), [
-          self = this->shared_from_this(), t = forward<T>(t), tkt = ticket++
-        ](yield_context yield) { self->write_response(yield, move(t), tkt); });
+          this, self = this->shared_from_this(), t = forward<T>(t),
+          tkt = ticket++
+        ](yield_context yield) { write_response(yield, move(t), tkt); });
       }
     else {
       spawn(socket.get_io_service(), [
-        self = this->shared_from_this(), t = forward<T>(t), tkt = ticket++
+        this, self = this->shared_from_this(), t = forward<T>(t), tkt = ticket++
       ](yield_context yield) {
         if
           constexpr(is_void<result_of_t<T()>>::value) {
             t();
-            self->write_response(yield, nullptr, tkt);
+            write_response(yield, nullptr, tkt);
           }
         else
-          self->write_response(yield, t(), tkt);
+          write_response(yield, t(), tkt);
       });
     }
   }
@@ -268,8 +269,8 @@ class n2w_connection : public enable_shared_from_this<n2w_connection<Handler>> {
   }
 
   auto register_websocket_pusher() {
-    auto pusher = [self = this->shared_from_this()](auto message) {
-      self->async(message);
+    auto pusher = [ this, self = this->shared_from_this() ](auto message) {
+      async(message);
     };
 
     if
