@@ -94,7 +94,7 @@ void deserialize_heterogenous(I &i, T &t, index_sequence<Is...>) {
 template <typename T> struct deserializer {
   template <typename U = T, typename I> static auto deserialize(I &i, U &t) {
     if
-      constexpr(is_same_v<U, void> || is_same_v<U, void *>) {}
+      constexpr(is_void_v<U> || is_same_v<U, void *>);
     else if
       constexpr(is_same_v<U, char16_t>) {
         struct cvt32 : codecvt<char32_t, char, mbstate_t> {};
