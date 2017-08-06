@@ -75,6 +75,7 @@
         "list": "cpp",
         "__locale": "cpp",
         "queue": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "slist": "cpp"
     }
 }
