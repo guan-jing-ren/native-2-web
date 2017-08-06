@@ -87,48 +87,60 @@ template <typename I, typename T, size_t... Is>
 void deserialize_heterogenous(I &i, T &t, index_sequence<Is...>) {
   using std::get;
   using n2w::get;
-  for (auto rc : {deserialize_index(i, get<Is>(t))...})
+  for (auto rc : initializer_list<int>{deserialize_index(i, get<Is>(t))...})
     (void)rc;
 }
 
 template <typename T> struct deserializer {
-  template <typename U = T, typename I>
-  static auto deserialize(I &i, U &t) -> enable_if_t<is_arithmetic<U>::value> {
-    t = deserialize_number<U>(i);
-  }
-  template <typename U = T, typename I>
-  static auto deserialize(I &i, char16_t &t)
-      -> enable_if_t<is_same<U, char16_t>::value> {
-    struct cvt32 : codecvt<char32_t, char, mbstate_t> {};
-    wstring_convert<cvt32, char32_t> cvter32;
-    u32string c32s;
-    c32s += deserialize_number<char32_t>(i);
-    auto cs = cvter32.to_bytes(c32s);
+  template <typename I> static auto deserialize(I &i, T &t) {
+    if
+      constexpr(is_void_v<T> || is_same_v<T, void *>);
+    else if
+      constexpr(is_same_v<T, char16_t>) {
+        struct cvt32 : codecvt<char32_t, char, mbstate_t> {};
+        wstring_convert<cvt32, char32_t> cvter32;
+        u32string c32s;
+        c32s += deserialize_number<char32_t>(i);
+        auto cs = cvter32.to_bytes(c32s);
 
-    struct cvt16 : codecvt<char16_t, char, mbstate_t> {};
-    wstring_convert<cvt16, char16_t> cvter16;
-    auto ts = cvter16.from_bytes(cs);
-    t = ts[0];
+        struct cvt16 : codecvt<char16_t, char, mbstate_t> {};
+        wstring_convert<cvt16, char16_t> cvter16;
+        auto ts = cvter16.from_bytes(cs);
+        t = ts[0];
+      }
+    else if
+      constexpr(is_same_v<T, wchar_t>) {
+        char s[sizeof(char32_t)];
+        auto n = min(utflen(*i), sizeof(s));
+        copy_n(i, n, s);
+        i += n;
+        mbstate_t state;
+        mbrtowc(&t, s, n, &state);
+      }
+    else if
+      constexpr(is_enum_v<T>) {
+        underlying_type_t<T> u;
+        deserializer<decltype(u)>::deserialize(i, u);
+        t = static_cast<T>(u);
+      }
+    else if
+      constexpr(is_arithmetic_v<T>) t = deserialize_number<T>(i);
+    else if
+      constexpr(is_heterogenous<T>) deserialize_heterogenous(
+          i, t, make_index_sequence<tuple_size_v<T>>{});
+    else if
+      constexpr(is_sequence<T>) {
+        if
+          constexpr(is_pushback_sequence<T>)
+              deserialize_sequence<typename T::value_type>(i, back_inserter(t));
+        else
+          deserialize_sequence<typename T::value_type>(i, inserter(t, end(t)));
+      }
+    else if
+      constexpr(is_associative<T>)
+          deserialize_associative<typename T::key_type,
+                                  typename T::mapped_type>(i, t);
   }
-  template <typename U = T, typename I>
-  static auto deserialize(I &i, wchar_t &t)
-      -> enable_if_t<is_same<U, wchar_t>::value> {
-    char s[sizeof(char32_t)];
-    auto n = min(utflen(*i), sizeof(s));
-    copy_n(i, n, s);
-    i += n;
-    mbstate_t state;
-    mbrtowc(&t, s, n, &state);
-  }
-  template <typename U = T, typename I>
-  static auto deserialize(I &i, U &t) -> enable_if_t<is_enum<U>{}> {
-    underlying_type_t<U> u;
-    deserialize(i, u);
-    t = static_cast<U>(u);
-  }
-};
-template <> struct deserializer<void *> {
-  template <typename I> static auto deserialize(I &i, void *) {}
 };
 template <typename T, size_t N> struct deserializer<T[N]> {
   template <typename I> static void deserialize(I &i, T (&t)[N]) {
@@ -138,21 +150,6 @@ template <typename T, size_t N> struct deserializer<T[N]> {
 template <typename T, size_t M, size_t N> struct deserializer<T[M][N]> {
   template <typename I> static void deserialize(I &i, T (&t)[M][N]) {
     deserializer<T[M * N]>::deserialize(i, reinterpret_cast<T(&)[M * N]>(t));
-  }
-};
-template <typename T, size_t N> struct deserializer<array<T, N>> {
-  template <typename I> static void deserialize(I &i, array<T, N> &t) {
-    deserialize_sequence<T>(N, i, begin(t), is_arithmetic<T>{});
-  }
-};
-template <typename T, typename U> struct deserializer<pair<T, U>> {
-  template <typename I> static void deserialize(I &i, pair<T, U> &t) {
-    deserialize_heterogenous(i, t, make_index_sequence<2>{});
-  }
-};
-template <typename T, typename... Ts> struct deserializer<tuple<T, Ts...>> {
-  template <typename I> static void deserialize(I &i, tuple<T, Ts...> &t) {
-    deserialize_heterogenous(i, t, make_index_sequence<sizeof...(Ts) + 1>{});
   }
 };
 template <typename T, typename... Traits>
@@ -171,85 +168,6 @@ struct deserializer<basic_string<T, Traits...>> {
       }
     else
       t = utf8;
-  }
-};
-template <typename T, typename... Traits>
-struct deserializer<vector<T, Traits...>> {
-  template <typename I> static void deserialize(I &i, vector<T, Traits...> &t) {
-    deserialize_sequence<T>(i, back_inserter(t));
-  }
-};
-template <typename T, typename... Traits>
-struct deserializer<list<T, Traits...>> {
-  template <typename I> static void deserialize(I &i, list<T, Traits...> &t) {
-    deserialize_sequence<T>(i, back_inserter(t));
-  }
-};
-template <typename T, typename... Traits>
-struct deserializer<forward_list<T, Traits...>> {
-  template <typename I>
-  static void deserialize(I &i, forward_list<T, Traits...> &t) {
-    deserialize_sequence<T>(i, back_inserter(t));
-  }
-};
-template <typename T, typename... Traits>
-struct deserializer<deque<T, Traits...>> {
-  template <typename I> static void deserialize(I &i, deque<T, Traits...> &t) {
-    deserialize_sequence<T>(i, back_inserter(t));
-  }
-};
-template <typename T, typename... Traits>
-struct deserializer<set<T, Traits...>> {
-  template <typename I> static void deserialize(I &i, set<T, Traits...> &t) {
-    deserialize_sequence<T>(i, inserter(t, begin(t)));
-  }
-};
-template <typename T, typename U, typename... Traits>
-struct deserializer<map<T, U, Traits...>> {
-  template <typename I> static void deserialize(I &i, map<T, U, Traits...> &t) {
-    deserialize_associative<T, U>(i, t);
-  }
-};
-template <typename T, typename... Traits>
-struct deserializer<unordered_set<T, Traits...>> {
-  template <typename I>
-  static void deserialize(I &i, unordered_set<T, Traits...> &t) {
-    deserialize_sequence<T>(i, inserter(t, begin(t)));
-  }
-};
-template <typename T, typename U, typename... Traits>
-struct deserializer<unordered_map<T, U, Traits...>> {
-  template <typename I>
-  static void deserialize(I &i, unordered_map<T, U, Traits...> &t) {
-    deserialize_associative<T, U>(i, t);
-  }
-};
-template <typename T, typename... Traits>
-struct deserializer<multiset<T, Traits...>> {
-  template <typename I>
-  static void deserialize(I &i, multiset<T, Traits...> &t) {
-    deserialize_sequence<T>(i, inserter(t, begin(t)));
-  }
-};
-template <typename T, typename U, typename... Traits>
-struct deserializer<multimap<T, U, Traits...>> {
-  template <typename I>
-  static void deserialize(I &i, multimap<T, U, Traits...> &t) {
-    deserialize_associative<T, U>(i, t);
-  }
-};
-template <typename T, typename... Traits>
-struct deserializer<unordered_multiset<T, Traits...>> {
-  template <typename I>
-  static void deserialize(I &i, unordered_multiset<T, Traits...> &t) {
-    deserialize_sequence<T>(i, inserter(t, begin(t)));
-  }
-};
-template <typename T, typename U, typename... Traits>
-struct deserializer<unordered_multimap<T, U, Traits...>> {
-  template <typename I>
-  static void deserialize(I &i, unordered_multimap<T, U, Traits...> &t) {
-    deserialize_associative<T, U>(i, t);
   }
 };
 template <typename S, typename T, typename... Ts, typename... Bs>
@@ -345,9 +263,9 @@ template <size_t N> struct deserializer<bitset<N>> {
 template <> struct deserializer<filesystem::space_info> {
   template <typename I>
   static void deserialize(I &i, filesystem::space_info &s) {
-    deserializer<double>::deserialize<double>(i, s.capacity);
-    deserializer<double>::deserialize<double>(i, s.free);
-    deserializer<double>::deserialize<double>(i, s.available);
+    deserializer<double>::deserialize(i, s.capacity);
+    deserializer<double>::deserialize(i, s.free);
+    deserializer<double>::deserialize(i, s.available);
   }
 };
 template <> struct deserializer<filesystem::file_status> {

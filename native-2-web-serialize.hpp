@@ -94,49 +94,54 @@ template <typename I, typename T, size_t... Is>
 void serialize_heterogenous(const T &t, index_sequence<Is...>, I &i) {
   using std::get;
   using n2w::get;
-  for (auto rc : {serialize_index(get<Is>(t), i)...})
+  for (auto rc : initializer_list<int>{serialize_index(get<Is>(t), i)...})
     (void)rc;
 }
 
 template <typename T> struct serializer {
-  template <typename U = T, typename I>
-  static auto serialize(const U t, I &i)
-      -> enable_if_t<is_arithmetic<U>::value> {
-    serialize_number(t, i);
+  template <typename I> static auto serialize(const T &t, I &i) {
+    if
+      constexpr(is_void_v<T> || is_same_v<T, void *>);
+    else if
+      constexpr(is_same_v<T, char16_t>) {
+        u16string ts;
+        ts += t;
+        struct cvt16 : codecvt<char16_t, char, mbstate_t> {};
+        wstring_convert<cvt16, char16_t> cvter16;
+        auto cs = cvter16.to_bytes(ts);
+        struct cvt32 : codecvt<char32_t, char, mbstate_t> {};
+        wstring_convert<cvt32, char32_t> cvter32;
+        auto c32s = cvter32.from_bytes(cs);
+        serialize_number<char32_t>(c32s[0], i);
+      }
+    else if
+      constexpr(is_same_v<T, wchar_t>) {
+        wstring ts;
+        ts += t;
+        struct wcvt : codecvt<wchar_t, char, mbstate_t> {};
+        wstring_convert<wcvt, wchar_t> wcvter;
+        auto cs = wcvter.to_bytes(ts);
+        struct cvt32 : codecvt<char32_t, char, mbstate_t> {};
+        wstring_convert<cvt32, char32_t> cvter32;
+        auto c32s = cvter32.from_bytes(cs);
+        serialize_number<char32_t>(c32s[0], i);
+      }
+    else if
+      constexpr(is_enum_v<T>) serializer<underlying_type_t<T>>::serialize(
+          static_cast<underlying_type_t<T>>(t), i);
+    else if
+      constexpr(is_arithmetic_v<T>) serialize_number(t, i);
+    else if
+      constexpr(is_heterogenous<T>)
+          serialize_heterogenous(t, make_index_sequence<tuple_size_v<T>>{}, i);
+    else if
+      constexpr(is_sequence<T>)
+          serialize_sequence<typename T::value_type>(t.size(), cbegin(t), i);
+    else if
+      constexpr(is_associative<T>)
+          serialize_associative<typename T::key_type, typename T::mapped_type>(
+              t, i);
   }
-  template <typename U = T, typename I>
-  static auto serialize(const char16_t t, I &i)
-      -> enable_if_t<is_same<U, char16_t>::value> {
-    u16string ts;
-    ts += t;
-    struct cvt16 : codecvt<char16_t, char, mbstate_t> {};
-    wstring_convert<cvt16, char16_t> cvter16;
-    auto cs = cvter16.to_bytes(ts);
-    struct cvt32 : codecvt<char32_t, char, mbstate_t> {};
-    wstring_convert<cvt32, char32_t> cvter32;
-    auto c32s = cvter32.from_bytes(cs);
-    serialize_number<char32_t>(c32s[0], i);
-  }
-  template <typename U = T, typename I>
-  static auto serialize(const wchar_t t, I &i)
-      -> enable_if_t<is_same<U, wchar_t>::value> {
-    wstring ts;
-    ts += t;
-    struct wcvt : codecvt<wchar_t, char, mbstate_t> {};
-    wstring_convert<wcvt, wchar_t> wcvter;
-    auto cs = wcvter.to_bytes(ts);
-    struct cvt32 : codecvt<char32_t, char, mbstate_t> {};
-    wstring_convert<cvt32, char32_t> cvter32;
-    auto c32s = cvter32.from_bytes(cs);
-    serialize_number<char32_t>(c32s[0], i);
-  }
-  template <typename U = T, typename I>
-  static auto serialize(const U t, I &i) -> enable_if_t<is_enum<U>{}> {
-    serialize(static_cast<underlying_type_t<U>>(t), i);
-  }
-};
-template <> struct serializer<void *> {
-  template <typename I> static auto serialize(void *, I i) {}
 };
 template <typename T, size_t N> struct serializer<T[N]> {
   template <typename I> static void serialize(const T (&t)[N], I &i) {
@@ -146,21 +151,6 @@ template <typename T, size_t N> struct serializer<T[N]> {
 template <typename T, size_t M, size_t N> struct serializer<T[M][N]> {
   template <typename I> static void serialize(const T (&t)[M][N], I &i) {
     serializer<T[M * N]>::serialize(reinterpret_cast<const T(&)[M * N]>(t), i);
-  }
-};
-template <typename T, size_t N> struct serializer<array<T, N>> {
-  template <typename I> static void serialize(const array<T, N> &t, I &i) {
-    serialize_sequence_bounded<T>(N, cbegin(t), i);
-  }
-};
-template <typename T, typename U> struct serializer<pair<T, U>> {
-  template <typename I> static void serialize(const pair<T, U> &t, I &i) {
-    serialize_heterogenous(t, make_index_sequence<2>{}, i);
-  }
-};
-template <typename T, typename... Ts> struct serializer<tuple<T, Ts...>> {
-  template <typename I> static void serialize(const tuple<T, Ts...> &t, I &i) {
-    serialize_heterogenous(t, make_index_sequence<sizeof...(Ts) + 1>{}, i);
   }
 };
 template <typename T, typename... Traits>
@@ -178,89 +168,6 @@ struct serializer<basic_string<T, Traits...>> {
     else
       utf8 = t;
     serialize_sequence<char>(utf8.size(), cbegin(utf8), i);
-  }
-};
-template <typename T, typename... Traits>
-struct serializer<vector<T, Traits...>> {
-  template <typename I>
-  static void serialize(const vector<T, Traits...> &t, I &i) {
-    serialize_sequence<T>(t.size(), cbegin(t), i);
-  }
-};
-template <typename T, typename... Traits>
-struct serializer<list<T, Traits...>> {
-  template <typename I>
-  static void serialize(const list<T, Traits...> &t, I &i) {
-    serialize_sequence<T>(t.size(), cbegin(t), i);
-  }
-};
-template <typename T, typename... Traits>
-struct serializer<forward_list<T, Traits...>> {
-  template <typename I>
-  static void serialize(const forward_list<T, Traits...> &t, I &i) {
-    serialize_sequence<T>(t.size(), cbegin(t), i);
-  }
-};
-template <typename T, typename... Traits>
-struct serializer<deque<T, Traits...>> {
-  template <typename I>
-  static void serialize(const deque<T, Traits...> &t, I &i) {
-    serialize_sequence<T>(t.size(), cbegin(t), i);
-  }
-};
-template <typename T, typename... Traits> struct serializer<set<T, Traits...>> {
-  template <typename I>
-  static void serialize(const set<T, Traits...> &t, I &i) {
-    serialize_sequence<T>(t.size(), cbegin(t), i);
-  }
-};
-template <typename T, typename U, typename... Traits>
-struct serializer<map<T, U, Traits...>> {
-  template <typename I>
-  static void serialize(const map<T, U, Traits...> &t, I &i) {
-    serialize_associative<T, U>(t, i);
-  }
-};
-template <typename T, typename... Traits>
-struct serializer<unordered_set<T, Traits...>> {
-  template <typename I>
-  static void serialize(const unordered_set<T, Traits...> &t, I &i) {
-    serialize_sequence<T>(t.size(), cbegin(t), i);
-  }
-};
-template <typename T, typename U, typename... Traits>
-struct serializer<unordered_map<T, U, Traits...>> {
-  template <typename I>
-  static void serialize(const unordered_map<T, U, Traits...> &t, I &i) {
-    serialize_associative<T, U>(t, i);
-  }
-};
-template <typename T, typename... Traits>
-struct serializer<multiset<T, Traits...>> {
-  template <typename I>
-  static void serialize(const multiset<T, Traits...> &t, I &i) {
-    serialize_sequence<T>(t.size(), cbegin(t), i);
-  }
-};
-template <typename T, typename U, typename... Traits>
-struct serializer<multimap<T, U, Traits...>> {
-  template <typename I>
-  static void serialize(const multimap<T, U, Traits...> &t, I &i) {
-    serialize_associative<T, U>(t, i);
-  }
-};
-template <typename T, typename... Traits>
-struct serializer<unordered_multiset<T, Traits...>> {
-  template <typename I>
-  static void serialize(const unordered_multiset<T, Traits...> &t, I &i) {
-    serialize_sequence<T>(t.size(), cbegin(t), i);
-  }
-};
-template <typename T, typename U, typename... Traits>
-struct serializer<unordered_multimap<T, U, Traits...>> {
-  template <typename I>
-  static void serialize(const unordered_multimap<T, U, Traits...> &t, I &i) {
-    serialize_associative<T, U>(t, i);
   }
 };
 template <typename S, typename T, typename... Ts, typename... Bs>
@@ -287,7 +194,7 @@ template <typename T> struct serializer<optional<T>> {
 };
 template <typename... Ts> struct serializer<variant<Ts...>> {
   template <typename I> static void serialize(const variant<Ts...> &v, I &i) {
-    serializer<uint32_t>::serialize(static_cast<uint32_t>(v.index()), i);
+    serializer<uint32_t>::serialize(v.index(), i);
     visit(
         [&i](const auto &t) {
           serializer<remove_cv_t<remove_reference_t<decltype(t)>>>::serialize(
@@ -300,7 +207,7 @@ template <typename R, intmax_t N, intmax_t D>
 struct serializer<chrono::duration<R, ratio<N, D>>> {
   template <typename I>
   static void serialize(const chrono::duration<R, ratio<N, D>> &t, I &i) {
-    serializer<double>::serialize(static_cast<double>(t.count()), i);
+    serializer<double>::serialize(t.count(), i);
   }
 };
 template <typename C, typename D> struct serializer<chrono::time_point<C, D>> {
@@ -311,8 +218,7 @@ template <typename C, typename D> struct serializer<chrono::time_point<C, D>> {
 };
 template <typename T> struct serializer<complex<T>> {
   template <typename I> static void serialize(const complex<T> &c, I &i) {
-    serializer<T>::serialize(c.real(), i);
-    serializer<T>::serialize(c.imag(), i);
+    serializer<pair<T, T>>::serialize(make_pair(c.real(), c.imag()), i);
   }
 };
 template <typename T> struct serializer<atomic<T>> {
@@ -328,16 +234,15 @@ template <size_t N> struct serializer<bitset<N>> {
 template <> struct serializer<filesystem::space_info> {
   template <typename I>
   static void serialize(const filesystem::space_info &s, I &i) {
-    serializer<double>::serialize<double>(s.capacity, i);
-    serializer<double>::serialize<double>(s.free, i);
-    serializer<double>::serialize<double>(s.available, i);
+    serializer<tuple<double, double, double>>::serialize(
+        make_tuple(s.capacity, s.free, s.available), i);
   }
 };
 template <> struct serializer<filesystem::file_status> {
   template <typename I>
   static void serialize(const filesystem::file_status &f, I &i) {
-    serializer<decltype(f.type())>::serialize(f.type(), i);
-    serializer<decltype(f.permissions())>::serialize(f.permissions(), i);
+    serializer<pair<filesystem::file_type, filesystem::perms>>::serialize(
+        make_pair(f.type(), f.permissions()), i);
   }
 };
 template <> struct serializer<filesystem::path> {
@@ -351,22 +256,24 @@ template <> struct serializer<filesystem::path> {
 template <> struct serializer<filesystem::directory_entry> {
   template <typename I>
   static void serialize(const filesystem::directory_entry &d, I &i) {
-    serializer<filesystem::path>::serialize(d.path(), i);
-    // serializer<bool>::serialize(d.exists(), i);
     error_code ec;
-    serializer<bool>::serialize(filesystem::exists(d, ec), i);
+    serializer<
+        tuple<filesystem::path, bool, uint32_t, uint32_t,
+              decltype(filesystem::last_write_time(d).time_since_epoch()),
+              filesystem::file_status>>::
+        serialize(
+            make_tuple(d.path(), filesystem::exists(d, ec),
+                       filesystem::file_size(d.path(), ec),
+                       filesystem::hard_link_count(d.path(), ec),
+                       filesystem::last_write_time(d, ec).time_since_epoch(),
+                       d.symlink_status(ec)),
+            i);
+    // serializer<bool>::serialize(d.exists(), i);
     // serializer<uint32_t>::serialize(d.file_size(), i);
-    serializer<uint32_t>::serialize(
-        static_cast<uint32_t>(filesystem::file_size(d.path(), ec)), i);
     // serializer<uint32_t>::serialize(d.hard_link_count(),
     //                                                      i);
-    serializer<uint32_t>::serialize(
-        static_cast<uint32_t>(filesystem::hard_link_count(d.path(), ec)), i);
     // serializer<decltype(d.last_write_time().time_since_epoch())>::serialize(
     //     d.last_write_time().time_since_epoch(), i);
-    serializer<decltype(filesystem::last_write_time(d).time_since_epoch())>::
-        serialize(filesystem::last_write_time(d, ec).time_since_epoch(), i);
-    serializer<filesystem::file_status>::serialize(d.symlink_status(ec), i);
   }
 };
 

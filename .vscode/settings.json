@@ -73,6 +73,8 @@
         "unordered_map": "cpp",
         "string_view": "cpp",
         "list": "cpp",
-        "__locale": "cpp"
+        "__locale": "cpp",
+        "queue": "cpp",
+        "stack": "cpp"
     }
 }
