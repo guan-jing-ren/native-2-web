@@ -16,7 +16,7 @@ inline bool operator!=(boost::system::error_code ec, int i) { return ec != i; }
 #include <thread>
 
 template <typename Handler>
-class n2w_connection
+class n2w_connection final
     : public std::enable_shared_from_this<n2w_connection<Handler>> {
 
   /***************************/
