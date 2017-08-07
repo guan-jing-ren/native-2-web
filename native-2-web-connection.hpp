@@ -281,12 +281,15 @@ class n2w_connection
   /* EXTERNAL INTERFACES */
   /***********************/
 
-  n2w_connection(boost::asio::io_service &service)
-      : socket{service}, ws{socket}, ws_stuff(&buf) {}
-
   template <typename, typename... Args>
   friend void accept(std::reference_wrapper<boost::asio::io_service> service,
                      Args &&... args);
+
+  struct private_construction_tag {};
+
+public:
+  n2w_connection(boost::asio::io_service &service, private_construction_tag)
+      : socket{service}, ws{socket}, ws_stuff(&buf) {}
 };
 
 template <typename Handler, typename... Args>
@@ -303,8 +306,9 @@ void accept(std::reference_wrapper<boost::asio::io_service> service,
     if (ec)
       return;
     while (true) {
-      std::shared_ptr<n2w_connection<Handler>> connection{
-          new n2w_connection<Handler>{service}};
+      auto connection = std::make_shared<n2w_connection<Handler>>(
+          service,
+          typename n2w_connection<Handler>::private_construction_tag{});
       acceptor.async_accept(connection->socket, yield[ec]);
       std::clog << "Thread: " << std::this_thread::get_id()
                 << "; Accepted connection: " << ec << '\n';
