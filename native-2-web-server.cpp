@@ -145,6 +145,12 @@ string create_modules() {
   return modules;
 }
 
+// Servers need to know other servers
+// Servers can redirect to other servers
+// n2w_connection for clients
+// Status updates via multicasting
+// Load balancing
+
 int main() {
   io_service service;
   io_service::work work{service};
@@ -232,8 +238,9 @@ int main() {
 
   accept<http_handler>(service, ip::address_v4::from_string("0.0.0.0"), 9001);
 
-  struct dummy_handler {};
-  accept<dummy_handler>(service, ip::address_v4::from_string("0.0.0.0"), 9003);
+  // struct dummy_handler {};
+  // accept<dummy_handler>(service, ip::address_v4::from_string("0.0.0.0"),
+  // 9003);
 
   struct ws_only_handler {
     struct websocket_handler_type {
