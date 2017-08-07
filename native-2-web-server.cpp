@@ -258,6 +258,12 @@ int main() {
   accept<ws_only_handler>(service, ip::address_v4::from_string("0.0.0.0"),
                           9002);
 
+  struct http_requester {
+    http::request<http::string_body> operator()(int) { return {}; }
+  };
+  auto server = connect<http_requester>(
+      service, ip::address_v4::from_string("127.0.0.2"), 9001);
+
   vector<thread> threadpool;
   generate_n(back_inserter(threadpool), 10,
              [&service]() { return thread{[&service]() { service.run(); }}; });

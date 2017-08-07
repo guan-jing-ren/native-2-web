@@ -304,6 +304,10 @@ class n2w_connection
   friend void accept(std::reference_wrapper<boost::asio::io_service> service,
                      Args &&... args);
 
+  template <typename H, typename... Args>
+  friend std::shared_ptr<n2w_connection<H>>
+  connect(std::reference_wrapper<boost::asio::io_service> service,
+          Args &&... args);
   struct private_construction_tag {};
 
 public:
@@ -344,6 +348,38 @@ void accept(std::reference_wrapper<boost::asio::io_service> service,
       });
     }
   });
+}
+
+template <typename Handler, typename... Args>
+std::shared_ptr<n2w_connection<Handler>>
+connect(std::reference_wrapper<boost::asio::io_service> service,
+        Args &&... args) {
+  static_assert(
+      n2w_connection<Handler>::supports_http_send,
+      "Provided handler class does not support sending HTTP requests");
+
+  auto connection = std::make_shared<n2w_connection<Handler>>(
+      service, typename n2w_connection<Handler>::private_construction_tag{});
+
+  boost::asio::spawn(service.get(), [
+    service, connection, endpoint = boost::asio::ip::tcp::endpoint(args...)
+  ](boost::asio::yield_context yield) {
+    boost::system::error_code ec;
+    boost::asio::ip::tcp::resolver resolver{service};
+    auto resolved = resolver.async_resolve(endpoint, yield[ec]);
+    std::clog << "Thread: " << std::this_thread::get_id()
+              << "; Resolved address: " << ec << '\n';
+    if (ec)
+      return;
+    auto connected =
+        boost::asio::async_connect(connection->socket, resolved, yield[ec]);
+    std::clog << "Thread: " << std::this_thread::get_id()
+              << "; Connected to endpoint: " << ec << '\n';
+    if (ec)
+      return;
+  });
+
+  return connection;
 }
 
 #endif
