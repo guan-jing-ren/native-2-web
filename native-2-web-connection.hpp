@@ -23,13 +23,28 @@ class n2w_connection
   /* HTTP SFINAE DEFINITIONS */
   /***************************/
 
-  static auto http_support(...) -> std::false_type;
+  static auto http_supports_receive(...) -> std::false_type;
   template <typename T = Handler>
-  static auto http_support(T *)
+  static auto http_supports_receive(T *)
       -> std::result_of_t<T(beast::http::request<beast::http::string_body>)>;
-  static constexpr bool supports_http =
-      !std::is_same_v<decltype(http_support(std::declval<Handler *>())),
+  static constexpr bool supports_http_receive =
+      !std::is_same_v<decltype(
+                          http_supports_receive(std::declval<Handler *>())),
                       std::false_type>;
+
+  struct adaptable {
+    template <typename T> operator T();
+  };
+
+  static auto http_supports_send(...) -> std::false_type;
+  template <typename T = Handler>
+  static auto http_supports_send(T *) -> std::result_of_t<T(adaptable)>;
+  static constexpr bool supports_http_send =
+      std::is_same_v<decltype(http_supports_send(std::declval<Handler *>())),
+                     beast::http::request<beast::http::string_body>>;
+
+  static constexpr bool supports_http =
+      supports_http_receive || supports_http_send;
 
   /**************************************/
   /* BASIC WEBSOCKET SFINAE DEFINITIONS */
@@ -213,7 +228,11 @@ class n2w_connection
         return;
       }
 
-      async([ this, request = move(request) ]() { return handler(request); });
+      if
+        constexpr(supports_http_receive) async(
+            [ this, request = move(request) ]() { return handler(request); });
+      else
+        break;
     }
     std::clog << "Finished serving socket\n";
 
@@ -295,6 +314,11 @@ public:
 template <typename Handler, typename... Args>
 void accept(std::reference_wrapper<boost::asio::io_service> service,
             Args &&... args) {
+  static_assert(n2w_connection<Handler>::supports_http_receive ||
+                    n2w_connection<Handler>::supports_websocket,
+                "Provided handler class does not support sending HTTP or "
+                "Websocket responses.");
+
   boost::asio::spawn(service.get(), [
     service, endpoint = boost::asio::ip::tcp::endpoint(args...)
   ](boost::asio::yield_context yield) {
