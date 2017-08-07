@@ -203,6 +203,8 @@ class n2w_connection
   }
 
   void serve(boost::asio::yield_context yield) {
+    socket.set_option(boost::asio::ip::tcp::no_delay{true});
+
     boost::system::error_code ec;
     while (true) {
       beast::http::request<beast::http::string_body> request;
@@ -308,6 +310,7 @@ class n2w_connection
   friend std::shared_ptr<n2w_connection<H>>
   connect(std::reference_wrapper<boost::asio::io_service> service,
           Args &&... args);
+
   struct private_construction_tag {};
 
 public:
