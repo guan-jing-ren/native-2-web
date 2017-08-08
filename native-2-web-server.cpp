@@ -150,6 +150,7 @@ string create_modules() {
 // n2w_connection for clients
 // Status updates via multicasting
 // Load balancing
+// Choose plugin combinations
 
 int main() {
   io_service service;
@@ -270,6 +271,7 @@ int main() {
   };
   auto server = connect<http_requester>(
       service, ip::address_v4::from_string("127.0.0.2"), 9001);
+  auto server2 = move(server);
 
   vector<thread> threadpool;
   generate_n(back_inserter(threadpool), 10,

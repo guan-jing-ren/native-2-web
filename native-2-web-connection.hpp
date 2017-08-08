@@ -15,6 +15,8 @@ inline bool operator!=(boost::system::error_code ec, int i) { return ec != i; }
 
 #include <thread>
 
+template <typename> class n2w_client_connection;
+
 template <typename Handler>
 class n2w_connection final
     : public std::enable_shared_from_this<n2w_connection<Handler>> {
@@ -268,7 +270,6 @@ class n2w_connection final
                   async([ this, message = move(message) ] {
                     return ws_stuff.websocket_handler(message);
                   });
-
           } else if (ws.got_binary()) {
             std::vector<uint8_t> message;
             save_stream(message);
@@ -306,8 +307,10 @@ class n2w_connection final
   friend void accept(std::reference_wrapper<boost::asio::io_service> service,
                      Args &&... args);
 
+  template <typename> friend class n2w_client_connection;
+
   template <typename H, typename... Args>
-  friend std::shared_ptr<n2w_connection<H>>
+  friend n2w_client_connection<H>
   connect(std::reference_wrapper<boost::asio::io_service> service,
           Args &&... args);
 
@@ -316,6 +319,7 @@ class n2w_connection final
 public:
   n2w_connection(boost::asio::io_service &service, private_construction_tag)
       : socket{service}, ws{socket}, ws_stuff(&buf) {}
+  n2w_connection() = delete;
 };
 
 template <typename Handler, typename... Args>
@@ -353,8 +357,26 @@ void accept(std::reference_wrapper<boost::asio::io_service> service,
   });
 }
 
+template <typename Handler> class n2w_client_connection {
+  std::shared_ptr<n2w_connection<Handler>> connection;
+
+  n2w_client_connection(decltype(connection) c) : connection(c) {}
+
+  template <typename H, typename... Args>
+  friend n2w_client_connection<H>
+  connect(std::reference_wrapper<boost::asio::io_service> service,
+          Args &&... args);
+
+public:
+  n2w_client_connection() = delete;
+  n2w_client_connection(const n2w_client_connection &) = delete;
+  n2w_client_connection(n2w_client_connection &&) = default;
+  n2w_client_connection &operator=(const n2w_client_connection &) = delete;
+  n2w_client_connection &operator=(n2w_client_connection &&) = default;
+};
+
 template <typename Handler, typename... Args>
-std::shared_ptr<n2w_connection<Handler>>
+n2w_client_connection<Handler>
 connect(std::reference_wrapper<boost::asio::io_service> service,
         Args &&... args) {
   static_assert(
@@ -382,7 +404,7 @@ connect(std::reference_wrapper<boost::asio::io_service> service,
       return;
   });
 
-  return connection;
+  return {std::move(connection)};
 }
 
 #endif
