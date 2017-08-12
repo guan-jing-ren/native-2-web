@@ -269,12 +269,16 @@ int main() {
   struct http_requester {
     http::request<http::string_body> operator()(int) { return {}; }
   };
-  auto server = connect<http_requester>(
-      service, ip::address_v4::from_string("127.0.0.2"), 9001);
-  auto server2 = move(server);
+  spawn(service, [&service](yield_context yield) {
+    auto server = connect<http_requester>(
+        service, ip::address_v4::from_string("127.0.0.2"), 9004);
+    auto server2 = move(server);
+  });
 
+  auto num_threads = thread::hardware_concurrency();
+  std::clog << "Hardware concurrency: " << num_threads << '\n';
   vector<thread> threadpool;
-  generate_n(back_inserter(threadpool), 10,
+  generate_n(back_inserter(threadpool), num_threads ? num_threads : 5,
              [&service]() { return thread{[&service]() { service.run(); }}; });
   service.run();
 
