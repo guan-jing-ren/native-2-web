@@ -34,9 +34,7 @@ class n2w_connection final
                           http_supports_receive(std::declval<Handler *>())),
                       std::false_type>;
 
-  struct adaptable {
-    template <typename T> operator T();
-  };
+  struct adaptable;
 
   static auto http_supports_send(...) -> std::false_type;
   template <typename T = Handler>
@@ -97,6 +95,10 @@ class n2w_connection final
   /**********************************/
   /* INTERNAL STRUCTURE DEFINITIONS */
   /**********************************/
+
+  struct adaptable {
+    template <typename T> operator T();
+  };
 
   struct NullHandler {
     beast::http::response<beast::http::string_body>
