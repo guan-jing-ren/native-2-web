@@ -318,6 +318,25 @@ class n2w_connection final
 
   struct private_construction_tag {};
 
+  /********************************/
+  /* CLIENT CONNECTION INTERFACES */
+  /********************************/
+
+  template <typename T, typename CompletionHandler>
+  auto request(T &&t, CompletionHandler &&ch) {
+    if
+      constexpr(supports_http_send) {
+        using handler_type = typename boost::asio::handler_type<
+            CompletionHandler,
+            void(boost::system::error_code,
+                 beast::http::response<beast::http::string_body>)>::type;
+        using async_result = boost::asio::async_result<handler_type>;
+        handler_type handler{std::forward<CompletionHandler &&>(ch)};
+        async_result result{handler};
+        return result.get();
+      }
+  }
+
 public:
   n2w_connection(boost::asio::io_service &service, private_construction_tag)
       : socket{service}, ws{socket}, ws_stuff(&buf) {}
