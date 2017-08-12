@@ -118,6 +118,8 @@ class n2w_connection final
     websocket_stuff(boost::asio::streambuf *buf) : stream(buf) {}
   };
 
+  struct private_construction_tag {};
+
   /*******************/
   /* INTERNAL LAYOUT */
   /*******************/
@@ -316,7 +318,6 @@ class n2w_connection final
   connect(std::reference_wrapper<boost::asio::io_service> service,
           Args &&... args);
 
-  struct private_construction_tag {};
 
   /********************************/
   /* CLIENT CONNECTION INTERFACES */
