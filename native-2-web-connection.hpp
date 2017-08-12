@@ -394,6 +394,12 @@ public:
   n2w_client_connection(n2w_client_connection &&) = default;
   n2w_client_connection &operator=(const n2w_client_connection &) = delete;
   n2w_client_connection &operator=(n2w_client_connection &&) = default;
+
+  template <typename T, typename CompletionHandler>
+  auto request(T &&t, CompletionHandler &&ch) {
+    return connection->request(std::forward<T>(t),
+                               std::forward<CompletionHandler>(ch));
+  }
 };
 
 template <typename Handler, typename... Args>
