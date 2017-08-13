@@ -237,10 +237,10 @@ int main() {
     }
   };
 
-  accept<http_handler>(service, ip::address_v4::from_string("0.0.0.0"), 9001);
+  accept<http_handler>(service, ip::address::from_string("0.0.0.0"), 9001);
 
   // struct dummy_handler {};
-  // accept<dummy_handler>(service, ip::address_v4::from_string("0.0.0.0"),
+  // accept<dummy_handler>(service, ip::address::from_string("0.0.0.0"),
   // 9003);
 
   struct ws_only_handler {
@@ -263,8 +263,7 @@ int main() {
     };
   };
 
-  accept<ws_only_handler>(service, ip::address_v4::from_string("0.0.0.0"),
-                          9002);
+  accept<ws_only_handler>(service, ip::address::from_string("0.0.0.0"), 9002);
 
   struct http_requester {
     auto operator()(const filesystem::path &p) {
@@ -276,7 +275,7 @@ int main() {
   };
   spawn(service, [&service](yield_context yield) {
     auto server = connect<http_requester>(
-        service, ip::address_v4::from_string("127.0.0.2"), 9001);
+        service, ip::address::from_string("127.0.0.2"), 9001);
     auto server2 = move(server);
     boost::system::error_code ec;
     http::response<http::string_body> res = server2.request("/", yield[ec]);
