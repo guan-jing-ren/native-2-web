@@ -374,7 +374,8 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
 
   void upgrade() {
     spawn(socket.get_io_service(),
-          [ this, tkt = ticket++ ](yield_context yield) {
+          [ this, self = this->shared_from_this(),
+            tkt = ticket++ ](yield_context yield) {
             while (tkt != serving)
               socket.get_io_service().post(yield);
 
@@ -382,11 +383,9 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
             http::response<http::string_body> res;
             auto remote = socket.remote_endpoint().address().to_string();
             clog << "Upgrading websocket host: " << remote << '\n';
-            clog << "Socket: " << this << '\n';
             ws.async_handshake(res, remote, "/", yield[ec]);
             clog << "Thread: " << this_thread::get_id()
                  << "; Connected to websocket: " << ec.message() << '\n';
-            clog << res;
             ++serving;
           });
   }
@@ -395,9 +394,7 @@ public:
   connection(io_service &service, private_construction_tag)
       : socket{service}, ws{socket}, ws_stuff(&buf) {}
   connection() = delete;
-  ~connection() {
-    clog << "Connection deleted.\n";
-  };
+  ~connection() { clog << "Connection deleted.\n"; };
 };
 
 template <typename Handler, typename... Args>
