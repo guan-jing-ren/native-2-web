@@ -325,7 +325,6 @@ class n2w_connection final
   connect(std::reference_wrapper<boost::asio::io_service> service,
           Args &&... args);
 
-
   /********************************/
   /* CLIENT CONNECTION INTERFACES */
   /********************************/
@@ -342,7 +341,44 @@ class n2w_connection final
         using async_result = boost::asio::async_result<handler_type>;
         handler_type handler{std::forward<CompletionHandler &&>(ch)};
         async_result result{handler};
-        return result.get();
+        boost::asio::spawn(socket.get_io_service(), [
+          self = this->shared_from_this(), this, p, handler, tkt = ticket++
+        ](boost::asio::yield_context yield) mutable {
+          while (tkt != serving)
+            socket.get_io_service().post(yield);
+
+          boost::system::error_code ec;
+          auto req = this->handler(p);
+          req.method(beast::http::verb::get);
+          req.prepare_payload();
+          beast::http::async_write(socket, req, yield[ec]);
+          std::clog << "Thread: " << std::this_thread::get_id()
+                    << "; Sent request: " << ec.message() << ".\n";
+          beast::http::response<beast::http::string_body> res;
+          beast::http::async_read(socket, buf, res, yield[ec]);
+          std::clog << "Thread: " << std::this_thread::get_id()
+                    << "; Received response: " << ec.message() << ".\n";
+          ++serving;
+          boost::asio::asio_handler_invoke(
+              [
+                ec, handler = std::move(handler), res = std::move(res)
+              ]() mutable {
+                std::clog << "Resuming coroutine\n";
+                handler(ec, res);
+              },
+              &handler);
+        });
+        std::clog << "Suspending coroutine\n";
+        if
+          constexpr(std::is_void_v<typename async_result::type>) {
+            result.get();
+            std::clog << "Coroutine resumed\n";
+          }
+        else {
+          auto r = result.get();
+          std::clog << "Coroutine resumed\n";
+          return r;
+        }
       }
   }
 
@@ -423,6 +459,7 @@ connect(std::reference_wrapper<boost::asio::io_service> service,
   auto connection = std::make_shared<n2w_connection<Handler>>(
       service, typename n2w_connection<Handler>::private_construction_tag{});
 
+  ++connection->ticket;
   boost::asio::spawn(service.get(), [
     service, connection, endpoint = boost::asio::ip::tcp::endpoint(args...)
   ](boost::asio::yield_context yield) {
@@ -439,6 +476,7 @@ connect(std::reference_wrapper<boost::asio::io_service> service,
               << "; Connected to endpoint: " << ec.message() << '\n';
     if (ec)
       return;
+    ++connection->serving;
   });
 
   return {std::move(connection)};
