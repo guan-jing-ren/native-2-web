@@ -486,22 +486,30 @@ client_connection<Handler> connect(reference_wrapper<io_service> service,
 template <typename Handler> class wsclient_connection {
   shared_ptr<connection<Handler>> connection;
 
-public:
   wsclient_connection(client_connection<Handler> &&http)
       : connection(move(http.connection)) {
     connection->upgrade();
   }
 
+  template <typename T>
+  friend wsclient_connection<T> upgrade(client_connection<T> &&client);
+
+public:
   wsclient_connection() = delete;
   wsclient_connection(const wsclient_connection &) = delete;
   wsclient_connection(wsclient_connection &&) = default;
   wsclient_connection &operator=(const wsclient_connection &) = delete;
   wsclient_connection &operator=(wsclient_connection &&) = default;
 };
+
+template <typename Handler>
+wsclient_connection<Handler> upgrade(client_connection<Handler> &&client) {
+  return {move(client)};
+}
 }
 
 using connection_detail::accept;
 using connection_detail::connect;
-using connection_detail::wsclient_connection;
+using connection_detail::upgrade;
 }
 #endif

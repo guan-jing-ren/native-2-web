@@ -284,7 +284,7 @@ int main() {
       clog << response << '\n';
     });
 
-    wsclient_connection<http_requester> wsclient{move(server2)};
+    auto wsclient = upgrade(move(server2));
   });
 
   auto num_threads = thread::hardware_concurrency();
