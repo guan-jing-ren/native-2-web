@@ -506,10 +506,17 @@ template <typename Handler>
 wsclient_connection<Handler> upgrade(client_connection<Handler> &&client) {
   return {move(client)};
 }
+
+template <typename Handler, typename... Args>
+wsclient_connection<Handler> wsconnect(reference_wrapper<io_service> service,
+                                       Args &&... args) {
+  return upgrade(connect<Handler>(service, forward<Args>(args)...));
+}
 }
 
 using connection_detail::accept;
 using connection_detail::connect;
 using connection_detail::upgrade;
+using connection_detail::wsconnect;
 }
 #endif

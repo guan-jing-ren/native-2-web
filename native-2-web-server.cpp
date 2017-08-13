@@ -285,6 +285,8 @@ int main() {
     });
 
     auto wsclient = upgrade(move(server2));
+    auto wsclient2 = wsconnect<http_requester>(
+        service, ip::address::from_string("127.0.0.3"), 9001);
   });
 
   auto num_threads = thread::hardware_concurrency();
