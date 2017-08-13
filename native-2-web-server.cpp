@@ -280,7 +280,11 @@ int main() {
     boost::system::error_code ec;
     http::response<http::string_body> res = server2.request("/", yield[ec]);
     clog << res << '\n';
-    server2.request("/", [](const auto &, auto) {});
+    server2.request("modules.js", [](const auto &, auto response) {
+      clog << response << '\n';
+    });
+
+    wsclient_connection<http_requester> wsclient{move(server2)};
   });
 
   auto num_threads = thread::hardware_concurrency();

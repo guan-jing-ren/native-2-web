@@ -372,6 +372,25 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
       }
   }
 
+  void upgrade() {
+    spawn(socket.get_io_service(),
+          [ this, tkt = ticket++ ](yield_context yield) {
+            while (tkt != serving)
+              socket.get_io_service().post(yield);
+
+            boost::system::error_code ec;
+            http::response<http::string_body> res;
+            auto remote = socket.remote_endpoint().address().to_string();
+            clog << "Upgrading websocket host: " << remote << '\n';
+            clog << "Socket: " << this << '\n';
+            ws.async_handshake(res, remote, "/", yield[ec]);
+            clog << "Thread: " << this_thread::get_id()
+                 << "; Connected to websocket: " << ec.message() << '\n';
+            clog << res;
+            ++serving;
+          });
+  }
+
 public:
   connection(io_service &service, private_construction_tag)
       : socket{service}, ws{socket}, ws_stuff(&buf) {}
@@ -467,9 +486,25 @@ client_connection<Handler> connect(reference_wrapper<io_service> service,
   return {move(conn)};
 }
 
+template <typename Handler> class wsclient_connection {
+  shared_ptr<connection<Handler>> connection;
+
+public:
+  wsclient_connection(client_connection<Handler> &&http)
+      : connection(move(http.connection)) {
+    connection->upgrade();
+  }
+
+  wsclient_connection() = delete;
+  wsclient_connection(const wsclient_connection &) = delete;
+  wsclient_connection(wsclient_connection &&) = default;
+  wsclient_connection &operator=(const wsclient_connection &) = delete;
+  wsclient_connection &operator=(wsclient_connection &&) = default;
+};
 }
 
 using connection_detail::accept;
 using connection_detail::connect;
+using connection_detail::wsclient_connection;
 }
 #endif
