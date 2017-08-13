@@ -300,7 +300,12 @@ class n2w_connection final
   }
 
   auto register_websocket_pusher() {
-    auto pusher = [ this, self = this->shared_from_this() ](auto message) {
+    auto pusher =
+        [ this, self = this->shared_from_this() ](auto message) mutable {
+      if (!self)
+        return;
+      if (self.use_count() == 1)
+        self.reset();
       async(message);
     };
 
