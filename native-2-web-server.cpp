@@ -1,4 +1,3 @@
-#include "native-2-web-connection.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -7,12 +6,14 @@
 #include <iostream>
 #include <regex>
 
+#include "native-2-web-connection.hpp"
 #include "native-2-web-plugin.hpp"
 
 using namespace std;
 using namespace std::experimental;
 using namespace boost::asio;
 using namespace beast;
+using namespace n2w;
 
 struct normalized_uri {
   filesystem::path path;
@@ -271,7 +272,6 @@ int main() {
       req.target(p.generic_u8string());
       return req;
     }
-    http::request<http::string_body> operator()(int) { return {}; }
   };
   spawn(service, [&service](yield_context yield) {
     auto server = connect<http_requester>(
@@ -279,12 +279,12 @@ int main() {
     auto server2 = move(server);
     boost::system::error_code ec;
     http::response<http::string_body> res = server2.request("/", yield[ec]);
-    std::clog << res << '\n';
+    clog << res << '\n';
     server2.request("/", [](const auto &, auto) {});
   });
 
   auto num_threads = thread::hardware_concurrency();
-  std::clog << "Hardware concurrency: " << num_threads << '\n';
+  clog << "Hardware concurrency: " << num_threads << '\n';
   vector<thread> threadpool;
   generate_n(back_inserter(threadpool), num_threads ? num_threads : 5,
              [&service]() { return thread{[&service]() { service.run(); }}; });
