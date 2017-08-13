@@ -13,6 +13,7 @@ inline bool operator!=(boost::system::error_code ec, int i) { return ec != i; }
 #define BOOST_COROUTINES_UNIDIRECT
 #include <boost/asio/spawn.hpp>
 
+#include <experimental/filesystem>
 #include <thread>
 
 template <typename> class n2w_client_connection;
@@ -38,13 +39,17 @@ class n2w_connection final
 
   static auto http_supports_send(...) -> std::false_type;
   template <typename T = Handler>
-  static auto http_supports_send(T *) -> std::result_of_t<T(adaptable)>;
+  static auto http_supports_send(T *)
+      -> std::result_of_t<T(std::experimental::filesystem::path, adaptable)>;
+  template <typename T = Handler>
+  static auto http_supports_send(T *)
+      -> std::result_of_t<T(std::experimental::filesystem::path)>;
   static constexpr bool supports_http_send =
       std::is_same_v<decltype(http_supports_send(std::declval<Handler *>())),
                      beast::http::request<beast::http::string_body>>;
 
   static constexpr bool supports_http =
-      supports_http_receive || supports_http_send;
+      supports_http_receive ^ supports_http_send;
 
   /**************************************/
   /* BASIC WEBSOCKET SFINAE DEFINITIONS */
@@ -325,8 +330,9 @@ class n2w_connection final
   /* CLIENT CONNECTION INTERFACES */
   /********************************/
 
-  template <typename T, typename CompletionHandler>
-  auto request(T &&t, CompletionHandler &&ch) {
+  template <typename CompletionHandler>
+  auto request(const std::experimental::filesystem::path p,
+               CompletionHandler &&ch) {
     if
       constexpr(supports_http_send) {
         using handler_type = typename boost::asio::handler_type<

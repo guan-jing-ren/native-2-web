@@ -267,12 +267,21 @@ int main() {
                           9002);
 
   struct http_requester {
+    auto operator()(const filesystem::path &p) {
+      http::request<http::string_body> req;
+      req.target(p.generic_u8string());
+      return req;
+    }
     http::request<http::string_body> operator()(int) { return {}; }
   };
   spawn(service, [&service](yield_context yield) {
     auto server = connect<http_requester>(
-        service, ip::address_v4::from_string("127.0.0.2"), 9004);
+        service, ip::address_v4::from_string("127.0.0.2"), 9001);
     auto server2 = move(server);
+    boost::system::error_code ec;
+    http::response<http::string_body> res = server2.request("/", yield[ec]);
+    std::clog << res << '\n';
+    server2.request("/", [](const auto &, auto) {});
   });
 
   auto num_threads = thread::hardware_concurrency();
