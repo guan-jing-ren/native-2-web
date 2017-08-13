@@ -175,7 +175,7 @@ class n2w_connection final
       }
 
     std::clog << "Thread: " << std::this_thread::get_id() << "; Written "
-              << response_type << " response:" << ec << ".\n";
+              << response_type << " response: " << ec.message() << ".\n";
     ++serving;
   }
 
@@ -216,7 +216,7 @@ class n2w_connection final
       beast::http::request<beast::http::string_body> request;
       beast::http::async_read(socket, buf, request, yield[ec]);
       std::clog << "Thread: " << std::this_thread::get_id()
-                << "; Received request: " << ec << ".\n";
+                << "; Received request: " << ec.message() << ".\n";
       if (ec)
         break;
 
@@ -224,7 +224,8 @@ class n2w_connection final
         if
           constexpr(supports_websocket) {
             ws.async_accept(request, yield[ec]);
-            std::clog << "Accepted websocket connection: " << ec << '\n';
+            std::clog << "Accepted websocket connection: " << ec.message()
+                      << '\n';
             if (ec)
               break;
             ws_stuff.stream >> std::noskipws;
@@ -262,7 +263,8 @@ class n2w_connection final
 
         while (true) {
           ws.async_read(buf, yield[ec]);
-          std::clog << "Read something from websocket: " << ec << '\n';
+          std::clog << "Read something from websocket: " << ec.message()
+                    << '\n';
           if (ec)
             break;
           if (ws.got_text()) {
@@ -342,6 +344,7 @@ public:
   n2w_connection(boost::asio::io_service &service, private_construction_tag)
       : socket{service}, ws{socket}, ws_stuff(&buf) {}
   n2w_connection() = delete;
+  ~n2w_connection() { std::clog << "Connection deleted.\n"; };
 };
 
 template <typename Handler, typename... Args>
@@ -359,7 +362,7 @@ void accept(std::reference_wrapper<boost::asio::io_service> service,
     boost::asio::ip::tcp::acceptor acceptor{service, endpoint, true};
     acceptor.listen(boost::asio::socket_base::max_connections, ec);
     std::clog << "Thread: " << std::this_thread::get_id()
-              << "; Start listening for connections: " << ec << '\n';
+              << "; Start listening for connections: " << ec.message() << '\n';
     if (ec)
       return;
     while (true) {
@@ -368,7 +371,7 @@ void accept(std::reference_wrapper<boost::asio::io_service> service,
           typename n2w_connection<Handler>::private_construction_tag{});
       acceptor.async_accept(connection->socket, yield[ec]);
       std::clog << "Thread: " << std::this_thread::get_id()
-                << "; Accepted connection: " << ec << '\n';
+                << "; Accepted connection: " << ec.message() << '\n';
       if (ec)
         break;
       boost::asio::spawn(service.get(), [connection = move(connection)](
@@ -421,13 +424,13 @@ connect(std::reference_wrapper<boost::asio::io_service> service,
     boost::asio::ip::tcp::resolver resolver{service};
     auto resolved = resolver.async_resolve(endpoint, yield[ec]);
     std::clog << "Thread: " << std::this_thread::get_id()
-              << "; Resolved address: " << ec << '\n';
+              << "; Resolved address: " << ec.message() << '\n';
     if (ec)
       return;
     auto connected =
         boost::asio::async_connect(connection->socket, resolved, yield[ec]);
     std::clog << "Thread: " << std::this_thread::get_id()
-              << "; Connected to endpoint: " << ec << '\n';
+              << "; Connected to endpoint: " << ec.message() << '\n';
     if (ec)
       return;
   });
