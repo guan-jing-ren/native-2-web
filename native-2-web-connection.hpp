@@ -342,7 +342,7 @@ class n2w_connection final
         handler_type handler{std::forward<CompletionHandler &&>(ch)};
         async_result result{handler};
         boost::asio::spawn(socket.get_io_service(), [
-          self = this->shared_from_this(), this, p, handler, tkt = ticket++
+          this, p, handler, tkt = ticket++
         ](boost::asio::yield_context yield) mutable {
           while (tkt != serving)
             socket.get_io_service().post(yield);
