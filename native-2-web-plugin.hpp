@@ -90,7 +90,7 @@ class plugin : private basic_plugin, public detail::plugin_impl {
   template <typename R, typename... Args>
   void register_api(const char *name, R (*callback)(Args...),
                     const char *description) {
-    const auto pointer = function_address(callback);
+    const auto pointer = function_address(name, callback);
     pointer_to_name[pointer] = name;
     pointer_to_description[pointer] = description;
     auto caller =
@@ -109,14 +109,15 @@ public:
   void register_service(const char *name, R (*callback)(Args...),
                         const char *description) {
     register_api(name, callback, description);
-    services.emplace(function_address(callback));
-    pointer_to_javascript[function_address(callback)] =
+    services.emplace(function_address(name, callback));
+    pointer_to_javascript[function_address(name, callback)] =
         R"(create_service(')" +
-        std::regex_replace(function_address(callback), regex{"'"}, R"(\')") +
+        std::regex_replace(function_address(name, callback), regex{"'"},
+                           R"(\')") +
         R"(', )" + to_js<args_t<Args...>>::create_writer() + R"(, )" +
         to_js<ret_t<R>>::create_reader() + R"())";
 
-    pointer_to_generator[function_address(callback)] =
+    pointer_to_generator[function_address(name, callback)] =
         R"(function (parent, executor) {
   let html_args = )" +
         to_js<args_t<Args...>>::create_html() + R"(;
@@ -130,7 +131,7 @@ public:
   void register_push_notifier(const char *name, R (*callback)(Args...),
                               const char *description) {
     register_api(name, callback, description);
-    push_notifiers.emplace(function_address(callback));
+    push_notifiers.emplace(function_address(name, callback));
     to_js<args_t<Args...>>::create_writer();
     to_js<ret_t<R>>::create_reader();
   }
@@ -138,7 +139,7 @@ public:
   void register_kaonashi(const char *name, R (*callback)(Args...),
                          const char *description) {
     register_api(name, callback, description);
-    kaonashis.emplace(function_address(callback));
+    kaonashis.emplace(function_address(name, callback));
     to_js<args_t<Args...>>::create_writer();
   }
 
@@ -173,6 +174,6 @@ public:
         plugin_impl(static_cast<plugin_impl>(sym<plugin>("plugin"))) {}
 };
 
-#define DECLARE_API(x) #x, x
+#define N2W__DECLARE_API(x) #x, x
 }
 #endif

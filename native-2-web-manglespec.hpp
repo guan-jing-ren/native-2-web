@@ -391,17 +391,19 @@ template <typename R, typename... Ts> struct mangle<R (*)(Ts...)> {
 };
 
 template <typename R, typename... Ts>
-string function_address(R (*f)(Ts...), uint8_t (&crypt)[sizeof(void (*)())]) {
+string function_address(const char *name, R (*f)(Ts...),
+                        uint8_t (&crypt)[sizeof(void (*)())]) {
   uintptr_t obf = 0;
   for (auto i = 0; i < sizeof(f); ++i)
     obf |= static_cast<uintptr_t>(reinterpret_cast<uint8_t *>(&f)[crypt[i]])
            << (i * 8);
-  return "@" + to_string(obf) + mangled<R(Ts...)>();
+  return string{"@"} + name + mangled<R(Ts...)>();
 }
 
-template <typename R, typename... Ts> string function_address(R (*f)(Ts...)) {
+template <typename R, typename... Ts>
+string function_address(const char *name, R (*f)(Ts...)) {
   uint8_t scrambler[] = {0, 1, 2, 3, 4, 5, 6, 7};
-  return function_address(f, scrambler);
+  return function_address(name, f, scrambler);
 }
 }
 

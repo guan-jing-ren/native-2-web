@@ -104,7 +104,7 @@ void reload_plugins() {
 
 n2w::plugin server = []() {
   n2w::plugin server;
-  server.register_service(DECLARE_API(reload_plugins), "");
+  server.register_service(N2W__DECLARE_API(reload_plugins), "");
   return server;
 }();
 
