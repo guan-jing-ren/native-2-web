@@ -84,6 +84,25 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
                      websocket_handles<vector<uint8_t>>(declval<Handler *>())),
                  unsupported>;
 
+  static auto websocket_response_decoration_support(...) -> unsupported;
+  template <typename T = Handler>
+  static auto websocket_response_decoration_support(T *) -> decltype(
+      declval<T>().decorate(declval<http::response<http::string_body> &>()));
+  static constexpr bool supports_response_decoration =
+      supports_websocket &&
+      !is_same_v<decltype(websocket_response_decoration_support(
+                     declval<Handler *>())),
+                 unsupported>;
+
+  static auto websocket_request_decoration_support(...) -> unsupported;
+  template <typename T = Handler>
+  static auto websocket_request_decoration_support(T *) -> decltype(
+      declval<T>().decorate(declval<http::request<http::string_body> &>()));
+  static constexpr bool supports_request_decoration =
+      supports_websocket &&
+      !is_same_v<decltype(websocket_request_decoration_support(
+                     declval<Handler *>())),
+                 unsupported>;
 
   /*****************************************/
   /* EXTENDED WEBSOCKET SFINAE DEFINITIONS */
@@ -225,7 +244,17 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
       if (websocket::is_upgrade(request)) {
         if
           constexpr(supports_websocket) {
-            ws.async_accept(request, yield[ec]);
+            if
+              constexpr(supports_response_decoration) {
+                ws.async_accept(request,
+                                [this](auto &response) {
+                                  ws_stuff.websocket_handler.decorate(response);
+                                },
+                                yield[ec]);
+              }
+            else {
+              ws.async_accept(request, yield[ec]);
+            }
             clog << "Accepted websocket connection: " << ec.message() << '\n';
             clog << request;
             if (ec)
@@ -376,21 +405,31 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
   }
 
   void upgrade() {
-    spawn(socket.get_io_service(),
-          [ this, self = this->shared_from_this(),
-            tkt = ticket++ ](yield_context yield) {
-            while (tkt != serving)
-              socket.get_io_service().post(yield);
+    spawn(socket.get_io_service(), [
+      this, self = this->shared_from_this(), tkt = ticket++
+    ](yield_context yield) {
+      while (tkt != serving)
+        socket.get_io_service().post(yield);
 
-            boost::system::error_code ec;
-            http::response<http::string_body> res;
-            auto remote = socket.remote_endpoint().address().to_string();
-            clog << "Upgrading websocket host: " << remote << '\n';
-            ws.async_handshake(res, remote, "/", yield[ec]);
-            clog << "Thread: " << this_thread::get_id()
-                 << "; Connected to websocket: " << ec.message() << '\n';
-            ++serving;
-          });
+      boost::system::error_code ec;
+      http::response<http::string_body> res;
+      auto remote = socket.remote_endpoint().address().to_string();
+      clog << "Upgrading websocket host: " << remote << '\n';
+      if
+        constexpr(supports_request_decoration) {
+          ws.async_handshake(res, remote, "/",
+                             [this](auto &request) {
+                               ws_stuff.websocket_handler.decorate(request);
+                             },
+                             yield[ec]);
+        }
+      else {
+        ws.async_handshake(res, remote, "/", yield[ec]);
+      }
+      clog << "Thread: " << this_thread::get_id()
+           << "; Connected to websocket: " << ec.message() << '\n';
+      ++serving;
+    });
   }
 
 public:
