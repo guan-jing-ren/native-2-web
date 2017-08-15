@@ -29,21 +29,23 @@ template <typename> class client_connection;
 template <typename Handler>
 class connection final : public enable_shared_from_this<connection<Handler>> {
 
+  struct unsupported;
+
   /***************************/
   /* HTTP SFINAE DEFINITIONS */
   /***************************/
 
-  static auto http_supports_receive(...) -> false_type;
+  static auto http_supports_receive(...) -> unsupported;
   template <typename T = Handler>
   static auto http_supports_receive(T *)
       -> result_of_t<T(http::request<http::string_body>)>;
   static constexpr bool supports_http_receive =
       !is_same_v<decltype(http_supports_receive(declval<Handler *>())),
-                 false_type>;
+                 unsupported>;
 
   struct adaptable;
 
-  static auto http_supports_send(...) -> false_type;
+  static auto http_supports_send(...) -> unsupported;
   template <typename T = Handler>
   static auto http_supports_send(T *)
       -> result_of_t<T(filesystem::path, adaptable)>;
@@ -60,45 +62,46 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
   /* BASIC WEBSOCKET SFINAE DEFINITIONS */
   /**************************************/
 
-  static auto websocket_support(...) -> false_type;
+  static auto websocket_support(...) -> unsupported;
   template <typename T = Handler>
   static auto websocket_support(T *) -> typename T::websocket_handler_type;
   using websocket_handler_type =
       decltype(websocket_support(declval<Handler *>()));
   static constexpr bool supports_websocket =
-      !is_same_v<websocket_handler_type, false_type>;
+      !is_same_v<websocket_handler_type, unsupported>;
 
-  template <typename> static auto websocket_handles(...) -> false_type;
+  template <typename> static auto websocket_handles(...) -> unsupported;
   template <typename V, typename T = Handler>
   static auto websocket_handles(T *)
       -> result_of_t<typename T::websocket_handler_type(V)>;
   static constexpr bool websocket_handles_text =
       supports_websocket &&
       !is_same_v<decltype(websocket_handles<string>(declval<Handler *>())),
-                 false_type>;
+                 unsupported>;
   static constexpr bool websocket_handles_binary =
       supports_websocket &&
       !is_same_v<decltype(
                      websocket_handles<vector<uint8_t>>(declval<Handler *>())),
-                 false_type>;
+                 unsupported>;
+
 
   /*****************************************/
   /* EXTENDED WEBSOCKET SFINAE DEFINITIONS */
   /*****************************************/
 
-  template <typename> static auto websocket_pushes(...) -> false_type;
+  template <typename> static auto websocket_pushes(...) -> unsupported;
   template <typename V, typename T = Handler>
   static auto websocket_pushes(T *)
       -> result_of_t<typename T::websocket_handler_type(function<void(V)>)>;
   static constexpr bool websocket_pushes_text =
       supports_websocket &&
       !is_same_v<decltype(websocket_pushes<string>(declval<Handler *>())),
-                 false_type>;
+                 unsupported>;
   static constexpr bool websocket_pushes_binary =
       supports_websocket &&
       !is_same_v<decltype(
                      websocket_pushes<vector<uint8_t>>(declval<Handler *>())),
-                 false_type>;
+                 unsupported>;
 
   /**********************************/
   /* INTERNAL STRUCTURE DEFINITIONS */
