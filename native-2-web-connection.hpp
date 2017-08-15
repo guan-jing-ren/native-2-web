@@ -86,8 +86,9 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
 
   static auto websocket_response_decoration_support(...) -> unsupported;
   template <typename T = Handler>
-  static auto websocket_response_decoration_support(T *) -> decltype(
-      declval<T>().decorate(declval<http::response<http::string_body> &>()));
+  static auto websocket_response_decoration_support(T *)
+      -> decltype(declval<typename T::websocket_handler_type>().decorate(
+          declval<http::response<http::string_body> &>()));
   static constexpr bool supports_response_decoration =
       supports_websocket &&
       !is_same_v<decltype(websocket_response_decoration_support(
@@ -96,8 +97,9 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
 
   static auto websocket_request_decoration_support(...) -> unsupported;
   template <typename T = Handler>
-  static auto websocket_request_decoration_support(T *) -> decltype(
-      declval<T>().decorate(declval<http::request<http::string_body> &>()));
+  static auto websocket_request_decoration_support(T *)
+      -> decltype(declval<typename T::websocket_handler_type>().decorate(
+          declval<http::request<http::empty_body> &>()));
   static constexpr bool supports_request_decoration =
       supports_websocket &&
       !is_same_v<decltype(websocket_request_decoration_support(
