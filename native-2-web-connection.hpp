@@ -249,12 +249,18 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
           constexpr(supports_websocket) {
             if
               constexpr(supports_response_decoration) {
-                ws.async_accept_ex(request,
-                                   [this](auto &response) {
-                                     ws_stuff.websocket_handler.decorate(
-                                         response);
-                                   },
-                                   yield[ec]);
+                ws.async_accept_ex(
+                    request,
+                    [
+                      this,
+                      subprotocol =
+                          request.count(http::field::sec_websocket_protocol) > 0
+                    ](auto &response) {
+                      ws_stuff.websocket_handler.decorate(response);
+                      if (!subprotocol)
+                        response.erase(http::field::sec_websocket_protocol);
+                    },
+                    yield[ec]);
               }
             else {
               ws.async_accept(request, yield[ec]);
