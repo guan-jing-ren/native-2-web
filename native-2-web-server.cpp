@@ -273,6 +273,8 @@ int main() {
   struct http_requester {
     struct websocket_handler_type {
       void decorate(http::request<http::empty_body> &request) {
+        if (!request.count(http::field::sec_websocket_protocol))
+          return;
         request.insert(http::field::sec_websocket_protocol, "n2w");
       }
     };

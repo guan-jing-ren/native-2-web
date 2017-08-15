@@ -88,6 +88,7 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
   template <typename T = Handler>
   static auto websocket_response_decoration_support(T *)
       -> decltype(declval<typename T::websocket_handler_type>().decorate(
+          declval<http::request<http::empty_body &>>(),
           declval<http::response<http::string_body> &>()));
   static constexpr bool supports_response_decoration =
       supports_websocket &&
@@ -249,18 +250,12 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
           constexpr(supports_websocket) {
             if
               constexpr(supports_response_decoration) {
-                ws.async_accept_ex(
-                    request,
-                    [
-                      this,
-                      subprotocol =
-                          request.count(http::field::sec_websocket_protocol) > 0
-                    ](auto &response) {
-                      ws_stuff.websocket_handler.decorate(response);
-                      if (!subprotocol)
-                        response.erase(http::field::sec_websocket_protocol);
-                    },
-                    yield[ec]);
+                ws.async_accept_ex(request,
+                                   [this, request](auto &response) {
+                                     ws_stuff.websocket_handler.decorate(
+                                         request, response);
+                                   },
+                                   yield[ec]);
               }
             else {
               ws.async_accept(request, yield[ec]);
