@@ -240,6 +240,7 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
       http::async_read(socket, buf, request, yield[ec]);
       clog << "Thread: " << this_thread::get_id()
            << "; Received request: " << ec.message() << ".\n";
+      clog << request;
       if (ec)
         break;
 
@@ -248,17 +249,17 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
           constexpr(supports_websocket) {
             if
               constexpr(supports_response_decoration) {
-                ws.async_accept(request,
-                                [this](auto &response) {
-                                  ws_stuff.websocket_handler.decorate(response);
-                                },
-                                yield[ec]);
+                ws.async_accept_ex(request,
+                                   [this](auto &response) {
+                                     ws_stuff.websocket_handler.decorate(
+                                         response);
+                                   },
+                                   yield[ec]);
               }
             else {
               ws.async_accept(request, yield[ec]);
             }
             clog << "Accepted websocket connection: " << ec.message() << '\n';
-            clog << request;
             if (ec)
               break;
             ws_stuff.stream >> noskipws;
@@ -419,17 +420,18 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
       clog << "Upgrading websocket host: " << remote << '\n';
       if
         constexpr(supports_request_decoration) {
-          ws.async_handshake(res, remote, "/",
-                             [this](auto &request) {
-                               ws_stuff.websocket_handler.decorate(request);
-                             },
-                             yield[ec]);
+          ws.async_handshake_ex(res, remote, "/",
+                                [this](auto &request) {
+                                  ws_stuff.websocket_handler.decorate(request);
+                                },
+                                yield[ec]);
         }
       else {
         ws.async_handshake(res, remote, "/", yield[ec]);
       }
       clog << "Thread: " << this_thread::get_id()
            << "; Connected to websocket: " << ec.message() << '\n';
+      clog << res;
       ++serving;
     });
   }
