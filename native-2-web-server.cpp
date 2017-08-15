@@ -162,6 +162,10 @@ int main() {
     reference_wrapper<const function<vector<uint8_t>(const vector<uint8_t> &)>>
         service = null_ref;
 
+    void decorate(http::response<http::string_body> &response) {
+      response.insert(http::field::sec_websocket_protocol, "n2w");
+    }
+
     void operator()(string message) {
       for (auto &plugin : plugins) {
         service = cref(plugin.second.get_function(message));
@@ -267,6 +271,12 @@ int main() {
   accept<ws_only_handler>(service, ip::address::from_string("0.0.0.0"), 9002);
 
   struct http_requester {
+    struct websocket_handler_type {
+      void decorate(http::request<http::empty_body> &request) {
+        request.insert(http::field::sec_websocket_protocol, "n2w");
+      }
+    };
+
     auto operator()(const filesystem::path &p) {
       http::request<http::string_body> req;
       req.target(p.generic_u8string());
