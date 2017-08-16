@@ -21,11 +21,11 @@
 
 <body>
     <script type='text/javascript'>
-        let ws1 = new WebSocket('ws://localhost:9001');
+        let ws1 = new WebSocket('ws://localhost:9001', 'n2w');
         let reconnect = ev => {
             console.log(ev.reason);
             if (ev.code == 1006) return;
-            ws1 = new WebSocket('ws://localhost:9001');
+            ws1 = new WebSocket('ws://localhost:9001', 'n2w');
             ws1.addEventListener('close', reconnect);
         };
         ws1.addEventListener('open', ev => { ws1.send("Hello world!"); ws1.send(new ArrayBuffer(20)); }, true);

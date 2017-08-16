@@ -88,7 +88,7 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
   template <typename T = Handler>
   static auto websocket_response_decoration_support(T *)
       -> decltype(declval<typename T::websocket_handler_type>().decorate(
-          declval<http::request<http::empty_body &>>(),
+          declval<http::request<http::string_body> &>(),
           declval<http::response<http::string_body> &>()));
   static constexpr bool supports_response_decoration =
       supports_websocket &&

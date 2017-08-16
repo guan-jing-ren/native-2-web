@@ -162,8 +162,33 @@ int main() {
     reference_wrapper<const function<vector<uint8_t>(const vector<uint8_t> &)>>
         service = null_ref;
 
-    void decorate(http::response<http::string_body> &response) {
-      response.insert(http::field::sec_websocket_protocol, "n2w");
+    void decorate(const http::request<http::string_body> &request,
+                  http::response<http::string_body> &response) {
+      if (!request.count(http::field::sec_websocket_protocol))
+        return;
+      string range = request[http::field::sec_websocket_protocol].to_string();
+      regex rx{R"(\s+)"};
+      vector<string> protocols, available;
+      copy(sregex_token_iterator{cbegin(range), cend(range), rx, -1}, {},
+           back_inserter(protocols));
+      sort(begin(protocols), end(protocols));
+
+      auto services = accumulate(
+          cbegin(plugins), cend(plugins), vector<string>{},
+          [](auto &all_services, auto &plugin) {
+            auto services = plugin.second.get_services();
+            copy(cbegin(services), cend(services), back_inserter(all_services));
+            return all_services;
+          });
+      sort(begin(services), end(services));
+      set_intersection(cbegin(protocols), cend(protocols), cbegin(services),
+                       cend(services), back_inserter(available));
+      response.insert(http::field::sec_websocket_protocol,
+                      "n2w" + accumulate(cbegin(available), cend(available),
+                                         string{},
+                                         [](auto &services, auto &service) {
+                                           return services + ' ' + service;
+                                         }));
     }
 
     void operator()(string message) {
@@ -273,8 +298,6 @@ int main() {
   struct http_requester {
     struct websocket_handler_type {
       void decorate(http::request<http::empty_body> &request) {
-        if (!request.count(http::field::sec_websocket_protocol))
-          return;
         request.insert(http::field::sec_websocket_protocol, "n2w");
       }
     };
