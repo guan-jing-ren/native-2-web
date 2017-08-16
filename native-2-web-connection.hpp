@@ -364,14 +364,13 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
   auto request(const filesystem::path p, CompletionHandler &&ch) {
     if
       constexpr(supports_http_send) {
-        using handler_type = typename boost::asio::handler_type<
-            CompletionHandler, void(boost::system::error_code,
-                                    http::response<http::string_body>)>::type;
-        using async_result = boost::asio::async_result<handler_type>;
-        handler_type handler{forward<CompletionHandler &&>(ch)};
-        async_result result{handler};
-        spawn(socket.get_io_service(), [ this, p, handler, tkt = ticket++ ](
-                                           yield_context yield) mutable {
+        async_completion<CompletionHandler,
+                         void(boost::system::error_code,
+                              http::response<http::string_body>)>
+            completion{ch};
+        spawn(socket.get_io_service(), [
+          this, p, handler = move(completion.completion_handler), tkt = ticket++
+        ](yield_context yield) mutable {
           while (tkt != serving)
             socket.get_io_service().post(yield);
 
@@ -387,21 +386,17 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
           clog << "Thread: " << this_thread::get_id()
                << "; Received response: " << ec.message() << ".\n";
           ++serving;
-          asio_handler_invoke(
-              [ ec, handler = move(handler), res = move(res) ]() mutable {
-                clog << "Resuming coroutine\n";
-                handler(ec, res);
-              },
-              &handler);
+          clog << "Resuming coroutine\n";
+          handler(ec, res);
         });
         clog << "Suspending coroutine\n";
         if
-          constexpr(is_void_v<typename async_result::type>) {
-            result.get();
+          constexpr(is_void_v<decltype(completion.result.get())>) {
+            completion.result.get();
             clog << "Coroutine resumed\n";
           }
         else {
-          auto r = result.get();
+          auto r = completion.result.get();
           clog << "Coroutine resumed\n";
           return r;
         }
