@@ -212,23 +212,30 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
     if
       constexpr(is_same_v<T, http::response<http::string_body>> ||
                 is_same_v<T, string> || is_same_v<T, vector<uint8_t>>) {
-        spawn(socket.get_io_service(), [
-          this, self = this->shared_from_this(), t = forward<T>(t),
-          tkt = ticket++
-        ](yield_context yield) { write_response(yield, move(t), tkt); });
+        spawn(socket.get_io_service(),
+              [
+                this, self = this->shared_from_this(), t = forward<T>(t),
+                tkt = ticket++
+              ](yield_context yield) { write_response(yield, move(t), tkt); },
+              boost::coroutines::attributes{
+                  16 << 10, boost::coroutines::fpu_not_preserved});
       }
     else {
-      spawn(socket.get_io_service(), [
-        this, self = this->shared_from_this(), t = forward<T>(t), tkt = ticket++
-      ](yield_context yield) {
-        if
-          constexpr(is_void_v<result_of_t<T()>>) {
-            t();
-            write_response(yield, nullptr, tkt);
-          }
-        else
-          write_response(yield, t(), tkt);
-      });
+      spawn(socket.get_io_service(),
+            [
+              this, self = this->shared_from_this(), t = forward<T>(t),
+              tkt = ticket++
+            ](yield_context yield) {
+              if
+                constexpr(is_void_v<result_of_t<T()>>) {
+                  t();
+                  write_response(yield, nullptr, tkt);
+                }
+              else
+                write_response(yield, t(), tkt);
+            },
+            boost::coroutines::attributes{
+                16 << 10, boost::coroutines::fpu_not_preserved});
     }
   }
 
@@ -368,27 +375,31 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
                          void(boost::system::error_code,
                               http::response<http::string_body>)>
             completion{ch};
-        spawn(socket.get_io_service(), [
-          this, p, handler = move(completion.completion_handler), tkt = ticket++
-        ](yield_context yield) mutable {
-          while (tkt != serving)
-            socket.get_io_service().post(yield);
+        spawn(socket.get_io_service(),
+              [
+                this, p, handler = move(completion.completion_handler),
+                tkt = ticket++
+              ](yield_context yield) mutable {
+                while (tkt != serving)
+                  socket.get_io_service().post(yield);
 
-          boost::system::error_code ec;
-          auto req = this->handler(p);
-          req.method(http::verb::get);
-          req.prepare_payload();
-          http::async_write(socket, req, yield[ec]);
-          clog << "Thread: " << this_thread::get_id()
-               << "; Sent request: " << ec.message() << ".\n";
-          http::response<http::string_body> res;
-          http::async_read(socket, buf, res, yield[ec]);
-          clog << "Thread: " << this_thread::get_id()
-               << "; Received response: " << ec.message() << ".\n";
-          ++serving;
-          clog << "Resuming coroutine\n";
-          handler(ec, res);
-        });
+                boost::system::error_code ec;
+                auto req = this->handler(p);
+                req.method(http::verb::get);
+                req.prepare_payload();
+                http::async_write(socket, req, yield[ec]);
+                clog << "Thread: " << this_thread::get_id()
+                     << "; Sent request: " << ec.message() << ".\n";
+                http::response<http::string_body> res;
+                http::async_read(socket, buf, res, yield[ec]);
+                clog << "Thread: " << this_thread::get_id()
+                     << "; Received response: " << ec.message() << ".\n";
+                ++serving;
+                clog << "Resuming coroutine\n";
+                handler(ec, res);
+              },
+              boost::coroutines::attributes{
+                  16 << 10, boost::coroutines::fpu_not_preserved});
         clog << "Suspending coroutine\n";
         if
           constexpr(is_void_v<decltype(completion.result.get())>) {
@@ -404,32 +415,35 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
   }
 
   void upgrade() {
-    spawn(socket.get_io_service(), [
-      this, self = this->shared_from_this(), tkt = ticket++
-    ](yield_context yield) {
-      while (tkt != serving)
-        socket.get_io_service().post(yield);
+    spawn(socket.get_io_service(),
+          [ this, self = this->shared_from_this(),
+            tkt = ticket++ ](yield_context yield) {
+            while (tkt != serving)
+              socket.get_io_service().post(yield);
 
-      boost::system::error_code ec;
-      http::response<http::string_body> res;
-      auto remote = socket.remote_endpoint().address().to_string();
-      clog << "Upgrading websocket host: " << remote << '\n';
-      if
-        constexpr(supports_request_decoration) {
-          ws.async_handshake_ex(res, remote, "/",
-                                [this](auto &request) {
-                                  ws_stuff.websocket_handler.decorate(request);
-                                },
-                                yield[ec]);
-        }
-      else {
-        ws.async_handshake(res, remote, "/", yield[ec]);
-      }
-      clog << "Thread: " << this_thread::get_id()
-           << "; Connected to websocket: " << ec.message() << '\n';
-      clog << res;
-      ++serving;
-    });
+            boost::system::error_code ec;
+            http::response<http::string_body> res;
+            auto remote = socket.remote_endpoint().address().to_string();
+            clog << "Upgrading websocket host: " << remote << '\n';
+            if
+              constexpr(supports_request_decoration) {
+                ws.async_handshake_ex(res, remote, "/",
+                                      [this](auto &request) {
+                                        ws_stuff.websocket_handler.decorate(
+                                            request);
+                                      },
+                                      yield[ec]);
+              }
+            else {
+              ws.async_handshake(res, remote, "/", yield[ec]);
+            }
+            clog << "Thread: " << this_thread::get_id()
+                 << "; Connected to websocket: " << ec.message() << '\n';
+            clog << res;
+            ++serving;
+          },
+          boost::coroutines::attributes{16 << 10,
+                                        boost::coroutines::fpu_not_preserved});
   }
 
 public:
@@ -463,11 +477,14 @@ void accept(reference_wrapper<io_service> service, Args &&... args) {
            << "; Accepted connection: " << ec.message() << '\n';
       if (ec)
         break;
-      spawn(service.get(), [conn = move(conn)](yield_context yield) {
-        conn->serve(yield);
-      });
+      spawn(service.get(), [conn = move(conn)](
+                               yield_context yield) { conn->serve(yield); },
+            boost::coroutines::attributes{
+                16 << 10, boost::coroutines::fpu_not_preserved});
     }
-  });
+  },
+        boost::coroutines::attributes{16 << 10,
+                                      boost::coroutines::fpu_not_preserved});
 }
 
 template <typename Handler> class client_connection {
@@ -520,7 +537,9 @@ client_connection<Handler> connect(reference_wrapper<io_service> service,
     if (ec)
       return;
     ++conn->serving;
-  });
+  },
+        boost::coroutines::attributes{16 << 10,
+                                      boost::coroutines::fpu_not_preserved});
 
   return {move(conn)};
 }
