@@ -217,8 +217,7 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
                 this, self = this->shared_from_this(), t = forward<T>(t),
                 tkt = ticket++
               ](yield_context yield) { write_response(yield, move(t), tkt); },
-              boost::coroutines::attributes{
-                  16 << 10, boost::coroutines::fpu_not_preserved});
+              boost::coroutines::attributes{16 << 10});
       }
     else {
       spawn(socket.get_io_service(),
@@ -234,8 +233,7 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
               else
                 write_response(yield, t(), tkt);
             },
-            boost::coroutines::attributes{
-                16 << 10, boost::coroutines::fpu_not_preserved});
+            boost::coroutines::attributes{16 << 10});
     }
   }
 
@@ -398,8 +396,7 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
                 clog << "Resuming coroutine\n";
                 handler(ec, res);
               },
-              boost::coroutines::attributes{
-                  16 << 10, boost::coroutines::fpu_not_preserved});
+              boost::coroutines::attributes{16 << 10});
         clog << "Suspending coroutine\n";
         if
           constexpr(is_void_v<decltype(completion.result.get())>) {
@@ -442,8 +439,7 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
             clog << res;
             ++serving;
           },
-          boost::coroutines::attributes{16 << 10,
-                                        boost::coroutines::fpu_not_preserved});
+          boost::coroutines::attributes{16 << 10});
   }
 
 public:
@@ -479,12 +475,10 @@ void accept(reference_wrapper<io_service> service, Args &&... args) {
         break;
       spawn(service.get(), [conn = move(conn)](
                                yield_context yield) { conn->serve(yield); },
-            boost::coroutines::attributes{
-                16 << 10, boost::coroutines::fpu_not_preserved});
+            boost::coroutines::attributes{16 << 10});
     }
   },
-        boost::coroutines::attributes{16 << 10,
-                                      boost::coroutines::fpu_not_preserved});
+        boost::coroutines::attributes{16 << 10});
 }
 
 template <typename Handler> class client_connection {
@@ -538,8 +532,7 @@ client_connection<Handler> connect(reference_wrapper<io_service> service,
       return;
     ++conn->serving;
   },
-        boost::coroutines::attributes{16 << 10,
-                                      boost::coroutines::fpu_not_preserved});
+        boost::coroutines::attributes{16 << 10});
 
   return {move(conn)};
 }
