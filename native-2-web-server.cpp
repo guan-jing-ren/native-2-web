@@ -270,7 +270,7 @@ int main() {
     }
   };
 
-  accept<http_handler>(service, ip::address::from_string("0.0.0.0"), 9001);
+  accept<http_handler>(service, ip::address_v6::any(), 9001);
 
   // struct dummy_handler {};
   // accept<dummy_handler>(service, ip::address::from_string("0.0.0.0"),
@@ -296,7 +296,7 @@ int main() {
     };
   };
 
-  accept<ws_only_handler>(service, ip::address::from_string("0.0.0.0"), 9002);
+  accept<ws_only_handler>(service, ip::address_v6::any(), 9002);
 
   struct http_requester {
     struct websocket_handler_type {
