@@ -181,8 +181,11 @@ int main() {
             return all_services;
           });
       sort(begin(services), end(services));
-      set_intersection(cbegin(protocols), cend(protocols), cbegin(services),
-                       cend(services), back_inserter(available));
+      if (protocols.size() == 1 && protocols.front() == "n2w")
+        available = move(services);
+      else
+        set_intersection(cbegin(protocols), cend(protocols), cbegin(services),
+                         cend(services), back_inserter(available));
       response.insert(http::field::sec_websocket_protocol,
                       "n2w" + accumulate(cbegin(available), cend(available),
                                          string{},
