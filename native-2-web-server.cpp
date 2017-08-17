@@ -6,6 +6,8 @@
 #include <iostream>
 #include <regex>
 
+#include <boost/program_options.hpp>
+
 #include "native-2-web-connection.hpp"
 #include "native-2-web-plugin.hpp"
 
@@ -150,10 +152,45 @@ string create_modules() {
 // Servers can redirect to other servers
 // n2w_connection for clients
 // Status updates via multicasting
+// - Startup, shutdown
+// - Accept, connect, close, fault
+// - Number of threads, tasks
 // Load balancing
 // Choose plugin combinations
 
-int main() {
+int main(int c, char **v) {
+  using namespace boost::program_options;
+  options_description options;
+  options.add_options()("help", value<bool>()->zero_tokens(),
+                        "Display this help message.\n")(
+      "server-socket",
+      value<string>()->default_value(ip::address_v6::any().to_string()),
+      "IPv4 or IPv6 address to listen for connections.\n")(
+      "server-port", value<unsigned short>()->default_value(9001),
+      "Base port number to listen for connections.\n")(
+      "server-port-range", value<unsigned>()->default_value(1),
+      "Number of ports to reserve starting from server-port.\n")(
+      "worker-threads", value<unsigned>()->default_value(0),
+      "Number of threads for processing requests.\n'0' for default.\n")(
+      "accept-threads", value<unsigned>()->default_value(0),
+      "Number of threads for listening for connections.\n'0' for default.\n")(
+      "connect-threads", value<unsigned>()->default_value(0),
+      "Number of threads for connecting to servers.\n'0' for default.\n")(
+      "worker-sessions", value<unsigned>()->default_value(0),
+      "Number of worker servers to to handle long running tasks. If "
+      "unspecified or '0', do not use workers.\n")(
+      "multicast-address", "IPv4 or IPv6 multicast group address for serer to "
+                           "manage child processes.");
+
+  auto command_line = parse_command_line(c, v, options);
+  variables_map arguments;
+  store(command_line, arguments);
+
+  if (arguments["help"].as<bool>()) {
+    clog << options;
+    return 0;
+  }
+
   io_service service;
   io_service::work work{service};
 
