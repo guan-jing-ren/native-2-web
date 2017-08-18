@@ -163,12 +163,12 @@ int main(int c, char **v) {
   options_description options;
   options.add_options()("help", value<bool>()->zero_tokens(),
                         "Display this help message.\n")(
-      "server-socket",
+      "socket",
       value<string>()->default_value(ip::address_v6::any().to_string()),
       "IPv4 or IPv6 address to listen for connections.\n")(
-      "server-port", value<unsigned short>()->default_value(9001),
+      "port", value<unsigned short>()->default_value(9001),
       "Base port number to listen for connections.\n")(
-      "server-port-range", value<unsigned>()->default_value(1),
+      "port-range", value<unsigned>()->default_value(1),
       "Number of ports to reserve starting from server-port.\n")(
       "worker-threads", value<unsigned>()->default_value(0),
       "Number of threads for processing requests.\n'0' for default.\n")(
