@@ -161,9 +161,11 @@ string create_modules() {
 int main(int c, char **v) {
   using namespace boost::program_options;
   options_description options;
-  options.add_options()("help", value<bool>()->zero_tokens(),
-                        "Display this help message.\n")(
-      "socket",
+  options.add_options()(
+      "help",
+      value<bool>()->zero_tokens()->default_value(false)->implicit_value(true),
+      "Display this help message.\n")(
+      "address",
       value<string>()->default_value(ip::address_v6::any().to_string()),
       "IPv4 or IPv6 address to listen for connections.\n")(
       "port", value<unsigned short>()->default_value(9001),
@@ -182,9 +184,9 @@ int main(int c, char **v) {
       "multicast-address", "IPv4 or IPv6 multicast group address for serer to "
                            "manage child processes.");
 
-  auto command_line = parse_command_line(c, v, options);
   variables_map arguments;
-  store(command_line, arguments);
+  store(parse_command_line(c, v, options), arguments);
+  notify(arguments);
 
   if (arguments["help"].as<bool>()) {
     clog << options;
@@ -307,7 +309,9 @@ int main(int c, char **v) {
     }
   };
 
-  accept<http_handler>(service, ip::address_v6::any(), 9001);
+  accept<http_handler>(
+      service, ip::address::from_string(arguments["address"].as<string>()),
+      arguments["port"].as<unsigned short>());
 
   // struct dummy_handler {};
   // accept<dummy_handler>(service, ip::address::from_string("0.0.0.0"),
