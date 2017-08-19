@@ -10,7 +10,8 @@ inline bool operator!=(boost::system::error_code ec, int i) { return ec != i; }
 #include <beast/websocket.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/signal_set.hpp>
-#define BOOST_COROUTINES_UNIDIRECT
+#define BOOST_COROUTINES_NO_DEPRECATION_WARNING 1
+#define BOOST_COROUTINES_V2 1
 #include <boost/asio/spawn.hpp>
 
 #include <experimental/filesystem>
