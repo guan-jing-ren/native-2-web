@@ -173,11 +173,11 @@ int main(int c, char **v) {
       "port-range", value<unsigned>()->default_value(1),
       "Number of ports to reserve starting from server-port.\n")(
       "worker-threads", value<unsigned>()->default_value(0),
-      "Number of threads for processing requests.\n'0' for default.\n")(
+      "Number of threads for processing requests.\n'0' for automatic.\n")(
       "accept-threads", value<unsigned>()->default_value(0),
-      "Number of threads for listening for connections.\n'0' for default.\n")(
+      "Number of threads for listening for connections.\n'0' for automatic.\n")(
       "connect-threads", value<unsigned>()->default_value(0),
-      "Number of threads for connecting to servers.\n'0' for default.\n")(
+      "Number of threads for connecting to servers.\n'0' for automatic.\n")(
       "worker-sessions", value<unsigned>()->default_value(0),
       "Number of worker servers to to handle long running tasks. If "
       "unspecified or '0', do not use workers.\n")(
