@@ -205,12 +205,7 @@ int main(int c, char **v) {
                   http::response<http::string_body> &response) {
       if (!request.count(http::field::sec_websocket_protocol))
         return;
-      string range = request[http::field::sec_websocket_protocol].to_string();
-      regex rx{R"(\s+)"};
-      vector<string> protocols, available;
-      copy(sregex_token_iterator{cbegin(range), cend(range), rx, -1}, {},
-           back_inserter(protocols));
-      sort(begin(protocols), end(protocols));
+      response.set(http::field::sec_websocket_protocol, "n2w");
 
       auto services = accumulate(
           cbegin(plugins), cend(plugins), vector<string>{},
@@ -219,18 +214,15 @@ int main(int c, char **v) {
             copy(cbegin(services), cend(services), back_inserter(all_services));
             return all_services;
           });
-      sort(begin(services), end(services));
-      if (protocols.size() == 1 && protocols.front() == "n2w")
-        available = move(services);
-      else
-        set_intersection(cbegin(protocols), cend(protocols), cbegin(services),
-                         cend(services), back_inserter(available));
-      response.insert(http::field::sec_websocket_protocol,
-                      "n2w" + accumulate(cbegin(available), cend(available),
-                                         string{},
-                                         [](auto &services, auto &service) {
-                                           return services + ' ' + service;
-                                         }));
+
+      response.set(
+          "X-n2w-api-list",
+          accumulate(cbegin(services), cend(services),
+                     string{}, [specials = regex{"\\\\|\"|\r"}](auto &services,
+                                                                auto &service) {
+                       return services + (services.empty() ? "" : " ") + '"' +
+                              regex_replace(service, specials, "\\$0") + '"';
+                     }));
     }
 
     void operator()(string message) {
