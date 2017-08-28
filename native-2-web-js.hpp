@@ -676,7 +676,7 @@ template <> struct to_js<filesystem::directory_entry> {
 
 string to_js<filesystem::directory_entry>::names() {
   return "['path', 'exists', 'file size', 'hard link count', 'time since "
-         "epoch', symlink status']";
+         "epoch', 'symlink status']";
 }
 
 #define N2W__JS_SPEC(s, m, ...)                                                \
