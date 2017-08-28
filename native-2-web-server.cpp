@@ -104,9 +104,32 @@ void reload_plugins() {
   clog << "Plugins reloaded\n";
 }
 
+struct server_options {
+  optional<string> address;
+  optional<unsigned short> port;
+  optional<unsigned short> port_range;
+  optional<unsigned> worker_threads;
+  optional<unsigned> accept_threads;
+  optional<unsigned> connect_threads;
+  optional<unsigned> worker_sessions;
+  optional<string> multicast_address;
+};
+
+N2W__READ_WRITE_SPEC(server_options,
+                     N2W__MEMBERS(address, port, port_range, worker_threads,
+                                  accept_threads, connect_threads,
+                                  worker_sessions, multicast_address));
+N2W__JS_SPEC(server_options,
+             N2W__MEMBERS(address, port, port_range, worker_threads,
+                          accept_threads, connect_threads, worker_sessions,
+                          multicast_address));
+
+void spawn_server(optional<server_options> options) {}
+
 n2w::plugin server = []() {
   n2w::plugin server;
   server.register_service(N2W__DECLARE_API(reload_plugins), "");
+  server.register_service(N2W__DECLARE_API(spawn_server), "");
   return server;
 }();
 
@@ -150,11 +173,10 @@ string create_modules() {
 
 // Servers need to know other servers
 // Servers can redirect to other servers
-// n2w_connection for clients
 // Status updates via multicasting
 // - Startup, shutdown
 // - Accept, connect, close, fault
-// - Number of threads, tasks
+// - Number of threads, tasks, connections
 // Load balancing
 // Choose plugin combinations
 
@@ -170,7 +192,7 @@ int main(int c, char **v) {
       "IPv4 or IPv6 address to listen for connections.\n")(
       "port", value<unsigned short>()->default_value(9001),
       "Base port number to listen for connections.\n")(
-      "port-range", value<unsigned>()->default_value(1),
+      "port-range", value<unsigned short>()->default_value(1),
       "Number of ports to reserve starting from server-port.\n")(
       "worker-threads", value<unsigned>()->default_value(0),
       "Number of threads for processing requests.\n'0' for automatic.\n")(
