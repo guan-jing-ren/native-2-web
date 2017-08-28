@@ -68,15 +68,15 @@ template <typename T> struct to_js {
   }
   template <typename U = T>
   static auto create_html() -> enable_if_t<is_enum<U>{}, string> {
+    auto e_to_str = enumeration<U>::e_to_str();
     return R"(function (parent, value, dispatcher) {
   this.signature = ')" +
            std::regex_replace(mangled<U>(), std::regex{"'"}, "\\'") +
            R"(';
   return (this.html_enum || html_enum)(parent, value, dispatcher, {)" +
            accumulate(
-               cbegin(enumeration<U>::e_to_str), cend(enumeration<U>::e_to_str),
-               string{},
-               [](const auto &enums, const auto &en) {
+               cbegin(e_to_str), cend(e_to_str), string{},
+               [](auto enums, const auto &en) {
                  return enums + (enums.empty() ? "" : ", ") + "'" +
                         to_string(static_cast<underlying_type_t<U>>(en.first)) +
                         "': '" + en.second + "'";
@@ -470,8 +470,8 @@ struct to_js<unordered_multimap<T, U, Traits...>> : to_js<map<T, U>> {};
 
 template <typename S, typename T, typename... Ts, typename... Bs>
 struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
-  static const string names;
-  static const string base_names;
+  static string names();
+  static string base_names();
 
   static string create_reader() {
     string base_readers;
@@ -482,6 +482,8 @@ struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
       base_readers.pop_back();
     base_readers = "let base_readers = [" + base_readers + "];\n";
 
+    auto base_names = to_js::base_names();
+    auto names = to_js::names();
     return R"(function (data, offset) {
   )" + base_names +
            base_readers + names +
@@ -498,6 +500,8 @@ struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
       base_writers.pop_back();
     base_writers = "let base_writers = [" + base_writers + "];\n";
 
+    auto base_names = to_js::base_names();
+    auto names = to_js::names();
     return R"(function (object) {
   )" + base_names +
            base_writers + names +
@@ -513,6 +517,8 @@ struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
       base_html.pop_back();
     base_html = "  let base_html = [" + base_html + "];\n";
 
+    auto base_names = to_js::base_names();
+    auto names = to_js::names();
     return R"(function (parent, value, dispatcher) {
   this.signature = ')" +
            std::regex_replace(
@@ -527,27 +533,28 @@ struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
 };
 
 template <typename S, typename T, typename... Ts, typename... Bs>
-const string to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>>::names =
-    "let names = [" +
-    accumulate(cbegin(structure<S, tuple<T, Ts...>, tuple<Bs...>>::names) + 1,
-               cend(structure<S, tuple<T, Ts...>, tuple<Bs...>>::names),
-               string{},
-               [](const auto &names, const auto &name) {
-                 return names + (names.empty() ? "" : ",") + "'" + name + "'";
-               }) +
-    "];\n";
+string to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>>::names() {
+  auto names = structure<S, tuple<T, Ts...>, tuple<Bs...>>::names();
+  return "let names = [" + accumulate(cbegin(names) + 1, cend(names), string{},
+                                      [](auto names, const auto &name) {
+                                        return names +
+                                               (names.empty() ? "" : ",") +
+                                               "'" + name + "'";
+                                      }) +
+         "];\n";
+}
 
 template <typename S, typename T, typename... Ts, typename... Bs>
-const string to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>>::base_names =
-    "let base_names = [" +
-    accumulate(cbegin(structure<S, tuple<T, Ts...>, tuple<Bs...>>::base_names),
-               cend(structure<S, tuple<T, Ts...>, tuple<Bs...>>::base_names),
-               string{},
-               [](const auto &names, const auto &name) {
-                 return "" + names + (names.empty() ? "" : ",") +
-                        (name.empty() ? "" : "'base class " + name + "'");
-               }) +
-    "];\n";
+string to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>>::base_names() {
+  auto base_names = structure<S, tuple<T, Ts...>, tuple<Bs...>>::base_names();
+  return "let base_names = [" +
+         accumulate(cbegin(base_names), cend(base_names), string{},
+                    [](auto names, const auto &name) {
+                      return names + (names.empty() ? "" : ",") +
+                             (name.empty() ? "" : "'base class " + name + "'");
+                    }) +
+         "];\n";
+}
 
 template <typename T> struct to_js<optional<T>> {
   static string create_reader() {

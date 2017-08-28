@@ -115,8 +115,8 @@ struct structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> {
     const S *const volatile s_read;
   };
   static const std::tuple<T S::*, Ts S::*...> members;
-  static const std::vector<std::string> names;
-  static const std::vector<std::string> base_names;
+  static std::vector<std::string> names();
+  static std::vector<std::string> base_names();
   structure(S *s) : s_write(s) {}
   structure(const S *s) : s_read(s) {}
   structure(std::nullptr_t) = delete;
@@ -284,9 +284,9 @@ name(const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &s) {
 }
 
 template <typename E> struct enumeration {
-  static const std::string type_name;
-  static std::map<E, std::string> e_to_str;
-  static std::unordered_map<std::string, E> str_to_e;
+  static std::string type_name();
+  static std::map<E, std::string> e_to_str();
+  static std::unordered_map<std::string, E> str_to_e();
 };
 
 template <size_t I, typename T>
@@ -312,12 +312,14 @@ using element_t = std::remove_cv_t<
   const decltype(N2W__MAKE_MEMBER_TUPLE(s, m)) N2W__USING_STRUCTURE(           \
       s, m, __VA_ARGS__)::members = N2W__MAKE_MEMBER_TUPLE(s, m);              \
   template <>                                                                  \
-  const std::vector<std::string> N2W__USING_STRUCTURE(                         \
-      s, m, __VA_ARGS__)::names{#s, N2W__MEMBER_NAMES(m)};                     \
+  std::vector<std::string> N2W__USING_STRUCTURE(s, m, __VA_ARGS__)::names() {  \
+    return {#s, N2W__MEMBER_NAMES(m)};                                         \
+  }                                                                            \
   template <>                                                                  \
-  const std::vector<std::string> N2W__USING_STRUCTURE(                         \
-      s, m, __VA_ARGS__)::base_names{                                          \
-      N2W__MEMBER_NAMES(BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))};
+  std::vector<std::string> N2W__USING_STRUCTURE(s, m,                          \
+                                                __VA_ARGS__)::base_names() {   \
+    return {N2W__MEMBER_NAMES(BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))};         \
+  }
 #define N2W__CONSTRUCTOR(s, m, o, ...)                                         \
   N2W__USING_STRUCTURE(s, m, __VA_ARGS__) o##_v { &o }
 
@@ -329,13 +331,14 @@ using element_t = std::remove_cv_t<
 #define N2W__STRING_TO_ENUM(m) BOOST_PP_SEQ_FOR_EACH_I(N2W__S_E_PAIR, _, m)
 #define N2W__SPECIALIZE_ENUM(e, m)                                             \
   template <> struct n2w::mangle<e> : n2w::mangle<enumeration<e>> {};          \
-  template <> const std::string n2w::enumeration<e>::type_name = #e;           \
+  template <> std::string n2w::enumeration<e>::type_name() { return #e; }      \
+  template <> std::map<e, std::string> n2w::enumeration<e>::e_to_str() {       \
+    return {N2W__ENUM_TO_STRING(m)};                                           \
+  }                                                                            \
   template <>                                                                  \
-  std::map<e, std::string> n2w::enumeration<e>::e_to_str = {                   \
-      N2W__ENUM_TO_STRING(m)};                                                 \
-  template <>                                                                  \
-  std::unordered_map<std::string, e> n2w::enumeration<e>::str_to_e = {         \
-      N2W__STRING_TO_ENUM(m)};
+  std::unordered_map<std::string, e> n2w::enumeration<e>::str_to_e() {         \
+    return {N2W__STRING_TO_ENUM(m)};                                           \
+  }
 }
 
 #endif

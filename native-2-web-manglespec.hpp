@@ -304,13 +304,13 @@ struct mangle<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
 
 template <typename E> struct mangle<enumeration<E>> {
   static string value() {
+    auto e_to_str = enumeration<E>::e_to_str();
     return mangle_prefixed<E>() + mangled<underlying_type_t<E>>() +
-           accumulate(cbegin(enumeration<E>::e_to_str),
-                      cend(enumeration<E>::e_to_str), string{},
-                      [](auto &&s, auto e) {
-                        return s += "," +
-                                    to_string(static_cast<underlying_type_t<E>>(
-                                        e.first));
+           accumulate(cbegin(e_to_str), cend(e_to_str), string{},
+                      [](auto s, auto e) {
+                        return s + "," +
+                               to_string(
+                                   static_cast<underlying_type_t<E>>(e.first));
                       }) +
            "]";
   }
