@@ -613,13 +613,14 @@ struct to_js<chrono::time_point<C, D>> : to_js<D> {};
 
 template <typename T> struct to_js<complex<T>> {
   using underlying = to_js<pair<T, T>>;
-  const static string names;
+  static string names();
   static string create_reader() { return underlying::create_reader(names); }
   static string create_writer() { return underlying::create_writer(names); }
   static string create_html() { return underlying::create_html(names); }
 };
-template <typename T>
-const string to_js<complex<T>>::names = "['real', 'imag']";
+template <typename T> string to_js<complex<T>>::names() {
+  return "['real', 'imag']";
+}
 
 template <typename T> struct to_js<atomic<T>> : to_js<T> {};
 
@@ -636,23 +637,25 @@ template <size_t N> struct to_js<bitset<N>> : to_js<string> {
 
 template <> struct to_js<filesystem::space_info> {
   using underlying = to_js<tuple<double, double, double>>;
-  const static string names;
-  static string create_reader() { return underlying::create_reader(names); }
-  static string create_writer() { return underlying::create_writer(names); }
-  static string create_html() { return underlying::create_html(names); }
+  static string names();
+  static string create_reader() { return underlying::create_reader(names()); }
+  static string create_writer() { return underlying::create_writer(names()); }
+  static string create_html() { return underlying::create_html(names()); }
 };
-const string to_js<filesystem::space_info>::names =
-    "['capacity', 'free', 'available']";
+string to_js<filesystem::space_info>::names() {
+  return "['capacity', 'free', 'available']";
+}
 
 template <> struct to_js<filesystem::file_status> {
   using underlying = to_js<tuple<filesystem::file_type, filesystem::perms>>;
-  const static string names;
-  static string create_reader() { return underlying::create_reader(names); }
-  static string create_writer() { return underlying::create_writer(names); }
-  static string create_html() { return underlying::create_html(names); }
+  static string names();
+  static string create_reader() { return underlying::create_reader(names()); }
+  static string create_writer() { return underlying::create_writer(names()); }
+  static string create_html() { return underlying::create_html(names()); }
 };
-const string to_js<filesystem::file_status>::names =
-    "['file type', 'permissions']";
+string to_js<filesystem::file_status>::names() {
+  return "['file type', 'permissions']";
+}
 
 template <> struct to_js<filesystem::path> : to_js<vector<string>> {
   // static string create_html() { return R"()"; }
@@ -665,15 +668,16 @@ template <> struct to_js<filesystem::directory_entry> {
                                declval<filesystem::directory_entry>())
                                .time_since_epoch()),
                   filesystem::file_status>>;
-  const static string names;
-  static string create_reader() { return underlying::create_reader(names); }
-  static string create_writer() { return underlying::create_writer(names); }
-  static string create_html() { return underlying::create_html(names); }
+  static string names();
+  static string create_reader() { return underlying::create_reader(names()); }
+  static string create_writer() { return underlying::create_writer(names()); }
+  static string create_html() { return underlying::create_html(names()); }
 };
 
-const string to_js<filesystem::directory_entry>::names =
-    "['path', 'exists', 'file size', 'hard link "
-    "count', 'time since epoch', 'symlink status']";
+string to_js<filesystem::directory_entry>::names() {
+  return "['path', 'exists', 'file size', 'hard link count', 'time since "
+         "epoch', symlink status']";
+}
 
 #define N2W__JS_SPEC(s, m, ...)                                                \
   namespace n2w {                                                              \
