@@ -614,9 +614,9 @@ struct to_js<chrono::time_point<C, D>> : to_js<D> {};
 template <typename T> struct to_js<complex<T>> {
   using underlying = to_js<pair<T, T>>;
   static string names();
-  static string create_reader() { return underlying::create_reader(names); }
-  static string create_writer() { return underlying::create_writer(names); }
-  static string create_html() { return underlying::create_html(names); }
+  static string create_reader() { return underlying::create_reader(names()); }
+  static string create_writer() { return underlying::create_writer(names()); }
+  static string create_html() { return underlying::create_html(names()); }
 };
 template <typename T> string to_js<complex<T>>::names() {
   return "['real', 'imag']";
