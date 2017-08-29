@@ -133,7 +133,7 @@ auto spawn_server(optional<server_options> options) {
   clog << "Spawn server\n";
   server_options default_options;
   return system(
-      ("(./n2w-server --address " +
+      ("(cd " + web_root.u8string() + " && ./n2w-server --address " +
        options->address.value_or(*default_options.address) + " --port " +
        to_string(options->port.value_or(*default_options.port)) +
        " --port-range " +
