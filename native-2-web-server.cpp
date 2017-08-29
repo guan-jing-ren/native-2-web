@@ -124,7 +124,28 @@ N2W__JS_SPEC(server_options,
                           accept_threads, connect_threads, worker_sessions,
                           multicast_address));
 
-void spawn_server(optional<server_options> options) {}
+auto spawn_server(optional<server_options> options) {
+  clog << "Spawn server\n";
+  server_options default_options;
+  return system(
+      ("(./n2w-server --address " +
+       options->address.value_or(*default_options.address) + " --port " +
+       to_string(options->port.value_or(*default_options.port)) +
+       " --port-range " +
+       to_string(options->port_range.value_or(*default_options.port_range)) +
+       " --worker-threads " + to_string(options->worker_threads.value_or(
+                                  *default_options.worker_threads)) +
+       " --accept-threads " + to_string(options->accept_threads.value_or(
+                                  *default_options.accept_threads)) +
+       " --connect-threads " + to_string(options->connect_threads.value_or(
+                                   *default_options.connect_threads)) +
+       " --worker-sessions " + to_string(options->worker_sessions.value_or(
+                                   *default_options.worker_sessions)) +
+       " --multicast-address " +
+       options->multicast_address.value_or(*default_options.multicast_address) +
+       "&)&")
+          .c_str());
+}
 
 n2w::plugin server = []() {
   n2w::plugin server;
