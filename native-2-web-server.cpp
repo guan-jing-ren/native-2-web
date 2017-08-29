@@ -124,6 +124,11 @@ N2W__JS_SPEC(server_options,
                           accept_threads, connect_threads, worker_sessions,
                           multicast_address));
 
+server_options spawn_server_default_options() {
+  clog << "Spawn server default options\n";
+  server_options default_options;
+  return default_options;
+}
 auto spawn_server(optional<server_options> options) {
   clog << "Spawn server\n";
   server_options default_options;
@@ -150,6 +155,7 @@ auto spawn_server(optional<server_options> options) {
 n2w::plugin server = []() {
   n2w::plugin server;
   server.register_service(N2W__DECLARE_API(reload_plugins), "");
+  server.register_service(N2W__DECLARE_API(spawn_server_default_options), "");
   server.register_service(N2W__DECLARE_API(spawn_server), "");
   return server;
 }();
