@@ -253,6 +253,7 @@ int main(int c, char **v) {
         if (service.get())
           return;
       }
+      service = server.get_function(message);
     }
     vector<uint8_t> operator()(vector<uint8_t> message) {
       if (!service.get())
