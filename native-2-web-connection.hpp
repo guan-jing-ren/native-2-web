@@ -460,7 +460,14 @@ void accept(reference_wrapper<io_service> service, Args &&... args) {
   spawn(service.get(), [ service, endpoint = ip::tcp::endpoint(args...) ](
                            yield_context yield) {
     boost::system::error_code ec;
-    ip::tcp::acceptor acceptor{service, endpoint, true};
+    ip::tcp::acceptor acceptor{service};
+    acceptor.open(endpoint.protocol(), ec);
+    if (ec)
+      return;
+    acceptor.bind(endpoint, ec);
+    if (ec)
+      return;
+    acceptor.set_option(socket_base::reuse_address{true});
     acceptor.listen(socket_base::max_connections, ec);
     clog << "Thread: " << this_thread::get_id()
          << "; Start listening for connections: " << ec.message() << '\n';
