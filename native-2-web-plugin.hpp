@@ -144,14 +144,13 @@ public:
   }
 
   std::vector<std::string> get_services() const {
-    return std::vector<std::string>{cbegin(services), cend(services)};
+    return {cbegin(services), cend(services)};
   }
   std::vector<std::string> get_push_notifiers() const {
-    return std::vector<std::string>{cbegin(push_notifiers),
-                                    cend(push_notifiers)};
+    return {cbegin(push_notifiers), cend(push_notifiers)};
   }
   std::vector<std::string> get_kaonashis() const {
-    return std::vector<std::string>{cbegin(kaonashis), cend(kaonashis)};
+    return {cbegin(kaonashis), cend(kaonashis)};
   }
 
   std::string get_name(std::string pointer) { return pointer_to_name[pointer]; }

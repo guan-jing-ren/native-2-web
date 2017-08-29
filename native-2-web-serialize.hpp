@@ -187,7 +187,7 @@ struct serializer<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
 };
 template <typename T> struct serializer<optional<T>> {
   template <typename I> static void serialize(const optional<T> &o, I &i) {
-    serializer<bool>::serialize(o, i);
+    serializer<bool>::serialize(static_cast<bool>(o), i);
     if (o)
       serializer<T>::serialize(*o, i);
   }

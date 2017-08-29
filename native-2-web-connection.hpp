@@ -197,7 +197,7 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
         else if
           constexpr(is_same_v<R, vector<uint8_t>>) {
             ws.binary(true);
-            response_type = "binary_websocket";
+            response_type = "binary websocket";
           }
         ws.async_write(buffer(reply), yield[ec]);
         if (ec)
