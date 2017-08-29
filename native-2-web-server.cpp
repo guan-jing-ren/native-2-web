@@ -151,12 +151,14 @@ auto spawn_server(optional<server_options> options) {
        "&)&")
           .c_str());
 }
+auto stop_server() { raise(SIGTERM); }
 
 n2w::plugin server = []() {
   n2w::plugin server;
   server.register_service(N2W__DECLARE_API(reload_plugins), "");
   server.register_service(N2W__DECLARE_API(spawn_server_default_options), "");
   server.register_service(N2W__DECLARE_API(spawn_server), "");
+  server.register_service(N2W__DECLARE_API(stop_server), "");
   return server;
 }();
 
@@ -207,6 +209,8 @@ string create_modules() {
 // Load balancing
 // Choose plugin combinations
 
+#include <boost/asio/signal_set.hpp>
+
 int main(int c, char **v) {
   server_options default_options;
   using namespace boost::program_options;
@@ -249,6 +253,9 @@ int main(int c, char **v) {
 
   io_service service;
   io_service::work work{service};
+
+  signal_set signals{service, SIGINT, SIGTERM};
+  signals.async_wait([&service](const auto &ec, auto sig) { service.stop(); });
 
   static function<vector<uint8_t>(const vector<uint8_t> &)> null_ref;
   struct websocket_handler {
