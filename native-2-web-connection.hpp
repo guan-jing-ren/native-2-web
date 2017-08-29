@@ -464,12 +464,16 @@ void accept(reference_wrapper<io_service> service, Args &&... args) {
     boost::system::error_code ec;
     ip::tcp::acceptor acceptor{service};
     acceptor.open(endpoint.protocol(), ec);
-    if (ec)
+    if (ec) {
+      clog << ec.message() << '\n';
       return;
-    acceptor.bind(endpoint, ec);
-    if (ec)
-      return;
+    }
     acceptor.set_option(socket_base::reuse_address{true});
+    acceptor.bind(endpoint, ec);
+    if (ec) {
+      clog << ec.message() << '\n';
+      return;
+    }
     acceptor.listen(socket_base::max_connections, ec);
     clog << "Thread: " << this_thread::get_id()
          << "; Start listening for connections: " << ec.message() << '\n';
