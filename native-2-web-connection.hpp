@@ -395,7 +395,9 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
                      << "; Received response: " << ec.message() << ".\n";
                 ++serving;
                 clog << "Resuming coroutine\n";
-                handler(ec, res);
+                asio_handler_invoke(
+                    [handler, ec, res]() mutable { handler(ec, res); },
+                    &handler);
               },
               boost::coroutines::attributes{16 << 10});
         clog << "Suspending coroutine\n";
