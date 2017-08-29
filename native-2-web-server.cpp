@@ -105,14 +105,14 @@ void reload_plugins() {
 }
 
 struct server_options {
-  optional<string> address;
-  optional<unsigned short> port;
-  optional<unsigned short> port_range;
-  optional<unsigned> worker_threads;
-  optional<unsigned> accept_threads;
-  optional<unsigned> connect_threads;
-  optional<unsigned> worker_sessions;
-  optional<string> multicast_address;
+  optional<string> address = ip::address_v6::any().to_string();
+  optional<unsigned short> port = 9001;
+  optional<unsigned short> port_range = 1;
+  optional<unsigned> worker_threads = 0;
+  optional<unsigned> accept_threads = 0;
+  optional<unsigned> connect_threads = 0;
+  optional<unsigned> worker_sessions = 0;
+  optional<string> multicast_address = "";
 };
 
 N2W__READ_WRITE_SPEC(server_options,
@@ -181,26 +181,31 @@ string create_modules() {
 // Choose plugin combinations
 
 int main(int c, char **v) {
+  server_options default_options;
   using namespace boost::program_options;
   options_description options;
   options.add_options()(
       "help",
       value<bool>()->zero_tokens()->default_value(false)->implicit_value(true),
       "Display this help message.\n")(
-      "address",
-      value<string>()->default_value(ip::address_v6::any().to_string()),
+      "address", value<string>()->default_value(*default_options.address),
       "IPv4 or IPv6 address to listen for connections.\n")(
-      "port", value<unsigned short>()->default_value(9001),
+      "port", value<unsigned short>()->default_value(*default_options.port),
       "Base port number to listen for connections.\n")(
-      "port-range", value<unsigned short>()->default_value(1),
+      "port-range",
+      value<unsigned short>()->default_value(*default_options.port_range),
       "Number of ports to reserve starting from server-port.\n")(
-      "worker-threads", value<unsigned>()->default_value(0),
+      "worker-threads",
+      value<unsigned>()->default_value(*default_options.worker_threads),
       "Number of threads for processing requests.\n'0' for automatic.\n")(
-      "accept-threads", value<unsigned>()->default_value(0),
+      "accept-threads",
+      value<unsigned>()->default_value(*default_options.accept_threads),
       "Number of threads for listening for connections.\n'0' for automatic.\n")(
-      "connect-threads", value<unsigned>()->default_value(0),
+      "connect-threads",
+      value<unsigned>()->default_value(*default_options.connect_threads),
       "Number of threads for connecting to servers.\n'0' for automatic.\n")(
-      "worker-sessions", value<unsigned>()->default_value(0),
+      "worker-sessions",
+      value<unsigned>()->default_value(*default_options.worker_sessions),
       "Number of worker servers to to handle long running tasks. If "
       "unspecified or '0', do not use workers.\n")(
       "multicast-address", "IPv4 or IPv6 multicast group address for serer to "
