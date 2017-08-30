@@ -275,6 +275,8 @@ int main(int c, char **v) {
             copy(cbegin(services), cend(services), back_inserter(all_services));
             return all_services;
           });
+      auto server_apis = server.get_services();
+      move(begin(server_apis), end(server_apis), back_inserter(services));
 
       response.set(
           "X-n2w-api-list",
