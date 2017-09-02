@@ -6,6 +6,7 @@
 #include <iostream>
 #include <regex>
 
+#include <boost/asio/signal_set.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/program_options.hpp>
 
@@ -210,8 +211,6 @@ string create_modules() {
 // Load balancing
 // Choose plugin combinations
 
-#include <boost/asio/signal_set.hpp>
-
 int main(int c, char **v) {
   server_options default_options;
   using namespace boost::program_options;
@@ -300,19 +299,22 @@ int main(int c, char **v) {
                 buffer(to_string(3.14159265358979)), stats_endpoint, yield[ec]);
             clog << "Multicast bytes written: " << bytes << '\n';
           }
-        });
+        },
+        boost::coroutines::attributes{8 << 10});
 
-  spawn(service, [&service, &stats_socket](yield_context yield) {
-    boost::system::error_code ec;
-    ip::udp::endpoint endpoint;
-    vector<char> stream{8};
-    while (true) {
-      auto bytes = stats_socket.async_receive_from(buffer(stream, 8), endpoint,
-                                                   yield[ec]);
-      clog << "Multicast bytes read: " << bytes << ", "
-           << string{cbegin(stream), cend(stream)} << '\n';
-    }
-  });
+  spawn(service,
+        [&service, &stats_socket](yield_context yield) {
+          boost::system::error_code ec;
+          ip::udp::endpoint endpoint;
+          vector<char> stream{8};
+          while (true) {
+            auto bytes = stats_socket.async_receive_from(buffer(stream, 8),
+                                                         endpoint, yield[ec]);
+            clog << "Multicast bytes read: " << bytes << ", "
+                 << string{cbegin(stream), cend(stream)} << '\n';
+          }
+        },
+        boost::coroutines::attributes{8 << 10});
 
   static function<vector<uint8_t>(const vector<uint8_t> &)> null_ref;
   struct websocket_handler {
