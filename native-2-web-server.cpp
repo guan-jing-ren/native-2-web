@@ -6,6 +6,7 @@
 #include <iostream>
 #include <regex>
 
+#include <boost/asio/steady_timer.hpp>
 #include <boost/program_options.hpp>
 
 #include "native-2-web-connection.hpp"
@@ -112,7 +113,7 @@ struct server_options {
   optional<unsigned> accept_threads = 0;
   optional<unsigned> connect_threads = 0;
   optional<unsigned> worker_sessions = 0;
-  optional<string> multicast_address = "";
+  optional<string> multicast_address = "233.252.18.0";
 };
 
 N2W__READ_WRITE_SPEC(server_options,
@@ -239,8 +240,10 @@ int main(int c, char **v) {
       value<unsigned>()->default_value(*default_options.worker_sessions),
       "Number of worker servers to to handle long running tasks. If "
       "unspecified or '0', do not use workers.\n")(
-      "multicast-address", "IPv4 or IPv6 multicast group address for serer to "
-                           "manage child processes.");
+      "multicast-address",
+      value<string>()->default_value(*default_options.multicast_address),
+      "IPv4 or IPv6 multicast group address for serer to "
+      "manage child processes.");
 
   variables_map arguments;
   store(parse_command_line(c, v, options), arguments);
@@ -253,9 +256,63 @@ int main(int c, char **v) {
 
   io_service service;
   io_service::work work{service};
+  boost::system::error_code ec;
 
   signal_set signals{service, SIGINT, SIGTERM};
   signals.async_wait([&service](const auto &ec, auto sig) { service.stop(); });
+
+  ip::udp::endpoint stats_endpoint(
+      ip::address::from_string(arguments["multicast-address"].as<string>()),
+      arguments["port"].as<unsigned short>() + 1);
+  ip::udp::socket stats_socket{service};
+  stats_socket.open(stats_endpoint.protocol(), ec);
+  if (ec)
+    clog << ec.message() << '\n';
+  stats_socket.set_option(socket_base::reuse_address{true}, ec);
+  if (ec)
+    clog << ec.message() << '\n';
+  stats_socket.set_option(ip::multicast::enable_loopback{true}, ec);
+  if (ec)
+    clog << ec.message() << '\n';
+  stats_socket.set_option(ip::multicast::hops{1}, ec);
+  if (ec)
+    clog << ec.message() << '\n';
+  stats_socket.bind(
+      ip::udp::endpoint(ip::address_v4::any(),
+                        arguments["port"].as<unsigned short>() + 1),
+      ec);
+  if (ec)
+    clog << ec.message() << '\n';
+  stats_socket.set_option(ip::multicast::join_group{ip::address::from_string(
+                              arguments["multicast-address"].as<string>())},
+                          ec);
+  if (ec)
+    clog << ec.message() << '\n';
+
+  spawn(service,
+        [&service, &stats_socket, stats_endpoint](yield_context yield) {
+          boost::system::error_code ec;
+          steady_timer timer{service};
+          while (true) {
+            timer.expires_from_now(chrono::seconds{1});
+            timer.async_wait(yield[ec]);
+            auto bytes = stats_socket.async_send_to(
+                buffer(to_string(3.14159265358979)), stats_endpoint, yield[ec]);
+            clog << "Multicast bytes written: " << bytes << '\n';
+          }
+        });
+
+  spawn(service, [&service, &stats_socket](yield_context yield) {
+    boost::system::error_code ec;
+    ip::udp::endpoint endpoint;
+    vector<char> stream{8};
+    while (true) {
+      auto bytes = stats_socket.async_receive_from(buffer(stream, 8), endpoint,
+                                                   yield[ec]);
+      clog << "Multicast bytes read: " << bytes << ", "
+           << string{cbegin(stream), cend(stream)} << '\n';
+    }
+  });
 
   static function<vector<uint8_t>(const vector<uint8_t> &)> null_ref;
   struct websocket_handler {
