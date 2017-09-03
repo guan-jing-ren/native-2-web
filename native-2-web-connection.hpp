@@ -131,6 +131,15 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
 
   struct private_construction_tag {};
 
+  struct ticket_sentinel {
+    reference_wrapper<connection> conn;
+    const uintmax_t tkt;
+    ticket_sentinel(connection &conn, uintmax_t tkt) : conn(conn), tkt(tkt) {}
+    ~ticket_sentinel() { ++conn.get().serving; }
+
+    bool operator!() const { return tkt != conn.get().serving; }
+  };
+
   /*******************/
   /* INTERNAL LAYOUT */
   /*******************/
@@ -149,11 +158,13 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
   /***********************/
 
   template <typename R>
-  void write_response(yield_context yield, R reply, uintmax_t tkt) {
+  void write_response(yield_context yield, R reply,
+                      const ticket_sentinel &sentinel) {
     boost::system::error_code ec;
-    while (tkt != serving) {
-      clog << "Waiting to serve: " << tkt << ", currently serving: " << serving
-           << ", is open: " << boolalpha << socket.is_open() << '\n';
+    while (!sentinel) {
+      clog << "Waiting to serve: " << sentinel.tkt
+           << ", currently serving: " << serving << ", is open: " << boolalpha
+           << socket.is_open() << '\n';
       socket.get_io_service().post(yield[ec]);
     }
 
@@ -183,7 +194,6 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
 
     clog << "Thread: " << this_thread::get_id() << "; Written " << response_type
          << " response: " << ec.message() << ".\n";
-    ++serving;
   }
 
   template <typename T> auto async(T t) {
@@ -194,7 +204,10 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
               [
                 this, self = this->shared_from_this(), t = forward<T>(t),
                 tkt = ticket++
-              ](yield_context yield) { write_response(yield, move(t), tkt); },
+              ](yield_context yield) {
+                ticket_sentinel sentinel{*this, tkt};
+                write_response(yield, move(t), sentinel);
+              },
               boost::coroutines::attributes{8 << 10});
       }
     else {
@@ -203,13 +216,14 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
               this, self = this->shared_from_this(), t = forward<T>(t),
               tkt = ticket++
             ](yield_context yield) {
+              ticket_sentinel sentinel{*this, tkt};
               if
                 constexpr(is_void_v<result_of_t<T()>>) {
                   t();
-                  write_response(yield, nullptr, tkt);
+                  write_response(yield, nullptr, sentinel);
                 }
               else
-                write_response(yield, t(), tkt);
+                write_response(yield, t(), sentinel);
             },
             boost::coroutines::attributes{16 << 10});
     }
@@ -356,7 +370,8 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
                 this, p, handler = move(completion.completion_handler),
                 tkt = ticket++
               ](yield_context yield) mutable {
-                while (tkt != serving)
+                ticket_sentinel sentinel{*this, tkt};
+                while (!sentinel)
                   socket.get_io_service().post(yield);
 
                 boost::system::error_code ec;
@@ -370,7 +385,6 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
                 http::async_read(socket, buf, res, yield[ec]);
                 clog << "Thread: " << this_thread::get_id()
                      << "; Received response: " << ec.message() << ".\n";
-                ++serving;
                 clog << "Resuming coroutine\n";
                 asio_handler_invoke(
                     [handler, ec, res]() mutable { handler(ec, res); },
@@ -395,7 +409,8 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
     spawn(socket.get_io_service(),
           [ this, self = this->shared_from_this(),
             tkt = ticket++ ](yield_context yield) {
-            while (tkt != serving)
+            ticket_sentinel sentinel{*this, tkt};
+            while (!sentinel)
               socket.get_io_service().post(yield);
 
             boost::system::error_code ec;
@@ -419,7 +434,6 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
             if
               constexpr(supports_upgrade_inspection)
                   ws_stuff.websocket_handler.inspect(res);
-            ++serving;
           },
           boost::coroutines::attributes{8 << 10});
   }
@@ -428,7 +442,7 @@ public:
   connection(io_service &service, private_construction_tag)
       : socket{service}, ws{socket}, ws_stuff(&buf) {}
   connection() = delete;
-  ~connection() { clog << "Connection deleted.\n"; };
+  ~connection() { clog << "Connection deleted.\n"; }
 };
 
 template <typename Handler, typename... Args>
