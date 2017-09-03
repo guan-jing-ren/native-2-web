@@ -10,6 +10,7 @@ inline bool operator!=(boost::system::error_code ec, int i) { return ec != i; }
 #include <beast/websocket.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/signal_set.hpp>
+#include <boost/preprocessor.hpp>
 #define BOOST_COROUTINES_NO_DEPRECATION_WARNING 1
 #define BOOST_COROUTINES_V2 1
 #include <boost/asio/spawn.hpp>
@@ -32,29 +33,32 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
 
   struct unsupported;
 
+#define N2W__SUPPORT_DECLVAL(r, data, i, elem)                                 \
+  BOOST_PP_COMMA_IF(i) declval<elem>()
+
+#define N2W__SUPPORT_ARGS(a) BOOST_PP_SEQ_FOR_EACH_I(N2W__SUPPORT_DECLVAL, _, a)
+
+#define N2W__SUPPORT(concept, handler, func, ...)                              \
+  static auto concept##_impl(...)->unsupported;                                \
+  template <typename T = Handler>                                              \
+  static auto concept##_impl(T *)->decltype(declval<handler>().func(           \
+      N2W__SUPPORT_ARGS(BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))));              \
+  static constexpr bool concept =                                              \
+      !is_same_v<decltype(concept##_impl(declval<Handler *>())), unsupported>
+
   /***************************/
   /* HTTP SFINAE DEFINITIONS */
   /***************************/
 
-  static auto http_supports_receive(...) -> unsupported;
-  template <typename T = Handler>
-  static auto http_supports_receive(T *)
-      -> result_of_t<T(http::request<http::string_body>)>;
-  static constexpr bool supports_http_receive =
-      !is_same_v<decltype(http_supports_receive(declval<Handler *>())),
-                 unsupported>;
+  N2W__SUPPORT(supports_http_receive, T, operator(),
+               http::request<http::string_body>);
 
   struct adaptable;
-
-  static auto http_supports_send(...) -> unsupported;
-  template <typename T = Handler>
-  static auto http_supports_send(T *)
-      -> result_of_t<T(filesystem::path, adaptable)>;
-  template <typename T = Handler>
-  static auto http_supports_send(T *) -> result_of_t<T(filesystem::path)>;
+  N2W__SUPPORT(supports_http_send_empty, T, operator(), filesystem::path);
+  N2W__SUPPORT(supports_http_send_body, T, operator(), filesystem::path,
+               adaptable);
   static constexpr bool supports_http_send =
-      is_same_v<decltype(http_supports_send(declval<Handler *>())),
-                http::request<http::string_body>>;
+      supports_http_send_empty || supports_http_send_body;
 
   static constexpr bool supports_http =
       supports_http_receive ^ supports_http_send;
@@ -71,71 +75,33 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
   static constexpr bool supports_websocket =
       !is_same_v<websocket_handler_type, unsupported>;
 
-  template <typename> static auto websocket_handles(...) -> unsupported;
-  template <typename V, typename T = Handler>
-  static auto websocket_handles(T *)
-      -> result_of_t<typename T::websocket_handler_type(V)>;
-  static constexpr bool websocket_handles_text =
-      supports_websocket &&
-      !is_same_v<decltype(websocket_handles<string>(declval<Handler *>())),
-                 unsupported>;
-  static constexpr bool websocket_handles_binary =
-      supports_websocket &&
-      !is_same_v<decltype(
-                     websocket_handles<vector<uint8_t>>(declval<Handler *>())),
-                 unsupported>;
+  N2W__SUPPORT(websocket_handles_text,
+               typename T::websocket_handler_type, operator(), string);
 
-  static auto websocket_response_decoration_support(...) -> unsupported;
-  template <typename T = Handler>
-  static auto websocket_response_decoration_support(T *)
-      -> decltype(declval<typename T::websocket_handler_type>().decorate(
-          declval<http::request<http::string_body> &>(),
-          declval<http::response<http::string_body> &>()));
-  static constexpr bool supports_response_decoration =
-      supports_websocket &&
-      !is_same_v<decltype(websocket_response_decoration_support(
-                     declval<Handler *>())),
-                 unsupported>;
+  N2W__SUPPORT(websocket_handles_binary,
+               typename T::websocket_handler_type, operator(), vector<uint8_t>);
 
-  static auto websocket_request_decoration_support(...) -> unsupported;
-  template <typename T = Handler>
-  static auto websocket_request_decoration_support(T *)
-      -> decltype(declval<typename T::websocket_handler_type>().decorate(
-          declval<http::request<http::empty_body> &>()));
-  static constexpr bool supports_request_decoration =
-      supports_websocket &&
-      !is_same_v<decltype(websocket_request_decoration_support(
-                     declval<Handler *>())),
-                 unsupported>;
+  N2W__SUPPORT(supports_response_decoration, typename T::websocket_handler_type,
+               decorate, http::request<http::string_body> &,
+               http::response<http::string_body> &);
 
-  static auto websocket_upgrade_inspection_support(...) -> unsupported;
-  template <typename T = Handler>
-  static auto websocket_upgrade_inspection_support(T *)
-      -> decltype(declval<typename T::websocket_handler_type>().inspect(
-          declval<http::response<http::string_body> &>()));
-  static constexpr bool supports_upgrade_inspection =
-      supports_websocket &&
-      !is_same_v<decltype(websocket_upgrade_inspection_support(
-                     declval<Handler *>())),
-                 unsupported>;
+  N2W__SUPPORT(supports_request_decoration, typename T::websocket_handler_type,
+               decorate, http::request<http::empty_body> &);
+
+  N2W__SUPPORT(supports_upgrade_inspection, typename T::websocket_handler_type,
+               inspect, http::response<http::string_body> &);
 
   /*****************************************/
   /* EXTENDED WEBSOCKET SFINAE DEFINITIONS */
   /*****************************************/
 
-  template <typename> static auto websocket_pushes(...) -> unsupported;
-  template <typename V, typename T = Handler>
-  static auto websocket_pushes(T *)
-      -> result_of_t<typename T::websocket_handler_type(function<void(V)>)>;
-  static constexpr bool websocket_pushes_text =
-      supports_websocket &&
-      !is_same_v<decltype(websocket_pushes<string>(declval<Handler *>())),
-                 unsupported>;
-  static constexpr bool websocket_pushes_binary =
-      supports_websocket &&
-      !is_same_v<decltype(
-                     websocket_pushes<vector<uint8_t>>(declval<Handler *>())),
-                 unsupported>;
+  N2W__SUPPORT(websocket_pushes_text,
+               typename T::websocket_handler_type, operator(),
+               function<void(string)>);
+
+  N2W__SUPPORT(websocket_pushes_binary,
+               typename T::websocket_handler_type, operator(),
+               function<void(vector<uint8_t>)>);
 
   /**********************************/
   /* INTERNAL STRUCTURE DEFINITIONS */
