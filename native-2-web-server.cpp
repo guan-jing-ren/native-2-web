@@ -459,6 +459,17 @@ int main(int c, char **v) {
       void decorate(http::request<http::empty_body> &request) {
         request.insert(http::field::sec_websocket_protocol, "n2w");
       }
+
+      void inspect(http::response<http::string_body> &response) {
+        clog << "Inspecting upgrade response\n";
+        regex rx{R"(^"|" "|"$)"};
+        auto api_list = response["X-n2w-api-list"];
+        for_each(
+            cregex_token_iterator{api_list.begin(), api_list.end(), rx, -1},
+            {}, [rx = regex{"\\\\(.)"}](const auto &api) {
+              clog << regex_replace(api.str(), rx, "$1") << '\n';
+            });
+      }
     };
 
     auto operator()(const filesystem::path &p) {
