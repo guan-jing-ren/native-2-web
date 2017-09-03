@@ -467,9 +467,10 @@ int main(int c, char **v) {
       return req;
     }
   };
-  spawn(service, [&service](yield_context yield) {
+  spawn(service, [&service, &arguments](yield_context yield) {
     auto server = connect<http_requester>(
-        service, ip::address::from_string("127.0.0.2"), 9001);
+        service, ip::address::from_string(arguments["address"].as<string>()),
+        arguments["port"].as<unsigned short>());
     auto server2 = move(server);
     boost::system::error_code ec;
     http::response<http::string_body> res = server2.request("/", yield[ec]);
@@ -480,7 +481,8 @@ int main(int c, char **v) {
 
     auto wsclient = upgrade(move(server2));
     auto wsclient2 = wsconnect<http_requester>(
-        service, ip::address::from_string("127.0.0.3"), 9001);
+        service, ip::address::from_string(arguments["address"].as<string>()),
+        arguments["port"].as<unsigned short>());
   });
 
   auto num_threads = thread::hardware_concurrency();
