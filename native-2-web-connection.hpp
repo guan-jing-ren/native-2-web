@@ -108,6 +108,17 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
                      declval<Handler *>())),
                  unsupported>;
 
+  static auto websocket_upgrade_inspection_support(...) -> unsupported;
+  template <typename T = Handler>
+  static auto websocket_upgrade_inspection_support(T *)
+      -> decltype(declval<typename T::websocket_handler_type>().inspect(
+          declval<http::response<http::string_body> &>()));
+  static constexpr bool supports_upgrade_inspection =
+      supports_websocket &&
+      !is_same_v<decltype(websocket_upgrade_inspection_support(
+                     declval<Handler *>())),
+                 unsupported>;
+
   /*****************************************/
   /* EXTENDED WEBSOCKET SFINAE DEFINITIONS */
   /*****************************************/
@@ -439,7 +450,9 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
             }
             clog << "Thread: " << this_thread::get_id()
                  << "; Connected to websocket: " << ec.message() << '\n';
-            clog << res;
+            if
+              constexpr(supports_upgrade_inspection)
+                  ws_stuff.websocket_handler.inspect(res);
             ++serving;
           },
           boost::coroutines::attributes{8 << 10});
