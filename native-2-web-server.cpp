@@ -428,9 +428,10 @@ int main(int c, char **v) {
       service, ip::address::from_string(arguments["address"].as<string>()),
       arguments["port"].as<unsigned short>());
 
-  // struct dummy_handler {};
-  // accept<dummy_handler>(service, ip::address::from_string("0.0.0.0"),
-  // 9003);
+  struct dummy_handler {};
+  accept<dummy_handler>(
+      service, ip::address::from_string(arguments["address"].as<string>()),
+      9003);
 
   struct ws_only_handler {
     struct websocket_handler_type {
@@ -452,7 +453,9 @@ int main(int c, char **v) {
     };
   };
 
-  accept<ws_only_handler>(service, ip::address_v6::any(), 9002);
+  accept<ws_only_handler>(
+      service, ip::address::from_string(arguments["address"].as<string>()),
+      9002);
 
   struct http_requester {
     struct websocket_handler_type {

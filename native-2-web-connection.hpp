@@ -208,7 +208,7 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
                 ticket_sentinel sentinel{*this, tkt};
                 write_response(yield, move(t), sentinel);
               },
-              boost::coroutines::attributes{8 << 10});
+              boost::coroutines::attributes{12 << 10});
       }
     else {
       spawn(socket.get_io_service(),
@@ -266,14 +266,16 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
           }
         else
           async(NullHandler{}(request));
-        return;
+        break;
       }
 
       if
         constexpr(supports_http_receive) async(
             [ this, request = move(request) ]() { return handler(request); });
-      else
+      else {
+        async(NullHandler{}(request));
         break;
+      }
     }
     clog << "Finished serving socket\n";
 
@@ -447,11 +449,6 @@ public:
 
 template <typename Handler, typename... Args>
 void accept(reference_wrapper<io_service> service, Args &&... args) {
-  static_assert(connection<Handler>::supports_http_receive ||
-                    connection<Handler>::supports_websocket,
-                "Provided handler class does not support sending HTTP or "
-                "Websocket responses.");
-
   spawn(service.get(), [ service, endpoint = ip::tcp::endpoint(args...) ](
                            yield_context yield) {
     boost::system::error_code ec;
