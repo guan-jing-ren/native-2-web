@@ -321,9 +321,6 @@ int main(int c, char **v) {
   signal_set signals{service, SIGINT, SIGTERM};
   signals.async_wait([&service](const auto &ec, auto sig) { service.stop(); });
 
-  static server_statistics stats{arguments["address"].as<string>(),
-                                 arguments["port"].as<unsigned short>()};
-
   ip::udp::endpoint stats_endpoint(
       ip::address::from_string(arguments["multicast-address"].as<string>()),
       arguments["port"].as<unsigned short>() + 1);
@@ -351,6 +348,10 @@ int main(int c, char **v) {
                           ec);
   if (ec)
     clog << ec.message() << '\n';
+
+  static server_statistics stats{
+      stats_socket.local_endpoint().address().to_string(),
+      stats_socket.local_endpoint().port()};
 
   spawn(service,
         [&service, &stats_socket, stats_endpoint](yield_context yield) {
@@ -380,7 +381,8 @@ int main(int c, char **v) {
             other_stat.address.clear();
             deserialize(buf, other_stat);
             clog << "Multicast bytes read: " << bytes << ", " << '\n';
-            clog << other_stat.address << ' ' << other_stat.port << ' '
+            clog << endpoint.address().to_string() << ' ' << endpoint.port()
+                 << ' ' << other_stat.address << ' ' << other_stat.port << ' '
                  << other_stat.threads << ' ' << other_stat.tasks << ' '
                  << other_stat.connections << ' ' << other_stat.upgrades << ' ';
           }
