@@ -15,9 +15,6 @@
 
 using namespace std;
 using namespace std::experimental;
-using namespace boost::asio;
-using namespace beast;
-using namespace n2w;
 
 struct normalized_uri {
   filesystem::path path;
@@ -70,7 +67,7 @@ struct normalized_uri {
 };
 
 struct server_options {
-  optional<string> address = ip::address_v6::any().to_string();
+  optional<string> address = boost::asio::ip::address_v6::any().to_string();
   optional<unsigned short> port = 9001;
   optional<unsigned short> port_range = 1;
   optional<unsigned> worker_threads = 0;
@@ -160,6 +157,10 @@ N2W__BINARY_SPEC(server_statistics,
                               close, error));
 
 int main(int c, char **v) {
+  using namespace boost::asio;
+  using namespace beast;
+  using namespace n2w;
+
   static const filesystem::path web_root = filesystem::current_path();
   static map<vector<string>, n2w::plugin> plugins;
 
