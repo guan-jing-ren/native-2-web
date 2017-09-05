@@ -5,11 +5,14 @@
 #include "native-2-web-serialize.hpp"
 #include <locale>
 
-#define N2W__READ_WRITE_SPEC(s, m, ...)                                        \
-  N2W__MANGLE_SPEC(s, m, __VA_ARGS__);                                         \
+#define N2W__BINARY_SPEC(s, m, ...)                                            \
   N2W__SPECIALIZE_STRUCTURE(s, m, __VA_ARGS__);                                \
   N2W__SERIALIZE_SPEC(s, m, __VA_ARGS__);                                      \
-  N2W__DESERIALIZE_SPEC(s, m, __VA_ARGS__);                                    \
+  N2W__DESERIALIZE_SPEC(s, m, __VA_ARGS__);
+
+#define N2W__READ_WRITE_SPEC(s, m, ...)                                        \
+  N2W__MANGLE_SPEC(s, m, __VA_ARGS__);                                         \
+  N2W__BINARY_SPEC(s, m, __VA_ARGS__);                                         \
   N2W__EQUALITY_SPEC(s, m, __VA_ARGS__);                                       \
   N2W__DEBUG_SPEC(s, m, __VA_ARGS__);
 

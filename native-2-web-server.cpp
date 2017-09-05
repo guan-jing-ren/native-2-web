@@ -204,12 +204,73 @@ string create_modules() {
 
 // Servers need to know other servers
 // Servers can redirect to other servers
+// Load balancing
+// Choose plugin combinations
+
 // Status updates via multicasting
 // - Startup, shutdown
 // - Accept, connect, close, fault
 // - Number of threads, tasks, connections
-// Load balancing
-// Choose plugin combinations
+static constexpr unsigned ring_size = 10;
+struct server_statistics {
+  using time_point = chrono::system_clock::time_point;
+  using rep = chrono::system_clock::duration::rep;
+  atomic<rep> startup = 0, shutdown = 0;
+  string address;
+  unsigned short port;
+  atomic_int32_t threads = 0, tasks = 0, connections = 0, upgrades = 0;
+  rep accept[ring_size], connect[ring_size], upgrade[ring_size],
+      close[ring_size];
+  boost::system::error_code error[ring_size];
+  atomic_uint accept_head = 0, connect_head = 0, upgrade_head = 0,
+              close_head = 0, error_head = 0;
+
+  server_statistics(string address, unsigned short port)
+      : address(move(address)), port(port) {}
+
+  void on_time(atomic<rep> &var) {
+    var = chrono::system_clock::now().time_since_epoch().count();
+  }
+  void on_time_array(rep (&var)[ring_size], atomic_uint &idx, rep rep) {
+    var[idx++ % ring_size] = rep;
+  }
+
+  void on_startup() { on_time(startup); }
+  void on_shutdown() { on_time(shutdown); }
+
+  void on_thread_start() { ++threads; }
+  void on_thread_end() { --threads; }
+  void on_task_start() { ++tasks; }
+  void on_task_end() { --tasks; }
+
+  void on_accept(time_point t) {
+    ++connections;
+    on_time_array(accept, accept_head, t.time_since_epoch().count());
+  }
+  void on_connect(time_point t) {
+    ++connections;
+    on_time_array(connect, connect_head, t.time_since_epoch().count());
+  }
+  void on_upgrade(time_point t) {
+    ++upgrades;
+    on_time_array(upgrade, upgrade_head, t.time_since_epoch().count());
+  }
+  void on_close(time_point t, bool upgraded) {
+    on_time_array(close, close_head, t.time_since_epoch().count());
+    --connections;
+    if (upgraded)
+      --upgrades;
+  }
+
+  void on_error(boost::system::error_code &ec) {
+    error[error_head++ % ring_size] = ec;
+  }
+};
+
+N2W__BINARY_SPEC(server_statistics,
+                 N2W__MEMBERS(startup, address, port, threads, tasks,
+                              connections, upgrades, accept, connect, upgrade,
+                              close, error));
 
 int main(int c, char **v) {
   server_options default_options;
@@ -260,6 +321,9 @@ int main(int c, char **v) {
   signal_set signals{service, SIGINT, SIGTERM};
   signals.async_wait([&service](const auto &ec, auto sig) { service.stop(); });
 
+  static server_statistics stats{arguments["address"].as<string>(),
+                                 arguments["port"].as<unsigned short>()};
+
   ip::udp::endpoint stats_endpoint(
       ip::address::from_string(arguments["multicast-address"].as<string>()),
       arguments["port"].as<unsigned short>() + 1);
@@ -290,13 +354,15 @@ int main(int c, char **v) {
 
   spawn(service,
         [&service, &stats_socket, stats_endpoint](yield_context yield) {
+          unsigned char buf[sizeof(stats) + 40];
           boost::system::error_code ec;
           steady_timer timer{service};
           while (true) {
             timer.expires_from_now(chrono::seconds{1});
             timer.async_wait(yield[ec]);
-            auto bytes = stats_socket.async_send_to(
-                buffer(to_string(3.14159265358979)), stats_endpoint, yield[ec]);
+            serialize(stats, buf);
+            auto bytes = stats_socket.async_send_to(buffer(buf, sizeof(buf)),
+                                                    stats_endpoint, yield[ec]);
             clog << "Multicast bytes written: " << bytes << '\n';
           }
         },
@@ -304,14 +370,19 @@ int main(int c, char **v) {
 
   spawn(service,
         [&service, &stats_socket](yield_context yield) {
+          server_statistics other_stat{"", 0};
+          unsigned char buf[sizeof(other_stat) + 40];
           boost::system::error_code ec;
           ip::udp::endpoint endpoint;
-          vector<char> stream{8};
           while (true) {
-            auto bytes = stats_socket.async_receive_from(buffer(stream, 8),
-                                                         endpoint, yield[ec]);
-            clog << "Multicast bytes read: " << bytes << ", "
-                 << string{cbegin(stream), cend(stream)} << '\n';
+            auto bytes = stats_socket.async_receive_from(
+                buffer(buf, sizeof(buf)), endpoint, yield[ec]);
+            other_stat.address.clear();
+            deserialize(buf, other_stat);
+            clog << "Multicast bytes read: " << bytes << ", " << '\n';
+            clog << other_stat.address << ' ' << other_stat.port << ' '
+                 << other_stat.threads << ' ' << other_stat.tasks << ' '
+                 << other_stat.connections << ' ' << other_stat.upgrades << ' ';
           }
         },
         boost::coroutines::attributes{8 << 10});
@@ -362,7 +433,29 @@ int main(int c, char **v) {
     }
   };
 
-  struct http_handler {
+  struct stats_reporter {
+    void report_task_start(server_statistics::time_point t) {
+      stats.on_task_start();
+    }
+    void report_task_end(server_statistics::time_point t) {
+      stats.on_task_end();
+    }
+    void report_accept(server_statistics::time_point t) { stats.on_accept(t); }
+    void report_connect(server_statistics::time_point t) {
+      stats.on_connect(t);
+    }
+    void report_upgrade(server_statistics::time_point t) {
+      stats.on_upgrade(t);
+    }
+    void report_close(server_statistics::time_point t, bool upgraded) {
+      stats.on_close(t, upgraded);
+    }
+    void report_error(boost::system::error_code error) {
+      stats.on_error(error);
+    }
+  };
+
+  struct http_handler : public stats_reporter {
     using websocket_handler_type = websocket_handler;
 
     http::response<http::string_body>
@@ -433,7 +526,7 @@ int main(int c, char **v) {
       service, ip::address::from_string(arguments["address"].as<string>()),
       9003);
 
-  struct ws_only_handler {
+  struct ws_only_handler : public stats_reporter {
     struct websocket_handler_type {
       function<void(string)> string_pusher;
       void operator()(function<void(string)> &&pusher) {
@@ -457,7 +550,7 @@ int main(int c, char **v) {
       service, ip::address::from_string(arguments["address"].as<string>()),
       9002);
 
-  struct http_requester {
+  struct http_requester : public stats_reporter {
     struct websocket_handler_type {
       void decorate(http::request<http::empty_body> &request) {
         request.insert(http::field::sec_websocket_protocol, "n2w");
@@ -499,12 +592,20 @@ int main(int c, char **v) {
         arguments["port"].as<unsigned short>());
   });
 
+  stats.on_startup();
   auto num_threads = thread::hardware_concurrency();
   clog << "Hardware concurrency: " << num_threads << '\n';
   vector<thread> threadpool;
   generate_n(back_inserter(threadpool), num_threads ? num_threads : 5,
-             [&service]() { return thread{[&service]() { service.run(); }}; });
+             [&service]() {
+               return thread{[&service]() {
+                 stats.on_thread_start();
+                 service.run();
+                 stats.on_thread_end();
+               }};
+             });
   service.run();
+  stats.on_shutdown();
 
   return 0;
 }

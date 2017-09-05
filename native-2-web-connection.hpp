@@ -38,13 +38,18 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
 
 #define N2W__SUPPORT_ARGS(a) BOOST_PP_SEQ_FOR_EACH_I(N2W__SUPPORT_DECLVAL, _, a)
 
-#define N2W__SUPPORT(concept, handler, func, ...)                              \
+#define N2W__SUPPORT_IMPL(dependent, concept, handler, func, ...)              \
   static auto concept##_impl(...)->unsupported;                                \
   template <typename T = Handler>                                              \
   static auto concept##_impl(T *)->decltype(declval<handler>().func(           \
       N2W__SUPPORT_ARGS(BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))));              \
   static constexpr bool concept =                                              \
+      dependent &&                                                             \
       !is_same_v<decltype(concept##_impl(declval<Handler *>())), unsupported>
+
+#define N2W__SUPPORT(concept, handler, func, ...)                              \
+  N2W__SUPPORT_IMPL(true, concept, handler, func, __VA_ARGS__)
+#define N2W__SUPPORT_IF N2W__SUPPORT_IMPL
 
   /***************************/
   /* HTTP SFINAE DEFINITIONS */
@@ -103,6 +108,25 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
                typename T::websocket_handler_type, operator(),
                function<void(vector<uint8_t>)>);
 
+  /*********************************/
+  /* STATISTICS SFINAE DEFINITIONS */
+  /*********************************/
+
+  N2W__SUPPORT_IF(supports_http, reports_task_start, T, report_task_start,
+                  chrono::system_clock::time_point);
+  N2W__SUPPORT_IF(supports_http, reports_task_end, T, report_task_end,
+                  chrono::system_clock::time_point);
+  N2W__SUPPORT_IF(supports_http, reports_accept, T, report_accept,
+                  chrono::system_clock::time_point);
+  N2W__SUPPORT_IF(supports_http, reports_connect, T, report_connect,
+                  chrono::system_clock::time_point);
+  N2W__SUPPORT_IF(supports_http, reports_upgrade, T, report_upgrade,
+                  chrono::system_clock::time_point);
+  N2W__SUPPORT_IF(supports_http, reports_close, T, report_close,
+                  chrono::system_clock::time_point, bool);
+  N2W__SUPPORT_IF(supports_http, reports_error, T, report_error,
+                  boost::system::error_code);
+
   /**********************************/
   /* INTERNAL STRUCTURE DEFINITIONS */
   /**********************************/
@@ -124,6 +148,7 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
   };
 
   struct websocket_stuff {
+    bool open = false;
     websocket_handler_type websocket_handler;
     istream stream;
     websocket_stuff(boost::asio::streambuf *buf) : stream(buf) {}
@@ -205,8 +230,14 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
                 this, self = this->shared_from_this(), t = forward<T>(t),
                 tkt = ticket++
               ](yield_context yield) {
+                if
+                  constexpr(reports_task_start)
+                      handler.report_task_start(chrono::system_clock::now());
                 ticket_sentinel sentinel{*this, tkt};
                 write_response(yield, move(t), sentinel);
+                if
+                  constexpr(reports_task_end)
+                      handler.report_task_end(chrono::system_clock::now());
               },
               boost::coroutines::attributes{12 << 10});
       }
@@ -216,6 +247,9 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
               this, self = this->shared_from_this(), t = forward<T>(t),
               tkt = ticket++
             ](yield_context yield) {
+              if
+                constexpr(reports_task_start)
+                    handler.report_task_start(chrono::system_clock::now());
               ticket_sentinel sentinel{*this, tkt};
               if
                 constexpr(is_void_v<result_of_t<T()>>) {
@@ -224,6 +258,9 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
                 }
               else
                 write_response(yield, t(), sentinel);
+              if
+                constexpr(reports_task_end)
+                    handler.report_task_end(chrono::system_clock::now());
             },
             boost::coroutines::attributes{16 << 10});
     }
@@ -288,6 +325,15 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
   void ws_serve(boost::system::error_code ec, yield_context yield) {
     if
       constexpr(supports_websocket) {
+        if
+          constexpr(reports_task_start)
+              handler.report_task_start(chrono::system_clock::now());
+        if
+          constexpr(reports_upgrade) {
+            ws_stuff.open = true;
+            handler.report_upgrade(chrono::system_clock::now());
+          }
+
         auto save_stream = [this](auto &message) {
           copy(istream_iterator<char>(ws_stuff.stream), {},
                back_inserter(message));
@@ -322,6 +368,9 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
             break;
           }
         }
+        if
+          constexpr(reports_task_end)
+              handler.report_task_end(chrono::system_clock::now());
       }
   }
 
@@ -372,6 +421,9 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
                 this, p, handler = move(completion.completion_handler),
                 tkt = ticket++
               ](yield_context yield) mutable {
+                if
+                  constexpr(reports_task_start) this->handler.report_task_start(
+                      chrono::system_clock::now());
                 ticket_sentinel sentinel{*this, tkt};
                 while (!sentinel)
                   socket.get_io_service().post(yield);
@@ -391,6 +443,9 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
                 asio_handler_invoke(
                     [handler, ec, res]() mutable { handler(ec, res); },
                     &handler);
+                if
+                  constexpr(reports_task_end) this->handler.report_task_end(
+                      chrono::system_clock::now());
               },
               boost::coroutines::attributes{16 << 10});
         clog << "Suspending coroutine\n";
@@ -434,6 +489,11 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
             clog << "Thread: " << this_thread::get_id()
                  << "; Connected to websocket: " << ec.message() << '\n';
             if
+              constexpr(reports_upgrade) {
+                ws_stuff.open = true;
+                handler.report_upgrade(chrono::system_clock::now());
+              }
+            if
               constexpr(supports_upgrade_inspection)
                   ws_stuff.websocket_handler.inspect(res);
           },
@@ -444,7 +504,12 @@ public:
   connection(io_service &service, private_construction_tag)
       : socket{service}, ws{socket}, ws_stuff(&buf) {}
   connection() = delete;
-  ~connection() { clog << "Connection deleted.\n"; }
+  ~connection() {
+    if
+      constexpr(reports_close)
+          handler.report_close(chrono::system_clock::now(), ws_stuff.open);
+    clog << "Connection deleted.\n";
+  }
 };
 
 template <typename Handler, typename... Args>
@@ -477,6 +542,9 @@ void accept(reference_wrapper<io_service> service, Args &&... args) {
            << "; Accepted connection: " << ec.message() << '\n';
       if (ec)
         break;
+      if
+        constexpr(connection<Handler>::reports_accept)
+            conn->handler.report_accept(chrono::system_clock::now());
       spawn(service.get(), [conn = move(conn)](
                                yield_context yield) { conn->serve(yield); },
             boost::coroutines::attributes{16 << 10});
@@ -534,6 +602,9 @@ client_connection<Handler> connect(reference_wrapper<io_service> service,
          << "; Connected to endpoint: " << ec.message() << '\n';
     if (ec)
       return;
+    if
+      constexpr(connection<Handler>::reports_connect)
+          conn->handler.report_connect(chrono::system_clock::now());
     ++conn->serving;
   },
         boost::coroutines::attributes{8 << 10});
