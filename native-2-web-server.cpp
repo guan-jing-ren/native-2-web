@@ -69,43 +69,6 @@ struct normalized_uri {
   normalized_uri(const char *uri) : normalized_uri(string(uri)) {}
 };
 
-const filesystem::path web_root = filesystem::current_path();
-map<vector<string>, n2w::plugin> plugins;
-
-void reload_plugins() {
-  clog << "Reloading plugins\n";
-  const regex lib_rx{"libn2w-.+"};
-  plugins.clear();
-  filesystem::recursive_directory_iterator it{
-      web_root, filesystem::directory_options::skip_permission_denied};
-  for (const auto &entry : it) {
-    auto path = entry.path();
-    auto name = path.filename().generic_u8string();
-    if (!regex_match(name, lib_rx)) {
-      it.disable_recursion_pending();
-      continue;
-    }
-    if (filesystem::is_directory(path))
-      continue;
-    if (path.extension() != ".so")
-      continue;
-    auto modfile = path.generic_u8string();
-    path.replace_extension("");
-    vector<string> hierarchy;
-    auto first = begin(path);
-    advance(first, distance(cbegin(web_root), cend(web_root)));
-    transform(first, end(path), back_inserter(hierarchy),
-              mem_fn(&filesystem::path::generic_u8string));
-    transform(
-        cbegin(hierarchy), cend(hierarchy),
-        begin(hierarchy), [offset = strlen("libn2w-")](const auto &module) {
-          return module.substr(offset);
-        });
-    plugins.emplace(hierarchy, modfile.c_str());
-  }
-  clog << "Plugins reloaded\n";
-}
-
 struct server_options {
   optional<string> address = ip::address_v6::any().to_string();
   optional<unsigned short> port = 9001;
@@ -125,82 +88,6 @@ N2W__JS_SPEC(server_options,
              N2W__MEMBERS(address, port, port_range, worker_threads,
                           accept_threads, connect_threads, worker_sessions,
                           multicast_address));
-
-server_options spawn_server_default_options() {
-  clog << "Spawn server default options\n";
-  server_options default_options;
-  return default_options;
-}
-auto spawn_server(optional<server_options> options) {
-  clog << "Spawn server\n";
-  server_options default_options;
-  return system(
-      ("(cd " + web_root.u8string() + " && ./n2w-server --address " +
-       options->address.value_or(*default_options.address) + " --port " +
-       to_string(options->port.value_or(*default_options.port)) +
-       " --port-range " +
-       to_string(options->port_range.value_or(*default_options.port_range)) +
-       " --worker-threads " + to_string(options->worker_threads.value_or(
-                                  *default_options.worker_threads)) +
-       " --accept-threads " + to_string(options->accept_threads.value_or(
-                                  *default_options.accept_threads)) +
-       " --connect-threads " + to_string(options->connect_threads.value_or(
-                                   *default_options.connect_threads)) +
-       " --worker-sessions " + to_string(options->worker_sessions.value_or(
-                                   *default_options.worker_sessions)) +
-       " --multicast-address " +
-       options->multicast_address.value_or(*default_options.multicast_address) +
-       "&)&")
-          .c_str());
-}
-auto stop_server() { raise(SIGTERM); }
-
-n2w::plugin server = []() {
-  n2w::plugin server;
-  server.register_service(N2W__DECLARE_API(reload_plugins), "");
-  server.register_service(N2W__DECLARE_API(spawn_server_default_options), "");
-  server.register_service(N2W__DECLARE_API(spawn_server), "");
-  server.register_service(N2W__DECLARE_API(stop_server), "");
-  return server;
-}();
-
-string create_modules() {
-  clog << "Creating modules\n";
-  reload_plugins();
-  string modules = "var n2w = (function () {\nlet n2w = {};\n";
-  modules += "n2w['$server'] = {};\n";
-  for (auto &s : server.get_services()) {
-    modules += "n2w.$server." + server.get_name(s) + " = " +
-               server.get_javascript(s) + ";\n";
-    modules += "n2w.$server." + server.get_name(s) +
-               ".html = " + server.get_generator(s) + ";\n";
-  }
-
-  for (auto &p : plugins) {
-    string module;
-    for (auto first = cbegin(p.first), last = min(first + 1, cend(p.first));
-         last != cend(p.first); ++last) {
-      module =
-          accumulate(first, last, string{}, [](auto mods, const auto &mod) {
-            return mods + "['" + mod + "']";
-          });
-      modules += "n2w" + module + " = n2w" + module + " || {};\n";
-    }
-    module = accumulate(
-        cbegin(p.first), cend(p.first), string{},
-        [](auto mods, const auto &mod) { return mods + "['" + mod + "']"; });
-    modules += "n2w" + module + " = n2w" + module + " || {};\n";
-
-    for (auto &s : p.second.get_services()) {
-      modules += "n2w" + module + '.' + p.second.get_name(s) + " = " +
-                 p.second.get_javascript(s) + ";\n";
-      modules += "n2w" + module + '.' + p.second.get_name(s) +
-                 ".html = " + p.second.get_generator(s) + ";\n";
-    }
-  }
-  modules += "return n2w;\n}());\n";
-  return modules;
-}
 
 // Servers need to know other servers
 // Servers can redirect to other servers
@@ -273,6 +160,120 @@ N2W__BINARY_SPEC(server_statistics,
                               close, error));
 
 int main(int c, char **v) {
+  static const filesystem::path web_root = filesystem::current_path();
+  static map<vector<string>, n2w::plugin> plugins;
+
+  static auto reload_plugins = []() {
+    clog << "Reloading plugins\n";
+    const regex lib_rx{"libn2w-.+"};
+    plugins.clear();
+    filesystem::recursive_directory_iterator it{
+        web_root, filesystem::directory_options::skip_permission_denied};
+    for (const auto &entry : it) {
+      auto path = entry.path();
+      auto name = path.filename().generic_u8string();
+      if (!regex_match(name, lib_rx)) {
+        it.disable_recursion_pending();
+        continue;
+      }
+      if (filesystem::is_directory(path))
+        continue;
+      if (path.extension() != ".so")
+        continue;
+      auto modfile = path.generic_u8string();
+      path.replace_extension("");
+      vector<string> hierarchy;
+      auto first = begin(path);
+      advance(first, distance(cbegin(web_root), cend(web_root)));
+      transform(first, end(path), back_inserter(hierarchy),
+                mem_fn(&filesystem::path::generic_u8string));
+      transform(
+          cbegin(hierarchy), cend(hierarchy),
+          begin(hierarchy), [offset = strlen("libn2w-")](const auto &module) {
+            return module.substr(offset);
+          });
+      plugins.emplace(hierarchy, modfile.c_str());
+    }
+    clog << "Plugins reloaded\n";
+  };
+
+  static auto spawn_server_default_options = []() {
+    clog << "Spawn server default options\n";
+    server_options default_options;
+    return default_options;
+  };
+  static auto spawn_server = [](optional<server_options> options) {
+    clog << "Spawn server\n";
+    server_options default_options;
+    return system(
+        ("(cd " + web_root.u8string() + " && ./n2w-server --address " +
+         options->address.value_or(*default_options.address) + " --port " +
+         to_string(options->port.value_or(*default_options.port)) +
+         " --port-range " +
+         to_string(options->port_range.value_or(*default_options.port_range)) +
+         " --worker-threads " + to_string(options->worker_threads.value_or(
+                                    *default_options.worker_threads)) +
+         " --accept-threads " + to_string(options->accept_threads.value_or(
+                                    *default_options.accept_threads)) +
+         " --connect-threads " + to_string(options->connect_threads.value_or(
+                                     *default_options.connect_threads)) +
+         " --worker-sessions " + to_string(options->worker_sessions.value_or(
+                                     *default_options.worker_sessions)) +
+         " --multicast-address " +
+         options->multicast_address.value_or(
+             *default_options.multicast_address) +
+         "&)&")
+            .c_str());
+  };
+  static auto stop_server = []() { raise(SIGTERM); };
+
+  static n2w::plugin server = []() {
+    n2w::plugin server;
+    server.register_service(N2W__DECLARE_API(reload_plugins), "");
+    server.register_service(N2W__DECLARE_API(spawn_server_default_options), "");
+    server.register_service(N2W__DECLARE_API(spawn_server), "");
+    server.register_service(N2W__DECLARE_API(stop_server), "");
+    return server;
+  }();
+
+  static auto create_modules = []() {
+    clog << "Creating modules\n";
+    reload_plugins();
+    string modules = "var n2w = (function () {\nlet n2w = {};\n";
+    modules += "n2w['$server'] = {};\n";
+    for (auto &s : server.get_services()) {
+      modules += "n2w.$server." + server.get_name(s) + " = " +
+                 server.get_javascript(s) + ";\n";
+      modules += "n2w.$server." + server.get_name(s) +
+                 ".html = " + server.get_generator(s) + ";\n";
+    }
+
+    for (auto &p : plugins) {
+      string module;
+      for (auto first = cbegin(p.first), last = min(first + 1, cend(p.first));
+           last != cend(p.first); ++last) {
+        module =
+            accumulate(first, last, string{}, [](auto mods, const auto &mod) {
+              return mods + "['" + mod + "']";
+            });
+        modules += "n2w" + module + " = n2w" + module + " || {};\n";
+      }
+      module = accumulate(
+          cbegin(p.first), cend(p.first), string{},
+          [](auto mods, const auto &mod) { return mods + "['" + mod + "']"; });
+      modules += "n2w" + module + " = n2w" + module + " || {};\n";
+
+      for (auto &s : p.second.get_services()) {
+        modules += "n2w" + module + '.' + p.second.get_name(s) + " = " +
+                   p.second.get_javascript(s) + ";\n";
+        modules += "n2w" + module + '.' + p.second.get_name(s) +
+                   ".html = " + p.second.get_generator(s) + ";\n";
+      }
+    }
+    modules += "return n2w;\n}());\n";
+    return modules;
+  };
+
   server_options default_options;
   using namespace boost::program_options;
   options_description options;
@@ -305,7 +306,7 @@ int main(int c, char **v) {
       "IPv4 or IPv6 multicast group address for serer to "
       "manage child processes.");
 
-  variables_map arguments;
+  static variables_map arguments;
   store(parse_command_line(c, v, options), arguments);
   notify(arguments);
 
@@ -314,17 +315,17 @@ int main(int c, char **v) {
     return 0;
   }
 
-  io_service service;
+  static io_service service;
   io_service::work work{service};
   boost::system::error_code ec;
 
   signal_set signals{service, SIGINT, SIGTERM};
-  signals.async_wait([&service](const auto &ec, auto sig) { service.stop(); });
+  signals.async_wait([](const auto &ec, auto sig) { service.stop(); });
 
-  ip::udp::endpoint stats_endpoint(
+  static ip::udp::endpoint stats_endpoint(
       ip::address::from_string(arguments["multicast-address"].as<string>()),
       arguments["port"].as<unsigned short>() + 1);
-  ip::udp::socket stats_socket{service};
+  static ip::udp::socket stats_socket{service};
   stats_socket.open(stats_endpoint.protocol(), ec);
   if (ec)
     clog << ec.message() << '\n';
@@ -354,7 +355,7 @@ int main(int c, char **v) {
       stats_socket.local_endpoint().port()};
 
   spawn(service,
-        [&service, &stats_socket, stats_endpoint](yield_context yield) {
+        [](yield_context yield) {
           unsigned char buf[sizeof(stats) + 40];
           boost::system::error_code ec;
           steady_timer timer{service};
@@ -370,7 +371,7 @@ int main(int c, char **v) {
         boost::coroutines::attributes{8 << 10});
 
   spawn(service,
-        [&service, &stats_socket](yield_context yield) {
+        [](yield_context yield) {
           server_statistics other_stat{"", 0};
           unsigned char buf[sizeof(other_stat) + 40];
           boost::system::error_code ec;
@@ -576,7 +577,7 @@ int main(int c, char **v) {
       return req;
     }
   };
-  spawn(service, [&service, &arguments](yield_context yield) {
+  spawn(service, [](yield_context yield) {
     auto server = connect<http_requester>(
         service, ip::address::from_string(arguments["address"].as<string>()),
         arguments["port"].as<unsigned short>());
@@ -598,14 +599,13 @@ int main(int c, char **v) {
   auto num_threads = thread::hardware_concurrency();
   clog << "Hardware concurrency: " << num_threads << '\n';
   vector<thread> threadpool;
-  generate_n(back_inserter(threadpool), num_threads ? num_threads : 5,
-             [&service]() {
-               return thread{[&service]() {
-                 stats.on_thread_start();
-                 service.run();
-                 stats.on_thread_end();
-               }};
-             });
+  generate_n(back_inserter(threadpool), num_threads ? num_threads : 5, []() {
+    return thread{[]() {
+      stats.on_thread_start();
+      service.run();
+      stats.on_thread_end();
+    }};
+  });
   service.run();
   stats.on_shutdown();
 
