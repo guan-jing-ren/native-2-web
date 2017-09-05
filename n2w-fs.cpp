@@ -31,15 +31,15 @@ auto set_current_working_directory(const filesystem::path &path) {
 // - Directory options
 auto list_files(optional<vector<filesystem::path>> paths) {
   cerr << "Listing files\n";
+  error_code ec;
   vector<filesystem::directory_entry> list;
   if (paths)
     for (auto &&path : *paths)
-      for (auto &&entry : filesystem::directory_iterator{path})
+      for (auto &&entry : filesystem::directory_iterator{path, ec})
         list.push_back(entry);
   else
     for (auto &&entry :
-         filesystem::directory_iterator{current_working_directory()}) {
-      cerr << entry.path() << '\n';
+         filesystem::directory_iterator{current_working_directory(), ec}) {
       list.push_back(entry);
     }
   cerr << "Number of files: " << list.size() << '\n';
