@@ -100,17 +100,38 @@ struct server_statistics {
   using time_point = chrono::system_clock::time_point;
   using rep = chrono::system_clock::duration::rep;
   atomic<rep> startup = 0, shutdown = 0;
-  string address;
   unsigned short port;
   atomic_int32_t threads = 0, tasks = 0, connections = 0, upgrades = 0;
-  rep accept[ring_size], connect[ring_size], upgrade[ring_size],
-      close[ring_size];
-  boost::system::error_code error[ring_size];
+  rep accept[ring_size] = {0}, connect[ring_size] = {0},
+      upgrade[ring_size] = {0}, close[ring_size] = {0};
+  boost::system::error_code error[ring_size] = {
+      make_error_code(boost::system::errc::success)};
   atomic_uint accept_head = 0, connect_head = 0, upgrade_head = 0,
               close_head = 0, error_head = 0;
 
-  server_statistics(string address, unsigned short port)
-      : address(move(address)), port(port) {}
+  server_statistics(unsigned short port) : port(port) {}
+  server_statistics(const server_statistics &other) { (*this) = other; }
+  server_statistics &operator=(const server_statistics &other) {
+    startup = other.startup.load();
+    shutdown = other.shutdown.load();
+    port = other.port;
+    threads = other.threads.load();
+    tasks = other.tasks.load();
+    connections = other.connections.load();
+    upgrades = other.upgrades.load();
+    accept_head = other.accept_head.load();
+    connect_head = other.connect_head.load();
+    upgrade_head = other.upgrade_head.load();
+    close_head = other.close_head.load();
+    error_head = other.error_head.load();
+    copy_n(other.accept, ring_size, accept);
+    copy_n(other.connect, ring_size, connect);
+    copy_n(other.upgrade, ring_size, upgrade);
+    copy_n(other.close, ring_size, close);
+    copy_n(other.error, ring_size, error);
+
+    return *this;
+  }
 
   void on_time(atomic<rep> &var) {
     var = chrono::system_clock::now().time_since_epoch().count();
