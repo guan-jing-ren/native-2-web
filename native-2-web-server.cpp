@@ -172,6 +172,32 @@ struct server_statistics {
   }
 };
 
+ostream &operator<<(ostream &out, const server_statistics &stats) {
+  out << stats.port << ' ' << stats.threads << ' ' << stats.tasks << ' '
+      << stats.connections << ' ' << stats.upgrades << '\n';
+  const auto print_array = [&out](const auto &array, auto index) {
+    const auto offset = index % ring_size;
+    copy(array + offset, array + ring_size,
+         ostream_iterator<server_statistics::rep>(out, ", "));
+    copy(array, array + offset,
+         ostream_iterator<server_statistics::rep>(out, ", "));
+
+  };
+
+  boost::system::error_code error[ring_size];
+
+  print_array(stats.accept, stats.accept_head.load());
+  out << '\n';
+  print_array(stats.connect, stats.connect_head.load());
+  out << '\n';
+  print_array(stats.upgrade, stats.upgrade_head.load());
+  out << '\n';
+  print_array(stats.close, stats.close_head.load());
+  out << '\n';
+
+  return out;
+}
+
 N2W__BINARY_SPEC(server_statistics,
                  N2W__MEMBERS(startup, address, port, threads, tasks,
                               connections, upgrades, accept, connect, upgrade,
