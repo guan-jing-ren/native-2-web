@@ -245,11 +245,6 @@ int main(int c, char **v) {
     clog << "Plugins reloaded\n";
   };
 
-  static auto spawn_server_default_options = []() {
-    clog << "Spawn server default options\n";
-    server_options default_options;
-    return default_options;
-  };
   static auto spawn_server = [](optional<server_options> options) {
     clog << "Spawn server\n";
     server_options default_options;
@@ -273,16 +268,13 @@ int main(int c, char **v) {
          "&)&")
             .c_str());
   };
-  static auto stop_server = []() { raise(SIGTERM); };
 
-  static n2w::plugin server = []() {
-    n2w::plugin server;
-    server.register_service(N2W__DECLARE_API(reload_plugins), "");
-    server.register_service(N2W__DECLARE_API(spawn_server_default_options), "");
-    server.register_service(N2W__DECLARE_API(spawn_server), "");
-    server.register_service(N2W__DECLARE_API(stop_server), "");
-    return server;
-  }();
+  static n2w::plugin server;
+  server.register_service(N2W__DECLARE_API(reload_plugins), "");
+  server.register_service("spawn_server_default_options",
+                          []() { return server_options{}; }, "");
+  server.register_service(N2W__DECLARE_API(spawn_server), "");
+  server.register_service("stop_server", []() { raise(SIGTERM); }, "");
 
   static auto create_modules = []() {
     clog << "Creating modules\n";
