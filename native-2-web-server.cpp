@@ -102,9 +102,8 @@ struct server_statistics {
   atomic<rep> startup = 0, shutdown = 0;
   unsigned short port;
   atomic_int32_t threads = 0, tasks = 0, connections = 0, upgrades = 0;
-  rep accept[ring_size] = {0}, connect[ring_size] = {0},
-      upgrade[ring_size] = {0}, close[ring_size] = {0};
-  boost::system::error_code error[ring_size] = {
+  array<rep, ring_size> accept = {0}, connect = {0}, upgrade = {0}, close = {0};
+  array<boost::system::error_code, ring_size> error = {
       make_error_code(boost::system::errc::success)};
   atomic_uint accept_head = 0, connect_head = 0, upgrade_head = 0,
               close_head = 0, error_head = 0;
@@ -124,11 +123,11 @@ struct server_statistics {
     upgrade_head = other.upgrade_head.load();
     close_head = other.close_head.load();
     error_head = other.error_head.load();
-    copy_n(other.accept, ring_size, accept);
-    copy_n(other.connect, ring_size, connect);
-    copy_n(other.upgrade, ring_size, upgrade);
-    copy_n(other.close, ring_size, close);
-    copy_n(other.error, ring_size, error);
+    accept = other.accept;
+    connect = other.connect;
+    upgrade = other.upgrade;
+    close = other.close;
+    error = other.error;
 
     return *this;
   }
@@ -136,7 +135,7 @@ struct server_statistics {
   void on_time(atomic<rep> &var) {
     var = chrono::system_clock::now().time_since_epoch().count();
   }
-  void on_time_array(rep (&var)[ring_size], atomic_uint &idx, rep rep) {
+  void on_time_array(array<rep, ring_size> &var, atomic_uint &idx, rep rep) {
     var[idx++ % ring_size] = rep;
   }
 
@@ -177,9 +176,9 @@ ostream &operator<<(ostream &out, const server_statistics &stats) {
       << stats.connections << ' ' << stats.upgrades << '\n';
   const auto print_array = [&out](const auto &array, auto index) {
     const auto offset = index % ring_size;
-    copy(array + offset, array + ring_size,
+    copy(cbegin(array) + offset, cbegin(array) + ring_size,
          ostream_iterator<server_statistics::rep>(out, ", "));
-    copy(array, array + offset,
+    copy(cbegin(array), cbegin(array) + offset,
          ostream_iterator<server_statistics::rep>(out, ", "));
 
   };
@@ -200,8 +199,10 @@ ostream &operator<<(ostream &out, const server_statistics &stats) {
 
 N2W__BINARY_SPEC(server_statistics,
                  N2W__MEMBERS(startup, port, threads, tasks, connections,
-                              upgrades, accept, connect, upgrade, close,
-                              error));
+                              upgrades, accept, connect, upgrade, close));
+N2W__JS_SPEC(server_statistics,
+             N2W__MEMBERS(startup, port, threads, tasks, connections, upgrades,
+                          accept, connect, upgrade, close));
 
 int main(int c, char **v) {
   using namespace boost::asio;
@@ -409,6 +410,7 @@ int main(int c, char **v) {
         boost::coroutines::attributes{8 << 10});
 
   static unordered_map<string, server_statistics> known_servers;
+  server.register_service("known_servers", []() { return known_servers; }, "");
 
   spawn(service,
         [](yield_context yield) {
