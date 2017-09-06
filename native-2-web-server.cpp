@@ -199,9 +199,9 @@ ostream &operator<<(ostream &out, const server_statistics &stats) {
 }
 
 N2W__BINARY_SPEC(server_statistics,
-                 N2W__MEMBERS(startup, address, port, threads, tasks,
-                              connections, upgrades, accept, connect, upgrade,
-                              close, error));
+                 N2W__MEMBERS(startup, port, threads, tasks, connections,
+                              upgrades, accept, connect, upgrade, close,
+                              error));
 
 int main(int c, char **v) {
   using namespace boost::asio;
@@ -390,9 +390,7 @@ int main(int c, char **v) {
   if (ec)
     clog << ec.message() << '\n';
 
-  static server_statistics stats{
-      stats_socket.local_endpoint().address().to_string(),
-      stats_socket.local_endpoint().port()};
+  static server_statistics stats{arguments["port"].as<unsigned short>()};
 
   spawn(service,
         [](yield_context yield) {
@@ -410,22 +408,23 @@ int main(int c, char **v) {
         },
         boost::coroutines::attributes{8 << 10});
 
+  static unordered_map<string, server_statistics> known_servers;
+
   spawn(service,
         [](yield_context yield) {
-          server_statistics other_stat{"", 0};
+          server_statistics other_stat{0};
           unsigned char buf[sizeof(other_stat) + 40];
           boost::system::error_code ec;
           ip::udp::endpoint endpoint;
           while (true) {
             auto bytes = stats_socket.async_receive_from(
                 buffer(buf, sizeof(buf)), endpoint, yield[ec]);
-            other_stat.address.clear();
             deserialize(buf, other_stat);
             clog << "Multicast bytes read: " << bytes << ", " << '\n';
             clog << endpoint.address().to_string() << ' ' << endpoint.port()
-                 << ' ' << other_stat.address << ' ' << other_stat.port << ' '
-                 << other_stat.threads << ' ' << other_stat.tasks << ' '
-                 << other_stat.connections << ' ' << other_stat.upgrades << ' ';
+                 << ' ' << other_stat;
+            known_servers.emplace(
+                make_pair(endpoint.address().to_string(), other_stat));
           }
         },
         boost::coroutines::attributes{8 << 10});
