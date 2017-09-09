@@ -98,7 +98,7 @@ N2W__JS_SPEC(server_options,
 static constexpr unsigned ring_size = 10;
 struct server_statistics {
   using time_point = chrono::system_clock::time_point;
-  using rep = chrono::system_clock::duration::rep;
+  using rep = double;
   atomic<rep> startup = 0, shutdown = 0;
   unsigned short port;
   atomic_int32_t threads = 0, tasks = 0, connections = 0, upgrades = 0;
