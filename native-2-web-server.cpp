@@ -393,15 +393,19 @@ int main(int c, char **v) {
 
   spawn(service,
         [](yield_context yield) {
-          unsigned char buf[sizeof(stats) + 40];
+          const auto port = arguments["port"].as<unsigned short>();
+          unsigned char buf[sizeof(stats)];
+          array<const_buffer, 2> bufs{
+              buffer(reinterpret_cast<const char *>(&port), sizeof(port)),
+              buffer(buf, sizeof(buf))};
           boost::system::error_code ec;
           steady_timer timer{service};
           while (true) {
             timer.expires_from_now(chrono::seconds{1});
             timer.async_wait(yield[ec]);
             serialize(stats, buf);
-            auto bytes = stats_socket.async_send_to(buffer(buf, sizeof(buf)),
-                                                    stats_endpoint, yield[ec]);
+            auto bytes =
+                stats_socket.async_send_to(bufs, stats_endpoint, yield[ec]);
             clog << "Multicast bytes written: " << bytes << '\n';
           }
         },
@@ -412,19 +416,23 @@ int main(int c, char **v) {
 
   spawn(service,
         [](yield_context yield) {
-          server_statistics other_stat{0};
-          unsigned char buf[sizeof(other_stat) + 40];
+          unsigned short port;
+          server_statistics other_stat;
+          unsigned char buf[sizeof(other_stat)];
+          array<mutable_buffer, 2> bufs{
+              buffer(reinterpret_cast<char *>(&port), sizeof(port)),
+              buffer(buf, sizeof(buf))};
           boost::system::error_code ec;
           ip::udp::endpoint endpoint;
           while (true) {
-            auto bytes = stats_socket.async_receive_from(
-                buffer(buf, sizeof(buf)), endpoint, yield[ec]);
+            auto bytes =
+                stats_socket.async_receive_from(bufs, endpoint, yield[ec]);
             deserialize(buf, other_stat);
             clog << "Multicast bytes read: " << bytes << ", " << '\n';
             clog << endpoint.address().to_string() << ' ' << endpoint.port()
                  << ' ' << other_stat;
-            known_servers.emplace(
-                make_pair(endpoint.address().to_string(), other_stat));
+            known_servers[make_pair(endpoint.address().to_string(), port)] =
+                other_stat;
           }
         },
         boost::coroutines::attributes{8 << 10});
