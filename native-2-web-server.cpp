@@ -100,7 +100,6 @@ struct server_statistics {
   using time_point = chrono::system_clock::time_point;
   using rep = double;
   atomic<rep> startup = 0, shutdown = 0;
-  unsigned short port;
   atomic_int32_t threads = 0, tasks = 0, connections = 0, upgrades = 0;
   array<rep, ring_size> accept = {0}, connect = {0}, upgrade = {0}, close = {0};
   array<boost::system::error_code, ring_size> error = {
@@ -108,12 +107,11 @@ struct server_statistics {
   atomic_uint accept_head = 0, connect_head = 0, upgrade_head = 0,
               close_head = 0, error_head = 0;
 
-  server_statistics(unsigned short port) : port(port) {}
+  server_statistics() = default;
   server_statistics(const server_statistics &other) { (*this) = other; }
   server_statistics &operator=(const server_statistics &other) {
     startup = other.startup.load();
     shutdown = other.shutdown.load();
-    port = other.port;
     threads = other.threads.load();
     tasks = other.tasks.load();
     connections = other.connections.load();
@@ -172,8 +170,8 @@ struct server_statistics {
 };
 
 ostream &operator<<(ostream &out, const server_statistics &stats) {
-  out << stats.port << ' ' << stats.threads << ' ' << stats.tasks << ' '
-      << stats.connections << ' ' << stats.upgrades << '\n';
+  out << stats.threads << ' ' << stats.tasks << ' ' << stats.connections << ' '
+      << stats.upgrades << '\n';
   const auto print_array = [&out](const auto &array, auto index) {
     const auto offset = index % ring_size;
     copy(cbegin(array) + offset, cbegin(array) + ring_size,
@@ -198,10 +196,10 @@ ostream &operator<<(ostream &out, const server_statistics &stats) {
 }
 
 N2W__BINARY_SPEC(server_statistics,
-                 N2W__MEMBERS(startup, port, threads, tasks, connections,
-                              upgrades, accept, connect, upgrade, close));
+                 N2W__MEMBERS(startup, threads, tasks, connections, upgrades,
+                              accept, connect, upgrade, close));
 N2W__JS_SPEC(server_statistics,
-             N2W__MEMBERS(startup, port, threads, tasks, connections, upgrades,
+             N2W__MEMBERS(startup, threads, tasks, connections, upgrades,
                           accept, connect, upgrade, close));
 
 int main(int c, char **v) {
@@ -391,7 +389,7 @@ int main(int c, char **v) {
   if (ec)
     clog << ec.message() << '\n';
 
-  static server_statistics stats{arguments["port"].as<unsigned short>()};
+  static server_statistics stats;
 
   spawn(service,
         [](yield_context yield) {
@@ -409,7 +407,7 @@ int main(int c, char **v) {
         },
         boost::coroutines::attributes{8 << 10});
 
-  static unordered_map<string, server_statistics> known_servers;
+  static map<pair<string, unsigned short>, server_statistics> known_servers;
   server.register_service("known_servers", []() { return known_servers; }, "");
 
   spawn(service,
