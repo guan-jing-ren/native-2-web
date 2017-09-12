@@ -409,6 +409,8 @@ string function_address(const char *name, R (*f)(Ts...)) {
 
 using mangle_detail::mangle;
 using mangle_detail::mangled;
+using mangle_detail::csv;
+using mangle_detail::endianness;
 using mangle_detail::function_address;
 
 using mangle_detail::filesystem::file_type;

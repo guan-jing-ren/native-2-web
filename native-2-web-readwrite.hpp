@@ -17,6 +17,7 @@
   N2W__DEBUG_SPEC(s, m, __VA_ARGS__);
 
 namespace n2w {
+namespace readwrite_detail {
 using namespace std;
 
 namespace {
@@ -127,8 +128,8 @@ template <typename T> struct printer {
   }
   template <size_t I = 0, typename O>
   static auto debug_print(O &o, T t) -> enable_if_t<is_enum<T>::value, O &> {
-    return o << indent<typename O::char_type, I> << enumeration<T>::type_name
-             << ":='" << enumeration<T>::e_to_str[t] << "'";
+    return o << indent<typename O::char_type, I> << enumeration<T>::type_name()
+             << ":='" << enumeration<T>::e_to_str()[t] << "'";
   }
 };
 template <typename T, size_t N> struct printer<T[N]> {
@@ -270,7 +271,7 @@ struct printer<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
         debug_print<I>(o, *static_cast<const Bs *>(t.s_read))...};
     (void)rc;
     return print_heterogenous<I>(o, t, make_index_sequence<sizeof...(Ts) + 1>{})
-           << "\t`" << *begin(t.names) << '`';
+           << "\t`" << t.names()[0] << '`';
   }
 };
 
@@ -433,6 +434,12 @@ template <typename T, size_t V = 5> struct filler {
 
   T operator()() { return next(t); }
 };
+}
+
+using readwrite_detail::execute;
+using readwrite_detail::debug_print;
+using readwrite_detail::printer;
+using readwrite_detail::filler;
 
 #define N2W__EQUALITY_SPEC(s, m, ...)                                          \
   bool operator==(const s &l, const s &r) {                                    \

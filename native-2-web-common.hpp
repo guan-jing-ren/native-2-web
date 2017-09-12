@@ -271,7 +271,7 @@ template <size_t N, typename T, size_t S> string name(const array<T, S> &) {
 
 template <size_t N, typename S, typename T, typename... Ts, typename... Bs>
 string name(const structure<S, tuple<T, Ts...>, tuple<Bs...>> &s) {
-  return s.names[N + 1];
+  return s.names()[N + 1];
 }
 
 template <typename E> struct enumeration {

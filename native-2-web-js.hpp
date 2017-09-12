@@ -700,6 +700,7 @@ string create_html(R (*f)(Args...), string name) {
 }
 
 using js_detail::to_js;
+using js_detail::create_html;
 }
 
 #endif
