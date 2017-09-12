@@ -67,6 +67,7 @@ struct normalized_uri {
 };
 
 struct server_options {
+  optional<bool> spawned = false;
   optional<string> address = boost::asio::ip::address_v6::any().to_string();
   optional<unsigned short> port = 9001;
   optional<unsigned short> port_range = 1;
@@ -99,6 +100,7 @@ static constexpr unsigned ring_size = 10;
 struct server_statistics {
   using time_point = chrono::system_clock::time_point;
   using rep = double;
+  atomic_bool spawned = false;
   atomic<rep> startup = 0, shutdown = 0;
   atomic_int32_t threads = 0, tasks = 0, connections = 0, upgrades = 0;
   array<rep, ring_size> accept = {0}, connect = {0}, upgrade = {0}, close = {0};
@@ -248,7 +250,8 @@ int main(int c, char **v) {
     clog << "Spawn server\n";
     server_options default_options;
     return system(
-        ("(cd " + web_root.u8string() + " && ./n2w-server --address " +
+        ("(cd " + web_root.u8string() +
+         " && ./n2w-server --spawned --address " +
          options->address.value_or(*default_options.address) + " --port " +
          to_string(options->port.value_or(*default_options.port)) +
          " --port-range " +
@@ -320,6 +323,9 @@ int main(int c, char **v) {
       "help",
       value<bool>()->zero_tokens()->default_value(false)->implicit_value(true),
       "Display this help message.\n")(
+      "spawned",
+      value<bool>()->zero_tokens()->default_value(false)->implicit_value(true),
+      "Start server in spawned mode.\n")(
       "address", value<string>()->default_value(*default_options.address),
       "IPv4 or IPv6 address to listen for connections.\n")(
       "port", value<unsigned short>()->default_value(*default_options.port),
