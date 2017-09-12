@@ -76,26 +76,23 @@ struct server_options {
   optional<unsigned> connect_threads = 0;
   optional<unsigned> worker_sessions = 0;
   optional<string> multicast_address = "233.252.18.0";
+  optional<unsigned short> multicast_port = 9002;
 };
 
 N2W__READ_WRITE_SPEC(server_options,
                      N2W__MEMBERS(address, port, port_range, worker_threads,
                                   accept_threads, connect_threads,
-                                  worker_sessions, multicast_address));
+                                  worker_sessions, multicast_address,
+                                  multicast_port));
 N2W__JS_SPEC(server_options,
              N2W__MEMBERS(address, port, port_range, worker_threads,
                           accept_threads, connect_threads, worker_sessions,
-                          multicast_address));
+                          multicast_address, multicast_port));
 
-// Servers need to know other servers
 // Servers can redirect to other servers
 // Load balancing
 // Choose plugin combinations
 
-// Status updates via multicasting
-// - Startup, shutdown
-// - Accept, connect, close, fault
-// - Number of threads, tasks, connections
 static constexpr unsigned ring_size = 10;
 struct server_statistics {
   using time_point = chrono::system_clock::time_point;
@@ -267,7 +264,9 @@ int main(int c, char **v) {
          " --multicast-address " +
          options->multicast_address.value_or(
              *default_options.multicast_address) +
-         "&)&")
+         " --multicast-port " + to_string(options->multicast_port.value_or(
+                                    *default_options.multicast_port)) +
+         " &)&")
             .c_str());
   };
 
@@ -348,8 +347,12 @@ int main(int c, char **v) {
       "unspecified or '0', do not use workers.\n")(
       "multicast-address",
       value<string>()->default_value(*default_options.multicast_address),
-      "IPv4 or IPv6 multicast group address for serer to "
-      "manage child processes.");
+      "IPv4 or IPv6 multicast group address for server to manage child "
+      "processes.")(
+      "multicast-port",
+      value<unsigned short>()->default_value(*default_options.port + 1),
+      "IPv4 or IPv6 multicast group address for server to manage "
+      "child processes.");
 
   static variables_map arguments;
   store(parse_command_line(c, v, options), arguments);
@@ -369,7 +372,7 @@ int main(int c, char **v) {
 
   static ip::udp::endpoint stats_endpoint(
       ip::address::from_string(arguments["multicast-address"].as<string>()),
-      arguments["port"].as<unsigned short>() + 1);
+      arguments["multicast-port"].as<unsigned short>());
   static ip::udp::socket stats_socket{service};
   stats_socket.open(stats_endpoint.protocol(), ec);
   if (ec)
@@ -385,7 +388,7 @@ int main(int c, char **v) {
     clog << ec.message() << '\n';
   stats_socket.bind(
       ip::udp::endpoint(ip::address_v4::any(),
-                        arguments["port"].as<unsigned short>() + 1),
+                        arguments["multicast-port"].as<unsigned short>()),
       ec);
   if (ec)
     clog << ec.message() << '\n';
@@ -410,10 +413,7 @@ int main(int c, char **v) {
             timer.expires_from_now(chrono::seconds{1});
             timer.async_wait(yield[ec]);
             serialize(stats, buf);
-            auto bytes =
-                stats_socket.async_send_to(bufs, stats_endpoint, yield[ec]);
-            if (!arguments["spawned"].as<bool>())
-              clog << "Multicast bytes written: " << bytes << '\n';
+            stats_socket.async_send_to(bufs, stats_endpoint, yield[ec]);
           }
         },
         boost::coroutines::attributes{8 << 10});
@@ -432,20 +432,10 @@ int main(int c, char **v) {
           boost::system::error_code ec;
           ip::udp::endpoint endpoint;
           while (true) {
-            auto bytes =
-                stats_socket.async_receive_from(bufs, endpoint, yield[ec]);
+            stats_socket.async_receive_from(bufs, endpoint, yield[ec]);
             deserialize(buf, other_stat);
             known_servers[make_pair(endpoint.address().to_string(), port)] =
                 other_stat;
-
-            if (!arguments["spawned"].as<bool>()) {
-              clog << "Multicast bytes read: " << bytes << ", " << '\n';
-              clog << endpoint.address().to_string() << ' ' << port << ' '
-                   << other_stat << '\n';
-              for (auto &&s : known_servers)
-                clog << s.first.first << ':' << s.first.second << '\n';
-              clog << "Number of servers: " << known_servers.size() << '\n';
-            }
           }
         },
         boost::coroutines::attributes{8 << 10});
