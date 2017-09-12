@@ -412,7 +412,8 @@ int main(int c, char **v) {
             serialize(stats, buf);
             auto bytes =
                 stats_socket.async_send_to(bufs, stats_endpoint, yield[ec]);
-            clog << "Multicast bytes written: " << bytes << '\n';
+            if (!arguments["spawned"].as<bool>())
+              clog << "Multicast bytes written: " << bytes << '\n';
           }
         },
         boost::coroutines::attributes{8 << 10});
@@ -434,11 +435,17 @@ int main(int c, char **v) {
             auto bytes =
                 stats_socket.async_receive_from(bufs, endpoint, yield[ec]);
             deserialize(buf, other_stat);
-            clog << "Multicast bytes read: " << bytes << ", " << '\n';
-            clog << endpoint.address().to_string() << ' ' << endpoint.port()
-                 << ' ' << other_stat;
             known_servers[make_pair(endpoint.address().to_string(), port)] =
                 other_stat;
+
+            if (!arguments["spawned"].as<bool>()) {
+              clog << "Multicast bytes read: " << bytes << ", " << '\n';
+              clog << endpoint.address().to_string() << ' ' << port << ' '
+                   << other_stat << '\n';
+              for (auto &&s : known_servers)
+                clog << s.first.first << ':' << s.first.second << '\n';
+              clog << "Number of servers: " << known_servers.size() << '\n';
+            }
           }
         },
         boost::coroutines::attributes{8 << 10});
