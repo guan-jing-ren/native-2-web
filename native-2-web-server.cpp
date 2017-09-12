@@ -376,13 +376,13 @@ int main(int c, char **v) {
   static ip::udp::socket stats_socket{service};
   stats_socket.open(stats_endpoint.protocol(), ec);
   if (ec)
-    clog << ec.message() << '\n';
+    clog << "Multicast open: " << ec.message() << '\n';
   stats_socket.set_option(socket_base::reuse_address{true}, ec);
   if (ec)
-    clog << ec.message() << '\n';
+    clog << "Reuse multicast address: " << ec.message() << '\n';
   stats_socket.set_option(ip::multicast::enable_loopback{true}, ec);
   if (ec)
-    clog << ec.message() << '\n';
+    clog << "Multicast loopback: " << ec.message() << '\n';
   stats_socket.set_option(ip::multicast::hops{1}, ec);
   if (ec)
     clog << ec.message() << '\n';
@@ -391,12 +391,12 @@ int main(int c, char **v) {
                         arguments["multicast-port"].as<unsigned short>()),
       ec);
   if (ec)
-    clog << ec.message() << '\n';
+    clog << "Bind multicast: " << ec.message() << '\n';
   stats_socket.set_option(ip::multicast::join_group{ip::address::from_string(
                               arguments["multicast-address"].as<string>())},
                           ec);
   if (ec)
-    clog << ec.message() << '\n';
+    clog << "Join multicast: " << ec.message() << '\n';
 
   static server_statistics stats;
 
