@@ -14,14 +14,14 @@
 #include <vector>
 
 namespace n2w {
-namespace detail {
-
+namespace plugin_detail {
+using namespace std;
 template <typename F> struct func;
 template <typename Ret, typename... Args> struct func<Ret(Args...)> {
-  using args_t = std::conditional_t<(sizeof...(Args) > 0),
-                                    std::tuple<decay_t<Args>...>, void *>;
-  using ret_t = std::conditional_t<std::is_void<Ret>{}, void *, Ret>;
-  static constexpr auto indices = std::make_index_sequence<sizeof...(Args)>{};
+  using args_t =
+      conditional_t<(sizeof...(Args) > 0), tuple<decay_t<Args>...>, void *>;
+  using ret_t = conditional_t<is_void<Ret>{}, void *, Ret>;
+  static constexpr auto indices = make_index_sequence<sizeof...(Args)>{};
   static auto function_address(const char *name) {
     return n2w::function_address(name, static_cast<Ret (*)(Args...)>(nullptr));
   };
@@ -42,30 +42,29 @@ template <typename F> struct func : func<decltype(&decay_t<F>::operator())> {};
 
 class plugin_impl {
 protected:
-  using buf_type = std::vector<uint8_t>;
+  using buf_type = vector<uint8_t>;
   template <typename F> using args_t = typename func<F>::args_t;
   template <typename F> using ret_t = typename func<F>::ret_t;
 
-  std::unordered_map<std::string, std::string> pointer_to_name;
-  std::unordered_map<std::string, std::string> name_to_readable;
-  std::unordered_map<std::string, std::string> pointer_to_description;
-  std::unordered_map<std::string, std::function<buf_type(const buf_type &)>>
+  unordered_map<string, string> pointer_to_name;
+  unordered_map<string, string> name_to_readable;
+  unordered_map<string, string> pointer_to_description;
+  unordered_map<string, function<buf_type(const buf_type &)>>
       pointer_to_function;
-  std::unordered_map<std::string, std::string> pointer_to_javascript;
-  std::unordered_map<std::string, std::string> pointer_to_generator;
+  unordered_map<string, string> pointer_to_javascript;
+  unordered_map<string, string> pointer_to_generator;
 
-  std::unordered_set<std::string> services;
-  std::unordered_set<std::string> push_notifiers;
-  std::unordered_set<std::string> kaonashis;
+  unordered_set<string> services;
+  unordered_set<string> push_notifiers;
+  unordered_set<string> kaonashis;
 };
-}
 
-class plugin : private basic_plugin, public detail::plugin_impl {
-  template <std::size_t... Is, typename R, typename W, typename C>
+class plugin : private basic_plugin, public plugin_impl {
+  template <size_t... Is, typename R, typename W, typename C>
   static auto generic_caller(R &&reader, W &&writer, C &&callback) {
     return [reader, writer, callback](const buf_type &in) mutable -> buf_type {
       if
-        constexpr(std::is_same_v<ret_t<C>, void *>) {
+        constexpr(is_same_v<ret_t<C>, void *>) {
           callback(get<Is>(reader(in))...);
           return writer(nullptr);
         }
@@ -73,8 +72,8 @@ class plugin : private basic_plugin, public detail::plugin_impl {
         return writer(callback(get<Is>(reader(in))...));
     };
   }
-  template <typename F, std::size_t... Is>
-  static auto create_caller(F &&callback, std::index_sequence<Is...>) {
+  template <typename F, size_t... Is>
+  static auto create_caller(F &&callback, index_sequence<Is...>) {
     using args_type = args_t<F>;
     using ret_type = ret_t<F>;
     auto reader = [](const buf_type &in) -> args_type {
@@ -108,10 +107,10 @@ class plugin : private basic_plugin, public detail::plugin_impl {
 
   template <typename F>
   void register_api(const char *name, F &&callback, const char *description) {
-    const auto pointer = detail::func<F>::function_address(name);
+    const auto pointer = func<F>::function_address(name);
     pointer_to_name[pointer] = name;
     pointer_to_description[pointer] = description;
-    auto caller = create_caller(callback, detail::func<F>::indices);
+    auto caller = create_caller(callback, func<F>::indices);
     pointer_to_function[pointer] = caller;
   }
 
@@ -126,15 +125,15 @@ public:
   void register_service(const char *name, F &&callback,
                         const char *description) {
     register_api(name, callback, description);
-    services.emplace(detail::func<F>::function_address(name));
-    pointer_to_javascript[detail::func<F>::function_address(name)] =
+    services.emplace(func<F>::function_address(name));
+    pointer_to_javascript[func<F>::function_address(name)] =
         R"(create_service(')" +
-        std::regex_replace(detail::func<F>::function_address(name), regex{"'"},
-                           R"(\')") +
+        regex_replace(func<F>::function_address(name), regex{"'"},
+                      R"(\')") +
         R"(', )" + to_js<args_t<F>>::create_writer() + R"(, )" +
         to_js<ret_t<F>>::create_reader() + R"())";
 
-    pointer_to_generator[detail::func<F>::function_address(name)] =
+    pointer_to_generator[func<F>::function_address(name)] =
         R"(function (parent, executor) {
   let html_args = )" +
         to_js<args_t<F>>::create_html() + R"(;
@@ -148,7 +147,7 @@ public:
   void register_push_notifier(const char *name, F &&callback,
                               const char *description) {
     register_api(name, callback, description);
-    push_notifiers.emplace(detail::func<F>::function_address(name));
+    push_notifiers.emplace(func<F>::function_address(name));
     to_js<args_t<F>>::create_writer();
     to_js<ret_t<F>>::create_reader();
   }
@@ -156,39 +155,40 @@ public:
   void register_kaonashi(const char *name, F &&callback,
                          const char *description) {
     register_api(name, callback, description);
-    kaonashis.emplace(detail::func<F>::function_address(name));
+    kaonashis.emplace(func<F>::function_address(name));
     to_js<args_t<F>>::create_writer();
   }
 
-  std::vector<std::string> get_services() const {
+  vector<string> get_services() const {
     return {cbegin(services), cend(services)};
   }
-  std::vector<std::string> get_push_notifiers() const {
+  vector<string> get_push_notifiers() const {
     return {cbegin(push_notifiers), cend(push_notifiers)};
   }
-  std::vector<std::string> get_kaonashis() const {
+  vector<string> get_kaonashis() const {
     return {cbegin(kaonashis), cend(kaonashis)};
   }
 
-  std::string get_name(std::string pointer) { return pointer_to_name[pointer]; }
+  string get_name(string pointer) { return pointer_to_name[pointer]; }
 
-  std::string get_generator(std::string pointer) {
-    return pointer_to_generator[pointer];
-  }
+  string get_generator(string pointer) { return pointer_to_generator[pointer]; }
 
-  std::string get_javascript(std::string pointer) {
+  string get_javascript(string pointer) {
     return pointer_to_javascript[pointer];
   }
 
-  std::reference_wrapper<const std::function<buf_type(const buf_type &)>>
-  get_function(const std::string &pointer) {
-    return std::cref(pointer_to_function[pointer]);
+  reference_wrapper<const function<buf_type(const buf_type &)>>
+  get_function(const string &pointer) {
+    return cref(pointer_to_function[pointer]);
   }
 
   plugin(const char *dll)
       : basic_plugin(dll),
         plugin_impl(static_cast<plugin_impl>(sym<plugin>("plugin"))) {}
 };
+}
+
+using plugin_detail::plugin;
 
 #define N2W__DECLARE_API(x) #x, x
 }

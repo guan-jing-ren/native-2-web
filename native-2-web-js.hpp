@@ -7,8 +7,9 @@
 #include <regex>
 
 namespace n2w {
+namespace js_detail {
 using namespace std;
-
+using namespace std::experimental;
 template <typename T> string js_constructor = "";
 template <> const string js_constructor<bool> = "Uint8";
 template <> const string js_constructor<char> = "Int8";
@@ -47,7 +48,7 @@ template <typename T> struct to_js {
   static auto create_html() -> enable_if_t<is_arithmetic<U>{}, string> {
     return R"(function (parent, value, dispatcher) {
   this.signature = ')" +
-           std::regex_replace(mangled<U>(), std::regex{"'"}, "\\'") + R"(';
+           regex_replace(mangled<U>(), regex{"'"}, "\\'") + R"(';
   )" + (is_same<U, bool>{} ? R"(this.html_bool)" : R"(this.html_number)") +
            R"((parent, value, dispatcher);
   }.bind(this))";
@@ -71,7 +72,7 @@ template <typename T> struct to_js {
     auto e_to_str = enumeration<U>::e_to_str();
     return R"(function (parent, value, dispatcher) {
   this.signature = ')" +
-           std::regex_replace(mangled<U>(), std::regex{"'"}, "\\'") +
+           regex_replace(mangled<U>(), regex{"'"}, "\\'") +
            R"(';
   return (this.html_enum || html_enum)(parent, value, dispatcher, {)" +
            accumulate(
@@ -92,7 +93,7 @@ template <> struct to_js<void *> {
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
   this.signature = ')" +
-           std::regex_replace(mangled<void *>(), std::regex{"'"}, "\\'") + R"(';
+           regex_replace(mangled<void *>(), regex{"'"}, "\\'") + R"(';
   return (this.html_void || html_void)(parent, value, dispatcher);
   }.bind(this))";
   }
@@ -104,7 +105,7 @@ template <> struct to_js<char> {
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
   this.signature = ')" +
-           std::regex_replace(mangled<char>(), std::regex{"'"}, "\\'") + R"(';
+           regex_replace(mangled<char>(), regex{"'"}, "\\'") + R"(';
   return (this.html_char || html_char)(parent, value, dispatcher);
   }.bind(this))";
   }
@@ -115,7 +116,7 @@ template <> struct to_js<char32_t> {
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
   this.signature = ')" +
-           std::regex_replace(mangled<char32_t>(), std::regex{"'"}, "\\'") +
+           regex_replace(mangled<char32_t>(), regex{"'"}, "\\'") +
            R"(';
   return (this.html_char32 || html_char32)(parent, value, dispatcher);
   }.bind(this))";
@@ -164,7 +165,7 @@ template <typename T, typename U> struct to_js<pair<T, U>> {
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
   this.signature = ')" +
-           std::regex_replace(mangled<pair<T, U>>(), std::regex{"'"}, "\\'") +
+           regex_replace(mangled<pair<T, U>>(), regex{"'"}, "\\'") +
            R"(';
   return (this.html_structure || html_structure)(parent, value, dispatcher, [)" +
            to_js_heterogenous<T, U>::create_html() + R"(], ['first', 'second']);
@@ -207,8 +208,7 @@ template <typename T, typename... Ts> struct to_js<tuple<T, Ts...>> {
     return R"(function (parent, value, dispatcher, )" + name_args +
            R"(base_html, base_names) {
   this.signature = ')" +
-           std::regex_replace(mangled<tuple<T, Ts...>>(), std::regex{"'"},
-                              "\\'") +
+           regex_replace(mangled<tuple<T, Ts...>>(), regex{"'"}, "\\'") +
            R"(';
   return (this.html_structure || html_structure)(parent, value, dispatcher, [)" +
            to_js_heterogenous<T, Ts...>::create_html() +
@@ -224,8 +224,8 @@ struct to_js<basic_string<T, Traits...>> {
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
   this.signature = ')" +
-           std::regex_replace(mangled<basic_string<T, Traits...>>(),
-                              std::regex{"'"}, "\\'") +
+           regex_replace(mangled<basic_string<T, Traits...>>(), regex{"'"},
+                         "\\'") +
            R"(';
   return (this.html_string || html_string)(parent, value, dispatcher);
   }.bind(this))";
@@ -270,8 +270,7 @@ template <typename T, typename... Traits> struct to_js<vector<T, Traits...>> {
   static auto create_html() {
     return R"(function (parent, value, dispatcher) {
   this.signature = ')" +
-           std::regex_replace(mangled<vector<T, Traits...>>(), std::regex{"'"},
-                              "\\'") +
+           regex_replace(mangled<vector<T, Traits...>>(), regex{"'"}, "\\'") +
            R"(';
   return (this.html_sequence || html_sequence)(parent, value, dispatcher, )" +
            to_js<T>::create_html() + R"();
@@ -350,7 +349,7 @@ template <typename T, size_t N> struct to_js<T[N]> {
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
   this.signature = ')" +
-           std::regex_replace(mangled<T[N]>(), std::regex{"'"}, "\\'") +
+           regex_replace(mangled<T[N]>(), regex{"'"}, "\\'") +
            R"(';
   return )" +
            to_js_bounded<T>::create_html() + R"((parent, value, dispatcher, )" +
@@ -399,7 +398,7 @@ template <typename T, size_t M, size_t N> struct to_js<T[M][N]> {
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
   this.signature = ')" +
-           std::regex_replace(mangled<T[M][N]>(), std::regex{"'"}, "\\'") +
+           regex_replace(mangled<T[M][N]>(), regex{"'"}, "\\'") +
            R"(';
   return (this.html_multiarray || html_multiarray)(parent, value, dispatcher, html, [)" +
            extent() + R"(]);
@@ -425,7 +424,7 @@ template <typename T, size_t N> struct to_js<array<T, N>> {
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
   this.signature = ')" +
-           std::regex_replace(mangled<array<T, N>>(), std::regex{"'"}, "\\'") +
+           regex_replace(mangled<array<T, N>>(), regex{"'"}, "\\'") +
            R"(';
   return (this.html_bounded || html_bounded)(parent, value, dispatcher, )" +
            to_js<T>::create_html() + R"(, )" + to_string(N) + R"();
@@ -452,8 +451,7 @@ struct to_js<map<T, U, Traits...>> {
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
   this.signature = ')" +
-           std::regex_replace(mangled<map<T, U, Traits...>>(), std::regex{"'"},
-                              "\\'") +
+           regex_replace(mangled<map<T, U, Traits...>>(), regex{"'"}, "\\'") +
            R"(';
   return (this.html_associative || html_associative)(parent, value, dispatcher, )" +
            to_js<T>::create_html() + R"(, )" + to_js<U>::create_html() + R"();
@@ -521,9 +519,8 @@ struct to_js<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
     auto names = to_js::names();
     return R"(function (parent, value, dispatcher) {
   this.signature = ')" +
-           std::regex_replace(
-               mangled<structure<S, tuple<T, Ts...>, tuple<Bs...>>>(),
-               std::regex{"'"}, "\\'") +
+           regex_replace(mangled<structure<S, tuple<T, Ts...>, tuple<Bs...>>>(),
+                         regex{"'"}, "\\'") +
            R"(';
   )" + base_names +
            base_html + names + '(' + to_js<tuple<T, Ts...>>::create_html() +
@@ -572,7 +569,7 @@ template <typename T> struct to_js<optional<T>> {
   static string create_html() {
     return R"(function (parent, value, dispatch) {
     this.signature = ')" +
-           std::regex_replace(mangled<optional<T>>(), std::regex{"'"}, "\\'") +
+           regex_replace(mangled<optional<T>>(), regex{"'"}, "\\'") +
            R"(';
     return (this.html_optional || html_optional)(parent, value, dispatch, )" +
            to_js<T>::create_html() + R"();
@@ -596,8 +593,7 @@ template <typename... Ts> struct to_js<variant<Ts...>> {
   static string create_html() {
     return R"(function (parent, value, dispatch) {
     this.signature = ')" +
-           std::regex_replace(mangled<variant<Ts...>>(), std::regex{"'"},
-                              "\\'") +
+           regex_replace(mangled<variant<Ts...>>(), regex{"'"}, "\\'") +
            R"(';
     return (this.html_variant || html_variant)(parent, value, dispatch, [)" +
            to_js_heterogenous<Ts...>::create_html() + R"(]);
@@ -628,7 +624,7 @@ template <size_t N> struct to_js<bitset<N>> : to_js<string> {
   static string create_html() {
     return R"(function (parent, value, dispatcher) {
   this.signature = ')" +
-           std::regex_replace(mangled<bitset<N>>(), std::regex{"'"}, "\\'") +
+           regex_replace(mangled<bitset<N>>(), regex{"'"}, "\\'") +
            R"(';
   return (this.html_string || html_string)(parent, value, dispatcher);
   }.bind(this))";
@@ -691,16 +687,19 @@ string to_js<filesystem::directory_entry>::names() {
   }
 
 template <typename R, typename... Args>
-std::string create_html(R (*f)(Args...), std::string name) {
+string create_html(R (*f)(Args...), string name) {
   return R"(function(parent, executor) {
   let html_arg = )" +
-         n2w::to_js_heterogenous<Args...>::create_html() + R"(;
+         to_js_heterogenous<Args...>::create_html() + R"(;
   let html_ret = )" +
-         n2w::to_js<R>::create_html() + R"(;
+         to_js<R>::create_html() + R"(;
   (this.html_function || html_function)(parent, html_arg, html_ret, ')" +
          name + R"(', executor);
 })";
 }
+}
+
+using js_detail::to_js;
 }
 
 #endif

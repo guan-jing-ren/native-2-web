@@ -6,7 +6,9 @@
 #include <codecvt>
 
 namespace n2w {
+namespace serialize_detail {
 using namespace std;
+using namespace std::experimental;
 
 template <typename T> struct serializer;
 template <typename T, typename I> I serialize(const T &t, I i) {
@@ -249,7 +251,7 @@ template <> struct serializer<filesystem::path> {
   template <typename I> static void serialize(const filesystem::path &p, I &i) {
     vector<string> segments;
     transform(cbegin(p), cend(p), back_inserter(segments),
-              std::mem_fn(&filesystem::path::generic_u8string));
+              mem_fn(&filesystem::path::generic_u8string));
     serializer<decltype(segments)>::serialize(segments, i);
   }
 };
@@ -276,6 +278,10 @@ template <> struct serializer<filesystem::directory_entry> {
     //     d.last_write_time().time_since_epoch(), i);
   }
 };
+}
+
+using serialize_detail::serialize;
+using serialize_detail::serializer;
 
 #define N2W__SERIALIZE_SPEC(s, m, ...)                                         \
   namespace n2w {                                                              \

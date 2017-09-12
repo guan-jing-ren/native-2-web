@@ -6,7 +6,9 @@
 #include <codecvt>
 
 namespace n2w {
+namespace deserialize_detail {
 using namespace std;
+using namespace std::experimental;
 
 template <typename T> struct deserializer;
 template <typename I, typename T> I deserialize(I i, T &t) {
@@ -312,6 +314,10 @@ template <> struct deserializer<filesystem::directory_entry> {
     d = filesystem::directory_entry(path);
   }
 };
+}
+
+using deserialize_detail::deserialize;
+using deserialize_detail::deserializer;
 
 #define N2W__DESERIALIZE_SPEC(s, m, ...)                                       \
   namespace n2w {                                                              \

@@ -3,8 +3,9 @@
 
 #include "native-2-web-common.hpp"
 namespace n2w {
-
+namespace mangle_detail {
 using namespace std;
+using namespace std::experimental;
 string terminate_processing = "z";
 
 template <typename...> struct mangle {
@@ -348,7 +349,6 @@ template <size_t N> struct mangle<bitset<N>> {
   static string value() { return mangle_prefixed<bitset<N>>() + to_string(N); }
 };
 
-using namespace std::experimental;
 template <> struct mangle<filesystem::path> {
   static string value() { return "/p"; }
 };
@@ -407,12 +407,15 @@ string function_address(const char *name, R (*f)(Ts...)) {
 }
 }
 
-using namespace std::experimental;
-using filesystem::file_type;
-using filesystem::perms;
+using mangle_detail::mangle;
+using mangle_detail::mangled;
+using mangle_detail::function_address;
+
+using mangle_detail::filesystem::file_type;
+using mangle_detail::filesystem::perms;
 // using filesystem::perm_options;
-using filesystem::copy_options;
-using filesystem::directory_options;
+using mangle_detail::filesystem::copy_options;
+using mangle_detail::filesystem::directory_options;
 N2W__SPECIALIZE_ENUM(file_type,
                      N2W__MEMBERS(file_type::none, file_type::not_found,
                                   file_type::regular, file_type::directory,
@@ -443,4 +446,5 @@ N2W__SPECIALIZE_ENUM(directory_options,
                      N2W__MEMBERS(directory_options::none,
                                   directory_options::follow_directory_symlink,
                                   directory_options::skip_permission_denied));
+}
 #endif
