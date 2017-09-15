@@ -106,6 +106,10 @@ struct server_statistics {
   atomic_uint accept_head = 0, connect_head = 0, upgrade_head = 0,
               close_head = 0, error_head = 0;
 
+  filesystem::path webroot, current_directory;
+  string user;
+  vector<filesystem::path> modules;
+
   server_statistics() = default;
   server_statistics(const server_statistics &other) { (*this) = other; }
   server_statistics &operator=(const server_statistics &other) {
@@ -196,10 +200,12 @@ ostream &operator<<(ostream &out, const server_statistics &stats) {
 
 N2W__BINARY_SPEC(server_statistics,
                  N2W__MEMBERS(startup, threads, tasks, connections, upgrades,
-                              accept, connect, upgrade, close));
+                              accept, connect, upgrade, close, webroot,
+                              current_directory, user, modules));
 N2W__JS_SPEC(server_statistics,
              N2W__MEMBERS(startup, threads, tasks, connections, upgrades,
-                          accept, connect, upgrade, close));
+                          accept, connect, upgrade, close, webroot,
+                          current_directory, user, modules));
 
 int main(int c, char **v) {
   using namespace boost::asio;
@@ -403,7 +409,7 @@ int main(int c, char **v) {
   spawn(service,
         [](yield_context yield) {
           const auto port = arguments["port"].as<unsigned short>();
-          unsigned char buf[sizeof(stats)];
+          unsigned char buf[sizeof(stats) + (4 << 10)];
           array<const_buffer, 2> bufs{
               buffer(reinterpret_cast<const char *>(&port), sizeof(port)),
               buffer(buf, sizeof(buf))};
@@ -412,11 +418,14 @@ int main(int c, char **v) {
           while (true) {
             timer.expires_from_now(chrono::seconds{1});
             timer.async_wait(yield[ec]);
+            stats.webroot = web_root;
+            stats.current_directory = filesystem::current_path();
+            stats.user = getenv("USER");
             serialize(stats, buf);
             stats_socket.async_send_to(bufs, stats_endpoint, yield[ec]);
           }
         },
-        boost::coroutines::attributes{8 << 10});
+        boost::coroutines::attributes{12 << 10});
 
   static map<pair<string, unsigned short>, server_statistics> known_servers;
   server.register_service("known_servers", []() { return known_servers; }, "");
@@ -425,7 +434,7 @@ int main(int c, char **v) {
         [](yield_context yield) {
           unsigned short port;
           server_statistics other_stat;
-          unsigned char buf[sizeof(other_stat)];
+          unsigned char buf[sizeof(other_stat) + (4 << 10)];
           array<mutable_buffer, 2> bufs{
               buffer(reinterpret_cast<char *>(&port), sizeof(port)),
               buffer(buf, sizeof(buf))};
@@ -438,7 +447,7 @@ int main(int c, char **v) {
                 other_stat;
           }
         },
-        boost::coroutines::attributes{8 << 10});
+        boost::coroutines::attributes{12 << 10});
 
   static function<vector<uint8_t>(const vector<uint8_t> &)> null_ref;
   struct websocket_handler {
