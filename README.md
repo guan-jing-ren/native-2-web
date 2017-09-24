@@ -11,7 +11,7 @@ Thus, native-2-web aims to simplify the creation of web-based applications.
 It removes the need to design any RESTful url schemes, any JSON or XML data transport, and transformation between the transport and the language data types. Just call your native C++ function from the web just as you would call any C++ function in a C++ program. Doing so will also decouple your front end from the business logic. You have the cross platform power of HTML5, WebGL, Canvas and SVG to do all you need on the client side.
 
 ## Top level design
-There are four components to this library.
+There are six components to this library.
 
 The three core components implementing the backend are:
 
