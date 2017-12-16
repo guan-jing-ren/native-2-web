@@ -1,4 +1,4 @@
-This project is licenced under GPL. Contact me for a commercial licence or for commercial support, or support me via [Patreon](patreon.com/king_yan_kwan).
+This project is licenced under GPL. Contact me for a commercial licence or for commercial support, or support me via [Patreon](https://patreon.com/king_yan_kwan).
 
 native-2-web
 ===
