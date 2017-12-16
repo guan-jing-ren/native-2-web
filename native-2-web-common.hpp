@@ -76,50 +76,52 @@ template <typename T> constexpr auto serial_size = sizeof(T);
 
 namespace n2w {
 
+namespace common_detail {
+using namespace std;
 // clang-format off
 template <typename T> constexpr bool is_sequence = false;
 template <typename T, size_t N> constexpr bool is_sequence<T[N]> = true;
-template <typename... Ts> constexpr bool is_sequence<std::vector<Ts...>> = true;
-template <typename... Ts> constexpr bool is_sequence<std::list<Ts...>> = true;
-template <typename... Ts> constexpr bool is_sequence<std::forward_list<Ts...>> = true;
-template <typename... Ts> constexpr bool is_sequence<std::deque<Ts...>> = true;
-template <typename... Ts> constexpr bool is_sequence<std::set<Ts...>> = true;
-template <typename... Ts> constexpr bool is_sequence<std::unordered_set<Ts...>> = true;
-template <typename... Ts> constexpr bool is_sequence<std::multiset<Ts...>> = true;
-template <typename... Ts> constexpr bool is_sequence<std::unordered_multiset<Ts...>> = true;
+template <typename... Ts> constexpr bool is_sequence<vector<Ts...>> = true;
+template <typename... Ts> constexpr bool is_sequence<list<Ts...>> = true;
+template <typename... Ts> constexpr bool is_sequence<forward_list<Ts...>> = true;
+template <typename... Ts> constexpr bool is_sequence<deque<Ts...>> = true;
+template <typename... Ts> constexpr bool is_sequence<set<Ts...>> = true;
+template <typename... Ts> constexpr bool is_sequence<unordered_set<Ts...>> = true;
+template <typename... Ts> constexpr bool is_sequence<multiset<Ts...>> = true;
+template <typename... Ts> constexpr bool is_sequence<unordered_multiset<Ts...>> = true;
 
 template <typename T> constexpr bool is_pushback_sequence = is_sequence<T>;
-template <typename... Ts> constexpr bool is_pushback_sequence<std::set<Ts...>> = false;
-template <typename... Ts> constexpr bool is_pushback_sequence<std::unordered_set<Ts...>> = false;
-template <typename... Ts> constexpr bool is_pushback_sequence<std::multiset<Ts...>> = false;
-template <typename... Ts> constexpr bool is_pushback_sequence<std::unordered_multiset<Ts...>> = false;
+template <typename... Ts> constexpr bool is_pushback_sequence<set<Ts...>> = false;
+template <typename... Ts> constexpr bool is_pushback_sequence<unordered_set<Ts...>> = false;
+template <typename... Ts> constexpr bool is_pushback_sequence<multiset<Ts...>> = false;
+template <typename... Ts> constexpr bool is_pushback_sequence<unordered_multiset<Ts...>> = false;
 
 template <typename> constexpr bool is_associative = false;
-template <typename... Ts> constexpr bool is_associative<std::map<Ts...>> = true;
-template <typename... Ts> constexpr bool is_associative<std::unordered_map<Ts...>> = true;
-template <typename... Ts> constexpr bool is_associative<std::multimap<Ts...>> = true;
-template <typename... Ts> constexpr bool is_associative<std::unordered_multimap<Ts...>> = true;
+template <typename... Ts> constexpr bool is_associative<map<Ts...>> = true;
+template <typename... Ts> constexpr bool is_associative<unordered_map<Ts...>> = true;
+template <typename... Ts> constexpr bool is_associative<multimap<Ts...>> = true;
+template <typename... Ts> constexpr bool is_associative<unordered_multimap<Ts...>> = true;
 
 template <typename> constexpr bool is_heterogenous = false;
-template <typename T, typename U> constexpr bool is_heterogenous<std::pair<T, U>> = true;
-template <typename... Ts> constexpr bool is_heterogenous<std::tuple<Ts...>> = true;
-template <typename T, size_t N> constexpr bool is_heterogenous<std::array<T, N>> = true;
+template <typename T, typename U> constexpr bool is_heterogenous<pair<T, U>> = true;
+template <typename... Ts> constexpr bool is_heterogenous<tuple<Ts...>> = true;
+template <typename T, size_t N> constexpr bool is_heterogenous<array<T, N>> = true;
 // clang-format on
 
 template <typename S, typename M, typename B> struct structure;
 
 template <typename S, typename T, typename... Ts, typename... Bs>
-struct structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> {
+struct structure<S, tuple<T, Ts...>, tuple<Bs...>> {
   const volatile union {
     S *const volatile s_write;
     const S *const volatile s_read;
   };
-  static const std::tuple<T S::*, Ts S::*...> members;
-  static const std::vector<std::string> names;
-  static const std::vector<std::string> base_names;
+  static const tuple<T S::*, Ts S::*...> members;
+  static vector<string> names();
+  static vector<string> base_names();
   structure(S *s) : s_write(s) {}
   structure(const S *s) : s_read(s) {}
-  structure(std::nullptr_t) = delete;
+  structure(nullptr_t) = delete;
   structure(int) = delete;
   structure(size_t) = delete;
   structure() = delete;
@@ -131,25 +133,24 @@ struct structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> {
 };
 
 template <size_t N, typename S, typename T, typename... Ts, typename... Bs>
-auto &get(const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &s) {
+auto &get(const structure<S, tuple<T, Ts...>, tuple<Bs...>> &s) {
   return s.s_read->*get<N>(s.members);
 }
 
 template <size_t N, typename S, typename T, typename... Ts, typename... Bs>
-auto &get(structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &s) {
+auto &get(structure<S, tuple<T, Ts...>, tuple<Bs...>> &s) {
   return s.s_write->*get<N>(s.members);
 }
 
 template <typename S, typename T, typename... Ts, typename... Bs, size_t... Is>
-bool memberwise_equality(
-    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &l,
-    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &r,
-    std::index_sequence<Is...>) {
+bool memberwise_equality(const structure<S, tuple<T, Ts...>, tuple<Bs...>> &l,
+                         const structure<S, tuple<T, Ts...>, tuple<Bs...>> &r,
+                         index_sequence<Is...>) {
   if (l.s_read == r.s_read)
     return true;
 
   bool equal = true;
-  for (auto rc : std::initializer_list<bool>{
+  for (auto rc : initializer_list<bool>{
            (equal = equal &&
                     *static_cast<const Bs *>(l.s_read) ==
                         *static_cast<const Bs *>(r.s_read))...})
@@ -163,38 +164,34 @@ bool memberwise_equality(
   return equal;
 }
 template <typename S, typename T, typename... Ts, typename... Bs>
-bool operator==(
-    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &l,
-    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &r) {
-  return memberwise_equality(l, r,
-                             std::make_index_sequence<sizeof...(Ts) + 1>{});
+bool operator==(const structure<S, tuple<T, Ts...>, tuple<Bs...>> &l,
+                const structure<S, tuple<T, Ts...>, tuple<Bs...>> &r) {
+  return memberwise_equality(l, r, make_index_sequence<sizeof...(Ts) + 1>{});
 }
 template <typename S, typename T, typename... Ts, typename... Bs>
-bool operator!=(
-    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &l,
-    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &r) {
+bool operator!=(const structure<S, tuple<T, Ts...>, tuple<Bs...>> &l,
+                const structure<S, tuple<T, Ts...>, tuple<Bs...>> &r) {
   return !(l == r);
 }
 
 template <typename S, typename T, typename... Ts, typename... Bs, size_t... Is>
-bool memberwise_less(
-    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &l,
-    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &r,
-    std::index_sequence<Is...>) {
+bool memberwise_less(const structure<S, tuple<T, Ts...>, tuple<Bs...>> &l,
+                     const structure<S, tuple<T, Ts...>, tuple<Bs...>> &r,
+                     index_sequence<Is...>) {
   if (l.s_read == r.s_read)
     return false;
 
-  std::pair<bool, bool> lesser_greater = std::make_pair(false, false);
-  for (auto rc : std::initializer_list<decltype(lesser_greater)>{
-           (lesser_greater = std::make_pair(
-                !lesser_greater.second &&
-                    (lesser_greater.first ||
-                     *static_cast<const Bs *>(l.s_read) <
-                         *static_cast<const Bs *>(r.s_read)),
-                !lesser_greater.first &&
-                    (lesser_greater.second ||
-                     *static_cast<const Bs *>(r.s_read) <
-                         *static_cast<const Bs *>(l.s_read))))...}) {
+  pair<bool, bool> lesser_greater = make_pair(false, false);
+  for (auto rc : initializer_list<decltype(lesser_greater)>{
+           (lesser_greater =
+                make_pair(!lesser_greater.second &&
+                              (lesser_greater.first ||
+                               *static_cast<const Bs *>(l.s_read) <
+                                   *static_cast<const Bs *>(r.s_read)),
+                          !lesser_greater.first &&
+                              (lesser_greater.second ||
+                               *static_cast<const Bs *>(r.s_read) <
+                                   *static_cast<const Bs *>(l.s_read))))...}) {
     if (lesser_greater.first)
       return true;
     if (lesser_greater.second)
@@ -202,7 +199,7 @@ bool memberwise_less(
   }
 
   for (auto rc :
-       {(lesser_greater = std::make_pair(
+       {(lesser_greater = make_pair(
              !lesser_greater.second &&
                  (lesser_greater.first || get<Is>(l) < get<Is>(r)),
              !lesser_greater.first &&
@@ -215,83 +212,89 @@ bool memberwise_less(
   return false;
 }
 template <typename S, typename T, typename... Ts, typename... Bs>
-bool operator<(const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &l,
-               const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &r) {
-  return memberwise_less(l, r, std::make_index_sequence<sizeof...(Ts) + 1>{});
+bool operator<(const structure<S, tuple<T, Ts...>, tuple<Bs...>> &l,
+               const structure<S, tuple<T, Ts...>, tuple<Bs...>> &r) {
+  return memberwise_less(l, r, make_index_sequence<sizeof...(Ts) + 1>{});
 }
 
 template <typename S, typename T, typename... Ts, typename... Bs>
-bool operator>(const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &l,
-               const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &r) {
+bool operator>(const structure<S, tuple<T, Ts...>, tuple<Bs...>> &l,
+               const structure<S, tuple<T, Ts...>, tuple<Bs...>> &r) {
   return r < l;
 };
 
 template <typename S, typename T, typename... Ts, typename... Bs>
-bool operator<=(
-    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &l,
-    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &r) {
+bool operator<=(const structure<S, tuple<T, Ts...>, tuple<Bs...>> &l,
+                const structure<S, tuple<T, Ts...>, tuple<Bs...>> &r) {
   return !(r < l);
 };
 
 template <typename S, typename T, typename... Ts, typename... Bs>
-bool operator>=(
-    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &l,
-    const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &r) {
+bool operator>=(const structure<S, tuple<T, Ts...>, tuple<Bs...>> &l,
+                const structure<S, tuple<T, Ts...>, tuple<Bs...>> &r) {
   return !(l < r);
 };
 
-template <size_t N, typename T, typename U>
-const char *at(const std::pair<T, U> &) {
+template <size_t N, typename T, typename U> const char *at(const pair<T, U> &) {
   return "";
 }
 
 template <size_t N, typename T, typename... Ts>
-const char *at(const std::tuple<T, Ts...> &) {
+const char *at(const tuple<T, Ts...> &) {
   return "";
 }
 
-template <size_t N, typename T, size_t S>
-const char *at(const std::array<T, S> &) {
+template <size_t N, typename T, size_t S> const char *at(const array<T, S> &) {
   return "";
 }
 
 template <size_t N, typename S, typename T, typename... Ts, typename... Bs>
-std::string at(const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &s) {
-  auto m_p = std::get<N>(s.members);
-  return '@' + std::to_string(*reinterpret_cast<std::uintptr_t *>(&m_p));
+string at(const structure<S, tuple<T, Ts...>, tuple<Bs...>> &s) {
+  auto m_p = get<N>(s.members);
+  return '@' + to_string(*reinterpret_cast<uintptr_t *>(&m_p));
 }
 
 template <size_t N, typename T, typename U>
-const char *name(const std::pair<T, U> &) {
+const char *name(const pair<T, U> &) {
   constexpr const char *pair[] = {"first", "second"};
   return pair[N];
 }
 
 template <size_t N, typename T, typename... Ts>
-std::string name(const std::tuple<T, Ts...> &) {
-  return std::to_string(N);
+string name(const tuple<T, Ts...> &) {
+  return to_string(N);
 }
 
-template <size_t N, typename T, size_t S>
-std::string name(const std::array<T, S> &) {
-  return std::to_string(N);
+template <size_t N, typename T, size_t S> string name(const array<T, S> &) {
+  return to_string(N);
 }
 
 template <size_t N, typename S, typename T, typename... Ts, typename... Bs>
-std::string
-name(const structure<S, std::tuple<T, Ts...>, std::tuple<Bs...>> &s) {
-  return s.names[N + 1];
+string name(const structure<S, tuple<T, Ts...>, tuple<Bs...>> &s) {
+  return s.names()[N + 1];
 }
 
 template <typename E> struct enumeration {
-  static const std::string type_name;
-  static std::map<E, std::string> e_to_str;
-  static std::unordered_map<std::string, E> str_to_e;
+  static string type_name();
+  static map<E, string> e_to_str();
+  static unordered_map<string, E> str_to_e();
 };
 
 template <size_t I, typename T>
-using element_t = std::remove_cv_t<
-    std::remove_reference_t<decltype(get<I>(std::declval<T>()))>>;
+using element_t =
+    remove_cv_t<remove_reference_t<decltype(get<I>(declval<T>()))>>;
+}
+
+using common_detail::is_sequence;
+using common_detail::is_pushback_sequence;
+using common_detail::is_associative;
+using common_detail::is_heterogenous;
+using common_detail::structure;
+using common_detail::enumeration;
+using common_detail::element_t;
+using common_detail::name;
+using common_detail::at;
+using common_detail::get;
 
 #define N2W__MEMBERS BOOST_PP_VARIADIC_TO_SEQ
 #define N2W__BASES(...) __VA_ARGS__
@@ -312,12 +315,14 @@ using element_t = std::remove_cv_t<
   const decltype(N2W__MAKE_MEMBER_TUPLE(s, m)) N2W__USING_STRUCTURE(           \
       s, m, __VA_ARGS__)::members = N2W__MAKE_MEMBER_TUPLE(s, m);              \
   template <>                                                                  \
-  const std::vector<std::string> N2W__USING_STRUCTURE(                         \
-      s, m, __VA_ARGS__)::names{#s, N2W__MEMBER_NAMES(m)};                     \
+  std::vector<std::string> N2W__USING_STRUCTURE(s, m, __VA_ARGS__)::names() {  \
+    return {#s, N2W__MEMBER_NAMES(m)};                                         \
+  }                                                                            \
   template <>                                                                  \
-  const std::vector<std::string> N2W__USING_STRUCTURE(                         \
-      s, m, __VA_ARGS__)::base_names{                                          \
-      N2W__MEMBER_NAMES(BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))};
+  std::vector<std::string> N2W__USING_STRUCTURE(s, m,                          \
+                                                __VA_ARGS__)::base_names() {   \
+    return {N2W__MEMBER_NAMES(BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))};         \
+  }
 #define N2W__CONSTRUCTOR(s, m, o, ...)                                         \
   N2W__USING_STRUCTURE(s, m, __VA_ARGS__) o##_v { &o }
 
@@ -329,13 +334,14 @@ using element_t = std::remove_cv_t<
 #define N2W__STRING_TO_ENUM(m) BOOST_PP_SEQ_FOR_EACH_I(N2W__S_E_PAIR, _, m)
 #define N2W__SPECIALIZE_ENUM(e, m)                                             \
   template <> struct n2w::mangle<e> : n2w::mangle<enumeration<e>> {};          \
-  template <> const std::string n2w::enumeration<e>::type_name = #e;           \
+  template <> std::string n2w::enumeration<e>::type_name() { return #e; }      \
+  template <> std::map<e, std::string> n2w::enumeration<e>::e_to_str() {       \
+    return {N2W__ENUM_TO_STRING(m)};                                           \
+  }                                                                            \
   template <>                                                                  \
-  std::map<e, std::string> n2w::enumeration<e>::e_to_str = {                   \
-      N2W__ENUM_TO_STRING(m)};                                                 \
-  template <>                                                                  \
-  std::unordered_map<std::string, e> n2w::enumeration<e>::str_to_e = {         \
-      N2W__STRING_TO_ENUM(m)};
+  std::unordered_map<std::string, e> n2w::enumeration<e>::str_to_e() {         \
+    return {N2W__STRING_TO_ENUM(m)};                                           \
+  }
 }
 
 #endif

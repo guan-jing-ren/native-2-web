@@ -31,15 +31,15 @@ auto set_current_working_directory(const filesystem::path &path) {
 // - Directory options
 auto list_files(optional<vector<filesystem::path>> paths) {
   cerr << "Listing files\n";
+  error_code ec;
   vector<filesystem::directory_entry> list;
   if (paths)
     for (auto &&path : *paths)
-      for (auto &&entry : filesystem::directory_iterator{path})
+      for (auto &&entry : filesystem::directory_iterator{path, ec})
         list.push_back(entry);
   else
     for (auto &&entry :
-         filesystem::directory_iterator{current_working_directory()}) {
-      cerr << entry.path() << '\n';
+         filesystem::directory_iterator{current_working_directory(), ec}) {
       list.push_back(entry);
     }
   cerr << "Number of files: " << list.size() << '\n';
@@ -220,30 +220,30 @@ auto temporary_directory_location() {
 
 plugin plugin = []() {
   n2w::plugin plugin;
-  plugin.register_service(DECLARE_API(current_working_directory), "");
-  plugin.register_service(DECLARE_API(set_current_working_directory), "");
-  plugin.register_service(DECLARE_API(list_files), "");
-  plugin.register_service(DECLARE_API(convert_to_absolute_path), "");
-  plugin.register_service(DECLARE_API(convert_to_canonical_path), "");
-  // plugin.register_service(DECLARE_API(convert_to_relative_path), "");
-  // plugin.register_service(DECLARE_API(convert_to_proximate_path), "");
-  plugin.register_service(DECLARE_API(copy_entity), "");
-  plugin.register_service(DECLARE_API(create_directory), "");
-  plugin.register_service(DECLARE_API(create_hard_link), "");
-  plugin.register_service(DECLARE_API(create_symbolic_link), "");
-  plugin.register_service(DECLARE_API(path_exists), "");
-  plugin.register_service(DECLARE_API(paths_equivalent), "");
-  plugin.register_service(DECLARE_API(file_size), "");
-  plugin.register_service(DECLARE_API(hard_link_count), "");
-  plugin.register_service(DECLARE_API(last_write_time), "");
-  plugin.register_service(DECLARE_API(set_last_write_time), "");
-  plugin.register_service(DECLARE_API(set_permissions), "");
-  plugin.register_service(DECLARE_API(get_symbolic_link_target), "");
-  plugin.register_service(DECLARE_API(remove_path), "");
-  plugin.register_service(DECLARE_API(rename_path), "");
-  plugin.register_service(DECLARE_API(resize_file), "");
-  plugin.register_service(DECLARE_API(space_information), "");
-  plugin.register_service(DECLARE_API(path_status), "");
-  plugin.register_service(DECLARE_API(temporary_directory_location), "");
+  plugin.register_service(N2W__DECLARE_API(current_working_directory), "");
+  plugin.register_service(N2W__DECLARE_API(set_current_working_directory), "");
+  plugin.register_service(N2W__DECLARE_API(list_files), "");
+  plugin.register_service(N2W__DECLARE_API(convert_to_absolute_path), "");
+  plugin.register_service(N2W__DECLARE_API(convert_to_canonical_path), "");
+  // plugin.register_service(N2W__DECLARE_API(convert_to_relative_path), "");
+  // plugin.register_service(N2W__DECLARE_API(convert_to_proximate_path), "");
+  plugin.register_service(N2W__DECLARE_API(copy_entity), "");
+  plugin.register_service(N2W__DECLARE_API(create_directory), "");
+  plugin.register_service(N2W__DECLARE_API(create_hard_link), "");
+  plugin.register_service(N2W__DECLARE_API(create_symbolic_link), "");
+  plugin.register_service(N2W__DECLARE_API(path_exists), "");
+  plugin.register_service(N2W__DECLARE_API(paths_equivalent), "");
+  plugin.register_service(N2W__DECLARE_API(file_size), "");
+  plugin.register_service(N2W__DECLARE_API(hard_link_count), "");
+  plugin.register_service(N2W__DECLARE_API(last_write_time), "");
+  plugin.register_service(N2W__DECLARE_API(set_last_write_time), "");
+  plugin.register_service(N2W__DECLARE_API(set_permissions), "");
+  plugin.register_service(N2W__DECLARE_API(get_symbolic_link_target), "");
+  plugin.register_service(N2W__DECLARE_API(remove_path), "");
+  plugin.register_service(N2W__DECLARE_API(rename_path), "");
+  plugin.register_service(N2W__DECLARE_API(resize_file), "");
+  plugin.register_service(N2W__DECLARE_API(space_information), "");
+  plugin.register_service(N2W__DECLARE_API(path_status), "");
+  plugin.register_service(N2W__DECLARE_API(temporary_directory_location), "");
   return plugin;
 }();

@@ -1,65 +1,110 @@
-_This project is licenced under GPLv3. For a commercial licence, email me to discuss._
+This project is licenced under GPL. Contact me for a commercial licence or for commercial support, or support me via [Patreon](patreon.com/king_yan_kwan).
 
-# native-2-web
+native-2-web
+===
 
-You have a function (libraries of functions) written in C++ and you want it to be called from a web environment. You want the client-side function call to look like the server-side function. native-2-web does this for you.
+Provides a library and implementation of generating web services from C++ functions over a websocket interface.
 
-With native-2-web, you can do away with unwieldy Java EE or .NET runtimes, overbearing "frameworks", excessive annotations, and generating intermediate processed files. Let the compiler do the heavy lifting. Don't let the middle~~man~~ware dictate your design by cutting out the middle~~man~~ware. Design and write your server side application in a way that _feels right_, and drive it from the web the way you would drive it as a standalone program.
+`native-2-web-server.cpp` is a complete demo showing what it takes to use the system. It also exposes the server itself as a service that can be used.
 
-Thus, native-2-web aims to simplify the creation of web-based applications.
+`n2w-fs.cpp` is a complete demo showing what it takes to expose C++17's filesystem API as a webservice.
 
-It removes the need to design any RESTful url schemes, any JSON or XML data transport, and transformation between the transport and the language data types. Just call your native C++ function from the web just as you would call any C++ function in a C++ program. Doing so will also decouple your front end from the business logic. You have the cross platform power of HTML5, WebGL, Canvas and SVG to do all you need on the client side.
+To see it in action, connect to the server via a browser.
 
-## Top level design
-There are six components to this library.
+Creating a websocket service is as easy as writing this
+---
+```C++
+accept<http_handler>(
+    io_service, ip::address::from_string(arguments["address"].as<string>()),
+    arguments["port"].as<unsigned short>());
+```
 
-The three core components implementing the backend are:
+Of course, that's just a trick. The guts of server is in the template argument `http_handler`, which you can define even as a function-scoped class:
 
-- Data and API mangling.
-- Serialization and deserialization.
-- API registration.
+```C++
+int main(...) {
+  // ...
+  struct http_handler {
+    using websocket_handler_type = websocket_handler;
 
-One auxiliary component that links between the web front end and the native backend:
+    http::response<http::string_body>
+    operator()(const http::request<http::string_body> &request) {...}
+  };
+}
+```
 
-- Javascript generator for calling APIs.
-- Javascript UI skeleton generator.
+The `websocket_handler_type` inner class type is optional and can just be a type alias. If not defined, you will just have a normal HTTP server. Similarly, `operator()` for a http::request is optional. You can simply provide the `websocket_handler_type` for a purely websocket server. You can even not provide both and have a server that can't do anything.
 
-And one auxiliary component for serving APIs:
+To handle websockets, you implement a class for the `websocket_handler_type`. For example:
 
-- A HTTP and websocket client and server.
+```C++
+struct websocket_handler {
+    void decorate(const http::request<http::string_body> &request,
+                  http::response<http::string_body> &response) {...}
 
-## Usages
+    void operator()(string message) {...}
+    vector<uint8_t> operator()(vector<uint8_t> message) {...}
+```
+`decorate()` allows you to customize the HTTP response that Beast sends to complete the websocket handshake. It is optional.
 
-## Design rationale
+`operator()` can be provided to take either a `string` message or a `binary` message, and can return either `string`, `binary` or `void`. `operator()`, of any overload, is also optional.
 
-The three component groups are designed to be orthogonal to each other to the extent that they could well be standalone libraries in their own right. For instance, an HTTP and websocket server implementation based on Boost.ASIO and Beast is provided, but the core and Javascript components are designed to be agnostic to any server implementation.
+The demo implementation of `http_handler` and `websocket_handler` shows how to interpret requests and invoke the correct native API.
 
-The Javascript and serialization components operate on a shared data marshalling scheme, but said scheme is based on the concept behind the specific types rather than dependent on the actual types.
+Exposing your native API for web is as easy as writing this
+---
+Implement your API using standard library types, or hook your own types via `N2W__SPECIALIZE_STRUCTURE` etc:
+```C++
+enum class recursivity : bool { RECURSIVE, NOT_RECURSIVE };
+N2W__SPECIALIZE_ENUM(recursivity, N2W__MEMBERS(recursivity::RECURSIVE,
+                                               recursivity::NOT_RECURSIVE));
+auto create_directory(
+    filesystem::path path,
+    optional<variant<filesystem::path, recursivity>> existing_or_recursive) {...}
+```
+Then hook it into the plugin system via like so:
+```C++
+plugin plugin = []() {
+  n2w::plugin plugin;
+  plugin.register_service(N2W__DECLARE_API(create_directory), "This is an API to create directories recursively.");
+  return plugin;
+}();
+```
 
-### Data marshalling concepts and scheme
+Final steps
+---
+The `websocket_handler` and `http_handler` in `n2w-server.cpp` shows you one way to display the generated HTML diagnostic GUI for invoking those APIs by hand, and then to wire the websocket request and calling the API:
+```C++
+struct websocket_handler {
+    // 1. Demo GUI first sends the API function to be called as a string.
+    // `message` is the mangled name of the API that is automatically generated by the plugin system.
+    void operator()(string message) {
+      // Find the API with the mangled name `message`.
+      for (auto &plugin : plugins) {
+        service = cref(plugin.second.get_function(message));
+        if (service.get())
+          return;
+      }
+      service = server.get_function(message);
+    }
 
-Data is considered to fall into the four categories, with the following marshalling method:
+    // 2. Then it sends the actual request data.
+    vector<uint8_t> operator()(vector<uint8_t> message) {
+      if (!service.get())
+        return {};
+      return service(message);
+    }
+};
+```
 
-1. Fundamental, non-pointer types. These include integral types, floating point types and enum types.
-   1. Serialized as is with no padding. For Javascript compatibility, no 64-bit integer support.
-1. Sequential containers. These include vectors, lists and sets.
-   1. For containers with sizes fixed at compile time, data is serialized in contiguous memory from beginning to end.
-   1. For containers with dynamic size, the data is serialized as previous, but preceded by a 32-bit length field.
-1. Associative containers. These include maps and unordered_maps.
-   1. A 32-bit length field, followed by keys, followed by values. The length field is applicable to both.
-1. Heterogenous containers. Pairs, tuples and structures.
-   1. Members are serialized in declaration order with no padding.
+Notes
+---
+Unfortunately build system organization and documentation for the internals is scant at the moment.
 
-Compound types are only acceptable if they contain only data from the above categories. ie, compound types can contain compound types, as long as the nesting is terminated by any of fundamental, non-pointer types.
-
-Due to the lack of compile-time reflection in C++, supporting custom data structures requires, as a maximum, annotation of the salient data members of the structure. The annotations are simple macros; no processing step to generate intermediate files is required.
-
-### Front end Javascript
-
-The generated Javascript to call the native API (via websocket) should resemble the native API argument-for-argument, with an extra argument specifying the websocket send the remote call to, and to receive the result of the API. Fundamental, non-pointer types are passed as they are. Sequential containers are passed as arrays. Associative and heterogenous containers are passed as Javascript objects.
-
-### Server implementation
-
-The server is designed around extreme SFINAE for extensibility. There are no interfaces that is required to be inherited from. There are no traits classes to specialize. The server detects capabilities at compile time and SFINAE enables only the mininum feature set. eg, if a server extension implements a websocket handler, but not an HTTP handler, the resulting connection instantiation only handles websocket code paths. eg, if a websocket handler only handles binary messages, only binary message code paths are SFINAE enabled. The minimum server extension implementation allowed is an empty class, which does nothing.
-
-For a server side connection, the user does not even get a server object. The server object lifetime is managed by the Boost.ASIO io_service, and all customized handling is done through the provided server extension. For a client side connection, the user does get a connection object that only allows sending requests. All other concerns are handled within the implementation, invisible to the user.
+Pre-requisites
+---
+- Boost.ASIO
+- Beast HTTP and Websocket library
+- Clang with C++17 support
+- The dynamic linking plugin stuff is Linux-only for now
+- The extend the HTML GUI stuff you need to know d3.js

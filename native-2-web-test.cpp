@@ -102,11 +102,11 @@ int main(int, char **) {
   std::cout << n2w::mangled<void (*)(decltype(a), decltype(b), decltype(c),
                                      decltype(d), decltype(e))>()
             << '\n';
-  std::cout << n2w::function_address(swap_test) << '\n';
-  std::cout << n2w::function_address(main) << '\n';
+  std::cout << n2w::function_address("swap_test", swap_test) << '\n';
+  std::cout << n2w::function_address("main", main) << '\n';
   std::uint8_t scrambler[] = {7, 6, 5, 4, 3, 2, 1, 0};
-  std::cout << n2w::function_address(swap_test, scrambler) << '\n';
-  std::cout << n2w::function_address(main, scrambler) << '\n';
+  std::cout << n2w::function_address("swap_test", swap_test, scrambler) << '\n';
+  std::cout << n2w::function_address("main", main, scrambler) << '\n';
 
   test_structure t;
 
@@ -287,7 +287,7 @@ int main(int, char **) {
     n2w::debug_print(std::cout, structure_fill_test) << '\n';
 
     std::cout << N2W__USING_STRUCTURE(test_substructure, (c)(d),
-                                      string_bool)::base_names[0]
+                                      string_bool)::base_names()[0]
               << '\n';
   }
 

@@ -3,8 +3,9 @@
 
 #include "native-2-web-common.hpp"
 namespace n2w {
-
+namespace mangle_detail {
 using namespace std;
+using namespace std::experimental;
 string terminate_processing = "z";
 
 template <typename...> struct mangle {
@@ -304,13 +305,13 @@ struct mangle<structure<S, tuple<T, Ts...>, tuple<Bs...>>> {
 
 template <typename E> struct mangle<enumeration<E>> {
   static string value() {
+    auto e_to_str = enumeration<E>::e_to_str();
     return mangle_prefixed<E>() + mangled<underlying_type_t<E>>() +
-           accumulate(cbegin(enumeration<E>::e_to_str),
-                      cend(enumeration<E>::e_to_str), string{},
-                      [](auto &&s, auto e) {
-                        return s += "," +
-                                    to_string(static_cast<underlying_type_t<E>>(
-                                        e.first));
+           accumulate(cbegin(e_to_str), cend(e_to_str), string{},
+                      [](auto s, auto e) {
+                        return s + "," +
+                               to_string(
+                                   static_cast<underlying_type_t<E>>(e.first));
                       }) +
            "]";
   }
@@ -348,7 +349,6 @@ template <size_t N> struct mangle<bitset<N>> {
   static string value() { return mangle_prefixed<bitset<N>>() + to_string(N); }
 };
 
-using namespace std::experimental;
 template <> struct mangle<filesystem::path> {
   static string value() { return "/p"; }
 };
@@ -391,26 +391,33 @@ template <typename R, typename... Ts> struct mangle<R (*)(Ts...)> {
 };
 
 template <typename R, typename... Ts>
-string function_address(R (*f)(Ts...), uint8_t (&crypt)[sizeof(void (*)())]) {
+string function_address(const char *name, R (*f)(Ts...),
+                        uint8_t (&crypt)[sizeof(void (*)())]) {
   uintptr_t obf = 0;
   for (auto i = 0; i < sizeof(f); ++i)
     obf |= static_cast<uintptr_t>(reinterpret_cast<uint8_t *>(&f)[crypt[i]])
            << (i * 8);
-  return "@" + to_string(obf) + mangled<R(Ts...)>();
+  return string{"@"} + name + mangled<R(Ts...)>();
 }
 
-template <typename R, typename... Ts> string function_address(R (*f)(Ts...)) {
+template <typename R, typename... Ts>
+string function_address(const char *name, R (*f)(Ts...)) {
   uint8_t scrambler[] = {0, 1, 2, 3, 4, 5, 6, 7};
-  return function_address(f, scrambler);
+  return function_address(name, f, scrambler);
 }
 }
 
-using namespace std::experimental;
-using filesystem::file_type;
-using filesystem::perms;
+using mangle_detail::mangle;
+using mangle_detail::mangled;
+using mangle_detail::csv;
+using mangle_detail::endianness;
+using mangle_detail::function_address;
+
+using mangle_detail::filesystem::file_type;
+using mangle_detail::filesystem::perms;
 // using filesystem::perm_options;
-using filesystem::copy_options;
-using filesystem::directory_options;
+using mangle_detail::filesystem::copy_options;
+using mangle_detail::filesystem::directory_options;
 N2W__SPECIALIZE_ENUM(file_type,
                      N2W__MEMBERS(file_type::none, file_type::not_found,
                                   file_type::regular, file_type::directory,
@@ -441,4 +448,5 @@ N2W__SPECIALIZE_ENUM(directory_options,
                      N2W__MEMBERS(directory_options::none,
                                   directory_options::follow_directory_symlink,
                                   directory_options::skip_permission_denied));
+}
 #endif
