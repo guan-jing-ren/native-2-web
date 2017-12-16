@@ -97,6 +97,8 @@ struct websocket_handler {
 };
 ```
 
+![](listfiles_demo.png)
+
 Notes
 ---
 Unfortunately build system organization and documentation for the internals is scant at the moment.
