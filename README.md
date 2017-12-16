@@ -73,7 +73,7 @@ plugin plugin = []() {
 
 Final steps
 ---
-The `websocket_handler` and `http_handler` in `n2w-server.cpp` shows you one way to display the generated HTML diagnostic GUI for invoking those APIs by hand, and then to wire the websocket request and calling the API:
+The `websocket_handler` and `http_handler` in `native-2-web-server.cpp` shows you one way to display the generated HTML diagnostic GUI for invoking those APIs by hand, and then to wire the websocket request and calling the API:
 ```C++
 struct websocket_handler {
     // 1. Demo GUI first sends the API function to be called as a string.
