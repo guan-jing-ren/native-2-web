@@ -9,6 +9,8 @@ Provides a library and implementation of generating web services from C++ functi
 
 `n2w-fs.cpp` is a complete demo showing what it takes to expose C++17's filesystem API as a webservice.
 
+The files in `oldtests` contain some useful usage examples too.
+
 To see it in action, connect to the server via a browser.
 
 Creating a websocket service is as easy as writing this
@@ -53,20 +55,52 @@ The demo implementation of `http_handler` and `websocket_handler` shows how to i
 
 Exposing your native API for web is as easy as writing this
 ---
-Implement your API using standard library types, or hook your own types via `N2W__SPECIALIZE_STRUCTURE` etc:
+Implement your API using standard library types, or hook your own types via `N2W__`** macros:
 ```C++
+// How to hook your enum into the introspection type system.
 enum class recursivity : bool { RECURSIVE, NOT_RECURSIVE };
 N2W__SPECIALIZE_ENUM(recursivity, N2W__MEMBERS(recursivity::RECURSIVE,
                                                recursivity::NOT_RECURSIVE));
+
+// Your actual API (could be a top level function)
 auto create_directory(
     filesystem::path path,
     optional<variant<filesystem::path, recursivity>> existing_or_recursive) {...}
+
+// Some custom type
+struct server_options {
+  optional<bool> spawned = false;
+  optional<string> address = boost::asio::ip::address_v6::any().to_string();
+  optional<unsigned short> port = 9001;
+  optional<unsigned short> port_range = 1;
+  optional<unsigned> worker_threads = 0;
+  optional<unsigned> accept_threads = 0;
+  optional<unsigned> connect_threads = 0;
+  optional<unsigned> worker_sessions = 0;
+  optional<string> multicast_address = "233.252.18.0";
+  optional<unsigned short> multicast_port = 9002;
+};
+
+// How to hook your custom type into the introspection type system.
+N2W__BINARY_SPEC(server_options,
+                 N2W__MEMBERS(address, port, port_range, worker_threads,
+                              accept_threads, connect_threads, worker_sessions,
+                              multicast_address, multicast_port));
+// How to hook your custom type into the HTML demo GUI generator.
+N2W__JS_SPEC(server_options,
+             N2W__MEMBERS(address, port, port_range, worker_threads,
+                          accept_threads, connect_threads, worker_sessions,
+                          multicast_address, multicast_port));
+
+// Your actual API (could be a lambda or function object)
+static auto spawn_server = [](optional<server_options> options) {...}
 ```
 Then hook it into the plugin system via like so:
 ```C++
 plugin plugin = []() {
   n2w::plugin plugin;
   plugin.register_service(N2W__DECLARE_API(create_directory), "This is an API to create directories recursively.");
+  plugin.register_service(N2W__DECLARE_API(spawn_server), "Spawn a new server using the browser.");
   return plugin;
 }();
 ```
@@ -102,6 +136,8 @@ struct websocket_handler {
 Notes
 ---
 Unfortunately build system organization and documentation for the internals is scant at the moment.
+
+A side aim of this project is to keep it so small, that all the header files you see are the only ones you need. The library will continue to be designed as a toolkit
 
 Pre-requisites
 ---
