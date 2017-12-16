@@ -137,7 +137,7 @@ Notes
 ---
 Unfortunately build system organization and documentation for the internals is scant at the moment.
 
-A side aim of this project is to keep it so small, that all the header files you see are the only ones you need. The library will continue to be designed as a toolkit and hopefully work contract frameworkitis.
+A side aim of this project is to keep it so small, that all the header files you see are the only ones you need. The library will continue to be designed as a toolkit and hopefully won't contract frameworkitis.
 
 Pre-requisites
 ---
