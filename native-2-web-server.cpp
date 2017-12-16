@@ -79,11 +79,10 @@ struct server_options {
   optional<unsigned short> multicast_port = 9002;
 };
 
-N2W__READ_WRITE_SPEC(server_options,
-                     N2W__MEMBERS(address, port, port_range, worker_threads,
-                                  accept_threads, connect_threads,
-                                  worker_sessions, multicast_address,
-                                  multicast_port));
+N2W__BINARY_SPEC(server_options,
+                 N2W__MEMBERS(address, port, port_range, worker_threads,
+                              accept_threads, connect_threads, worker_sessions,
+                              multicast_address, multicast_port));
 N2W__JS_SPEC(server_options,
              N2W__MEMBERS(address, port, port_range, worker_threads,
                           accept_threads, connect_threads, worker_sessions,
@@ -259,19 +258,24 @@ int main(int c, char **v) {
          to_string(options->port.value_or(*default_options.port)) +
          " --port-range " +
          to_string(options->port_range.value_or(*default_options.port_range)) +
-         " --worker-threads " + to_string(options->worker_threads.value_or(
-                                    *default_options.worker_threads)) +
-         " --accept-threads " + to_string(options->accept_threads.value_or(
-                                    *default_options.accept_threads)) +
-         " --connect-threads " + to_string(options->connect_threads.value_or(
-                                     *default_options.connect_threads)) +
-         " --worker-sessions " + to_string(options->worker_sessions.value_or(
-                                     *default_options.worker_sessions)) +
+         " --worker-threads " +
+         to_string(options->worker_threads.value_or(
+             *default_options.worker_threads)) +
+         " --accept-threads " +
+         to_string(options->accept_threads.value_or(
+             *default_options.accept_threads)) +
+         " --connect-threads " +
+         to_string(options->connect_threads.value_or(
+             *default_options.connect_threads)) +
+         " --worker-sessions " +
+         to_string(options->worker_sessions.value_or(
+             *default_options.worker_sessions)) +
          " --multicast-address " +
          options->multicast_address.value_or(
              *default_options.multicast_address) +
-         " --multicast-port " + to_string(options->multicast_port.value_or(
-                                    *default_options.multicast_port)) +
+         " --multicast-port " +
+         to_string(options->multicast_port.value_or(
+             *default_options.multicast_port)) +
          " &)&")
             .c_str());
   };
@@ -472,12 +476,12 @@ int main(int c, char **v) {
 
       response.set(
           "X-n2w-api-list",
-          accumulate(cbegin(services), cend(services),
-                     string{}, [specials = regex{"\\\\|\"|\r"}](auto &services,
-                                                                auto &service) {
-                       return services + (services.empty() ? "" : " ") + '"' +
-                              regex_replace(service, specials, "\\$0") + '"';
-                     }));
+          accumulate(
+              cbegin(services), cend(services), string{},
+              [specials = regex{"\\\\|\"|\r"}](auto &services, auto &service) {
+                return services + (services.empty() ? "" : " ") + '"' +
+                       regex_replace(service, specials, "\\$0") + '"';
+              }));
     }
 
     void operator()(string message) {
@@ -636,23 +640,23 @@ int main(int c, char **v) {
       return req;
     }
   };
-  spawn(service, [](yield_context yield) {
-    auto server = connect<http_requester>(
-        service, ip::address::from_string(arguments["address"].as<string>()),
-        arguments["port"].as<unsigned short>());
-    auto server2 = move(server);
-    boost::system::error_code ec;
-    http::response<http::string_body> res = server2.request("/", yield[ec]);
-    clog << res << '\n';
-    server2.request("modules.js", [](const auto &, auto response) {
-      clog << response << '\n';
-    });
+  // spawn(service, [](yield_context yield) {
+  //   auto server = connect<http_requester>(
+  //       service, ip::address::from_string(arguments["address"].as<string>()),
+  //       arguments["port"].as<unsigned short>());
+  //   auto server2 = move(server);
+  //   boost::system::error_code ec;
+  //   http::response<http::string_body> res = server2.request("/", yield[ec]);
+  //   clog << res << '\n';
+  //   server2.request("modules.js", [](const auto &, auto response) {
+  //     clog << response << '\n';
+  //   });
 
-    auto wsclient = upgrade(move(server2));
-    auto wsclient2 = wsconnect<http_requester>(
-        service, ip::address::from_string(arguments["address"].as<string>()),
-        arguments["port"].as<unsigned short>());
-  });
+  //   auto wsclient = upgrade(move(server2));
+  //   auto wsclient2 = wsconnect<http_requester>(
+  //       service, ip::address::from_string(arguments["address"].as<string>()),
+  //       arguments["port"].as<unsigned short>());
+  // });
 
   stats.on_startup();
   auto num_threads = thread::hardware_concurrency();

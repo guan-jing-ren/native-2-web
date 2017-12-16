@@ -194,73 +194,59 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
     }
 
     string response_type;
-    if
-      constexpr(is_same_v<R, http::response<http::string_body>>) {
-        reply.prepare_payload();
-        http::async_write(socket, reply, yield[ec]);
-        response_type = "HTTP";
+    if constexpr (is_same_v<R, http::response<http::string_body>>) {
+      reply.prepare_payload();
+      http::async_write(socket, reply, yield[ec]);
+      response_type = "HTTP";
+    } else if constexpr (!is_same_v<R, nullptr_t> && supports_websocket) {
+      if constexpr (is_same_v<R, string>) {
+        ws.text(true);
+        response_type = "text websocket";
+      } else if constexpr (is_same_v<R, vector<uint8_t>>) {
+        ws.binary(true);
+        response_type = "binary websocket";
       }
-    else if
-      constexpr(!is_same_v<R, nullptr_t> && supports_websocket) {
-        if
-          constexpr(is_same_v<R, string>) {
-            ws.text(true);
-            response_type = "text websocket";
-          }
-        else if
-          constexpr(is_same_v<R, vector<uint8_t>>) {
-            ws.binary(true);
-            response_type = "binary websocket";
-          }
-        ws.async_write(buffer(reply), yield[ec]);
-        if (ec)
-          ws_stuff.websocket_handler = websocket_handler_type{};
-      }
+      ws.async_write(buffer(reply), yield[ec]);
+      if (ec)
+        ws_stuff.websocket_handler = websocket_handler_type{};
+    }
 
     clog << "Thread: " << this_thread::get_id() << "; Written " << response_type
          << " response: " << ec.message() << ".\n";
   }
 
   template <typename T> auto async(T t) {
-    if
-      constexpr(is_same_v<T, http::response<http::string_body>> ||
-                is_same_v<T, string> || is_same_v<T, vector<uint8_t>>) {
-        spawn(socket.get_io_service(),
-              [
-                this, self = this->shared_from_this(), t = forward<T>(t),
-                tkt = ticket++
-              ](yield_context yield) {
-                if
-                  constexpr(reports_task_start)
-                      handler.report_task_start(chrono::system_clock::now());
-                ticket_sentinel sentinel{*this, tkt};
-                write_response(yield, move(t), sentinel);
-                if
-                  constexpr(reports_task_end)
-                      handler.report_task_end(chrono::system_clock::now());
-              },
-              boost::coroutines::attributes{12 << 10});
-      }
-    else {
+    if constexpr (is_same_v<T, http::response<http::string_body>> ||
+                  is_same_v<T, string> || is_same_v<T, vector<uint8_t>>) {
       spawn(socket.get_io_service(),
             [
               this, self = this->shared_from_this(), t = forward<T>(t),
               tkt = ticket++
             ](yield_context yield) {
-              if
-                constexpr(reports_task_start)
-                    handler.report_task_start(chrono::system_clock::now());
+              if constexpr (reports_task_start)
+                handler.report_task_start(chrono::system_clock::now());
               ticket_sentinel sentinel{*this, tkt};
-              if
-                constexpr(is_void_v<result_of_t<T()>>) {
-                  t();
-                  write_response(yield, nullptr, sentinel);
-                }
-              else
+              write_response(yield, move(t), sentinel);
+              if constexpr (reports_task_end)
+                handler.report_task_end(chrono::system_clock::now());
+            },
+            boost::coroutines::attributes{12 << 10});
+    } else {
+      spawn(socket.get_io_service(),
+            [
+              this, self = this->shared_from_this(), t = forward<T>(t),
+              tkt = ticket++
+            ](yield_context yield) {
+              if constexpr (reports_task_start)
+                handler.report_task_start(chrono::system_clock::now());
+              ticket_sentinel sentinel{*this, tkt};
+              if constexpr (is_void_v<result_of_t<T()>>) {
+                t();
+                write_response(yield, nullptr, sentinel);
+              } else
                 write_response(yield, t(), sentinel);
-              if
-                constexpr(reports_task_end)
-                    handler.report_task_end(chrono::system_clock::now());
+              if constexpr (reports_task_end)
+                handler.report_task_end(chrono::system_clock::now());
             },
             boost::coroutines::attributes{16 << 10});
     }
@@ -280,35 +266,30 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
         break;
 
       if (websocket::is_upgrade(request)) {
-        if
-          constexpr(supports_websocket) {
-            if
-              constexpr(supports_response_decoration) {
-                ws.async_accept_ex(request,
-                                   [this, request](auto &response) {
-                                     ws_stuff.websocket_handler.decorate(
-                                         request, response);
-                                   },
-                                   yield[ec]);
-              }
-            else {
-              ws.async_accept(request, yield[ec]);
-            }
-            clog << "Accepted websocket connection: " << ec.message() << '\n';
-            if (ec)
-              break;
-            ws_stuff.stream >> noskipws;
-            register_websocket_pusher();
-            goto do_upgrade;
+        if constexpr (supports_websocket) {
+          if constexpr (supports_response_decoration) {
+            ws.async_accept_ex(request,
+                               [this, request](auto &response) {
+                                 ws_stuff.websocket_handler.decorate(request,
+                                                                     response);
+                               },
+                               yield[ec]);
+          } else {
+            ws.async_accept(request, yield[ec]);
           }
-        else
+          clog << "Accepted websocket connection: " << ec.message() << '\n';
+          if (ec)
+            break;
+          ws_stuff.stream >> noskipws;
+          register_websocket_pusher();
+          goto do_upgrade;
+        } else
           async(NullHandler{}(request));
         break;
       }
 
-      if
-        constexpr(supports_http_receive) async(
-            [ this, request = move(request) ]() { return handler(request); });
+      if constexpr (supports_http_receive)
+        async([ this, request = move(request) ]() { return handler(request); });
       else {
         async(NullHandler{}(request));
         break;
@@ -323,55 +304,49 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
   }
 
   void ws_serve(boost::system::error_code ec, yield_context yield) {
-    if
-      constexpr(supports_websocket) {
-        if
-          constexpr(reports_task_start)
-              handler.report_task_start(chrono::system_clock::now());
-        if
-          constexpr(reports_upgrade) {
-            ws_stuff.open = true;
-            handler.report_upgrade(chrono::system_clock::now());
-          }
-
-        auto save_stream = [this](auto &message) {
-          copy(istream_iterator<char>(ws_stuff.stream), {},
-               back_inserter(message));
-          ws_stuff.stream.clear();
-        };
-
-        while (true) {
-          ws.async_read(buf, yield[ec]);
-          clog << "Read something from websocket: " << ec.message() << '\n';
-          if (ec)
-            break;
-          if (ws.got_text()) {
-            string message;
-            save_stream(message);
-            clog << "Text message received: " << message << '\n';
-            if
-              constexpr(websocket_handles_text)
-                  async([ this, message = move(message) ] {
-                    return ws_stuff.websocket_handler(message);
-                  });
-          } else if (ws.got_binary()) {
-            vector<uint8_t> message;
-            save_stream(message);
-            clog << "Binary message received, size: " << message.size() << '\n';
-            if
-              constexpr(websocket_handles_binary)
-                  async([ this, message = move(message) ] {
-                    return ws_stuff.websocket_handler(message);
-                  });
-          } else {
-            clog << "Unsupported WebSocket opcode: " << '\n';
-            break;
-          }
-        }
-        if
-          constexpr(reports_task_end)
-              handler.report_task_end(chrono::system_clock::now());
+    if constexpr (supports_websocket) {
+      if constexpr (reports_task_start)
+        handler.report_task_start(chrono::system_clock::now());
+      if constexpr (reports_upgrade) {
+        ws_stuff.open = true;
+        handler.report_upgrade(chrono::system_clock::now());
       }
+
+      auto save_stream = [this](auto &message) {
+        copy(istream_iterator<char>(ws_stuff.stream), {},
+             back_inserter(message));
+        ws_stuff.stream.clear();
+      };
+
+      while (true) {
+        ws.async_read(buf, yield[ec]);
+        clog << "Read something from websocket: " << ec.message() << '\n';
+        if (ec)
+          break;
+        if (ws.got_text()) {
+          string message;
+          save_stream(message);
+          clog << "Text message received: " << message << '\n';
+          if constexpr (websocket_handles_text)
+            async([ this, message = move(message) ] {
+              return ws_stuff.websocket_handler(message);
+            });
+        } else if (ws.got_binary()) {
+          vector<uint8_t> message;
+          save_stream(message);
+          clog << "Binary message received, size: " << message.size() << '\n';
+          if constexpr (websocket_handles_binary)
+            async([ this, message = move(message) ] {
+              return ws_stuff.websocket_handler(message);
+            });
+        } else {
+          clog << "Unsupported WebSocket opcode: " << '\n';
+          break;
+        }
+      }
+      if constexpr (reports_task_end)
+        handler.report_task_end(chrono::system_clock::now());
+    }
   }
 
   auto register_websocket_pusher() {
@@ -384,10 +359,10 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
       async(message);
     };
 
-    if
-      constexpr(websocket_pushes_text) ws_stuff.websocket_handler(pusher);
-    if
-      constexpr(websocket_pushes_binary) ws_stuff.websocket_handler(pusher);
+    if constexpr (websocket_pushes_text)
+      ws_stuff.websocket_handler(pusher);
+    if constexpr (websocket_pushes_binary)
+      ws_stuff.websocket_handler(pusher);
   }
 
   /***********************/
@@ -410,56 +385,50 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
 
   template <typename CompletionHandler>
   auto request(const filesystem::path p, CompletionHandler &&ch) {
-    if
-      constexpr(supports_http_send) {
-        async_completion<CompletionHandler,
-                         void(boost::system::error_code,
-                              http::response<http::string_body>)>
-            completion{ch};
-        spawn(socket.get_io_service(),
-              [
-                this, p, handler = move(completion.completion_handler),
-                tkt = ticket++
-              ](yield_context yield) mutable {
-                if
-                  constexpr(reports_task_start) this->handler.report_task_start(
-                      chrono::system_clock::now());
-                ticket_sentinel sentinel{*this, tkt};
-                while (!sentinel)
-                  socket.get_io_service().post(yield);
+    if constexpr (supports_http_send) {
+      async_completion<CompletionHandler,
+                       void(boost::system::error_code,
+                            http::response<http::string_body>)>
+          completion{ch};
+      spawn(socket.get_io_service(),
+            [
+              this, p, handler = move(completion.completion_handler),
+              tkt = ticket++
+            ](yield_context yield) mutable {
+              if constexpr (reports_task_start)
+                this->handler.report_task_start(chrono::system_clock::now());
+              ticket_sentinel sentinel{*this, tkt};
+              while (!sentinel)
+                socket.get_io_service().post(yield);
 
-                boost::system::error_code ec;
-                auto req = this->handler(p);
-                req.method(http::verb::get);
-                req.prepare_payload();
-                http::async_write(socket, req, yield[ec]);
-                clog << "Thread: " << this_thread::get_id()
-                     << "; Sent request: " << ec.message() << ".\n";
-                http::response<http::string_body> res;
-                http::async_read(socket, buf, res, yield[ec]);
-                clog << "Thread: " << this_thread::get_id()
-                     << "; Received response: " << ec.message() << ".\n";
-                clog << "Resuming coroutine\n";
-                asio_handler_invoke(
-                    [handler, ec, res]() mutable { handler(ec, res); },
-                    &handler);
-                if
-                  constexpr(reports_task_end) this->handler.report_task_end(
-                      chrono::system_clock::now());
-              },
-              boost::coroutines::attributes{16 << 10});
-        clog << "Suspending coroutine\n";
-        if
-          constexpr(is_void_v<decltype(completion.result.get())>) {
-            completion.result.get();
-            clog << "Coroutine resumed\n";
-          }
-        else {
-          auto r = completion.result.get();
-          clog << "Coroutine resumed\n";
-          return r;
-        }
+              boost::system::error_code ec;
+              auto req = this->handler(p);
+              req.method(http::verb::get);
+              req.prepare_payload();
+              http::async_write(socket, req, yield[ec]);
+              clog << "Thread: " << this_thread::get_id()
+                   << "; Sent request: " << ec.message() << ".\n";
+              http::response<http::string_body> res;
+              http::async_read(socket, buf, res, yield[ec]);
+              clog << "Thread: " << this_thread::get_id()
+                   << "; Received response: " << ec.message() << ".\n";
+              clog << "Resuming coroutine\n";
+              asio_handler_invoke(
+                  [handler, ec, res]() mutable { handler(ec, res); }, &handler);
+              if constexpr (reports_task_end)
+                this->handler.report_task_end(chrono::system_clock::now());
+            },
+            boost::coroutines::attributes{16 << 10});
+      clog << "Suspending coroutine\n";
+      if constexpr (is_void_v<decltype(completion.result.get())>) {
+        completion.result.get();
+        clog << "Coroutine resumed\n";
+      } else {
+        auto r = completion.result.get();
+        clog << "Coroutine resumed\n";
+        return r;
       }
+    }
   }
 
   void upgrade() {
@@ -474,28 +443,24 @@ class connection final : public enable_shared_from_this<connection<Handler>> {
             http::response<http::string_body> res;
             auto remote = socket.remote_endpoint().address().to_string();
             clog << "Upgrading websocket host: " << remote << '\n';
-            if
-              constexpr(supports_request_decoration) {
-                ws.async_handshake_ex(res, remote, "/",
-                                      [this](auto &request) {
-                                        ws_stuff.websocket_handler.decorate(
-                                            request);
-                                      },
-                                      yield[ec]);
-              }
-            else {
+            if constexpr (supports_request_decoration) {
+              ws.async_handshake_ex(res, remote, "/",
+                                    [this](auto &request) {
+                                      ws_stuff.websocket_handler.decorate(
+                                          request);
+                                    },
+                                    yield[ec]);
+            } else {
               ws.async_handshake(res, remote, "/", yield[ec]);
             }
             clog << "Thread: " << this_thread::get_id()
                  << "; Connected to websocket: " << ec.message() << '\n';
-            if
-              constexpr(reports_upgrade) {
-                ws_stuff.open = true;
-                handler.report_upgrade(chrono::system_clock::now());
-              }
-            if
-              constexpr(supports_upgrade_inspection)
-                  ws_stuff.websocket_handler.inspect(res);
+            if constexpr (reports_upgrade) {
+              ws_stuff.open = true;
+              handler.report_upgrade(chrono::system_clock::now());
+            }
+            if constexpr (supports_upgrade_inspection)
+              ws_stuff.websocket_handler.inspect(res);
           },
           boost::coroutines::attributes{8 << 10});
   }
@@ -505,17 +470,16 @@ public:
       : socket{service}, ws{socket}, ws_stuff(&buf) {}
   connection() = delete;
   ~connection() {
-    if
-      constexpr(reports_close)
-          handler.report_close(chrono::system_clock::now(), ws_stuff.open);
+    if constexpr (reports_close)
+      handler.report_close(chrono::system_clock::now(), ws_stuff.open);
     clog << "Connection deleted.\n";
   }
 };
 
 template <typename Handler, typename... Args>
 void accept(reference_wrapper<io_service> service, Args &&... args) {
-  spawn(service.get(), [ service, endpoint = ip::tcp::endpoint(args...) ](
-                           yield_context yield) {
+  spawn(service.get(), [ service, endpoint = ip::tcp::endpoint(
+                                      args...) ](yield_context yield) {
     boost::system::error_code ec;
     ip::tcp::acceptor acceptor{service};
     acceptor.open(endpoint.protocol(), ec);
@@ -542,11 +506,10 @@ void accept(reference_wrapper<io_service> service, Args &&... args) {
            << "; Accepted connection: " << ec.message() << '\n';
       if (ec)
         break;
-      if
-        constexpr(connection<Handler>::reports_accept)
-            conn->handler.report_accept(chrono::system_clock::now());
-      spawn(service.get(), [conn = move(conn)](
-                               yield_context yield) { conn->serve(yield); },
+      if constexpr (connection<Handler>::reports_accept)
+        conn->handler.report_accept(chrono::system_clock::now());
+      spawn(service.get(),
+            [conn = move(conn)](yield_context yield) { conn->serve(yield); },
             boost::coroutines::attributes{16 << 10});
     }
   },
@@ -588,25 +551,26 @@ client_connection<Handler> connect(reference_wrapper<io_service> service,
       service, typename connection<Handler>::private_construction_tag{});
 
   ++conn->ticket;
-  spawn(service.get(), [ service, conn, endpoint = ip::tcp::endpoint(args...) ](
-                           yield_context yield) {
-    boost::system::error_code ec;
-    ip::tcp::resolver resolver{service};
-    auto resolved = resolver.async_resolve(endpoint, yield[ec]);
-    clog << "Thread: " << this_thread::get_id()
-         << "; Resolved address: " << ec.message() << '\n';
-    if (ec)
-      return;
-    auto connected = async_connect(conn->socket, resolved, yield[ec]);
-    clog << "Thread: " << this_thread::get_id()
-         << "; Connected to endpoint: " << ec.message() << '\n';
-    if (ec)
-      return;
-    if
-      constexpr(connection<Handler>::reports_connect)
-          conn->handler.report_connect(chrono::system_clock::now());
-    ++conn->serving;
-  },
+  spawn(service.get(),
+        [ service, conn,
+          endpoint = ip::tcp::endpoint(args...) ](yield_context yield) {
+          boost::system::error_code ec;
+          ip::tcp::resolver resolver{service};
+          auto resolved = resolver.async_resolve(endpoint, yield[ec]);
+          clog << "Thread: " << this_thread::get_id()
+               << "; Resolved address: " << ec.message() << '\n';
+          if (ec)
+            return;
+          auto connected = async_connect(conn->socket, resolved, yield[ec]);
+          clog << "Thread: " << this_thread::get_id()
+               << "; Connected to endpoint: " << endpoint << " " << ec.message()
+               << '\n';
+          if (ec)
+            return;
+          if constexpr (connection<Handler>::reports_connect)
+            conn->handler.report_connect(chrono::system_clock::now());
+          ++conn->serving;
+        },
         boost::coroutines::attributes{8 << 10});
 
   return {move(conn)};
@@ -641,11 +605,11 @@ wsclient_connection<Handler> wsconnect(reference_wrapper<io_service> service,
                                        Args &&... args) {
   return upgrade(connect<Handler>(service, forward<Args>(args)...));
 }
-}
+} // namespace connection_detail
 
 using connection_detail::accept;
 using connection_detail::connect;
 using connection_detail::upgrade;
 using connection_detail::wsconnect;
-}
+} // namespace n2w
 #endif
