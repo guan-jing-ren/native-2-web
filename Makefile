@@ -9,14 +9,14 @@ GCC_STDLIBFLAGS=-lstdc++fs
 LLV_STDLIBFLAGS=-lc++experimental
 STDFLAGS=$($(CL)_STDFLAGS)
 STDLIBFLAGS=$($(CL)_STDLIBFLAGS)
-BOOST_INCLUDES=-I /home/kykwan/Downloads/boost_1_64_0 -L /home/kykwan/Downloads/boost_1_64_0/stage/lib
+BOOST_INCLUDES=-I /home/kykwan/include -L /home/kykwan/lib
 BEAST_INCLUDES=$(BOOST_INCLUDES) -I ../Beast/include/
 
 libn2w-fs.so: n2w-fs.cpp native-2-web-plugin.hpp native-2-web-manglespec.hpp native-2-web-js.hpp
 	time -p $(CXX) $(OPFLAGS) $(STDFLAGS) $(BOOST_INCLUDES) -shared -fPIC -pthread -o libn2w-fs.so n2w-fs.cpp -ldl $(STDLIBFLAGS)
 
 n2w-server: native-2-web-server.cpp native-2-web-plugin.hpp libn2w-fs.so
-	time -p $(CXX) $(OPFLAGS) $(STDFLAGS) $(BEAST_INCLUDES) -pthread -o n2w-server native-2-web-server.cpp -ldl -lboost_system -lboost_thread -lboost_chrono -lboost_context -lboost_coroutine -lboost_program_options $(STDLIBFLAGS)
+	time -p $(CXX) $(OPFLAGS) $(STDFLAGS) $(BEAST_INCLUDES) -pthread -o n2w-server native-2-web-server.cpp -ldl -lboost_system -lboost_thread -lboost_atomic -lboost_chrono -lboost_context -lboost_coroutine -lboost_program_options $(STDLIBFLAGS)
 
 all:
 	time -p $(CXX) $(OPFLAGS) $(STDFLAGS) -I ../preprocessor/include/ -o n2w native-2-web.cpp &
