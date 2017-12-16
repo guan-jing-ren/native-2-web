@@ -137,7 +137,7 @@ Notes
 ---
 Unfortunately build system organization and documentation for the internals is scant at the moment.
 
-A side aim of this project is to keep it so small, that all the header files you see are the only ones you need. The library will continue to be designed as a toolkit
+A side aim of this project is to keep it so small, that all the header files you see are the only ones you need. The library will continue to be designed as a toolkit and hopefully work contract frameworkitis.
 
 Pre-requisites
 ---
@@ -145,4 +145,4 @@ Pre-requisites
 - Beast HTTP and Websocket library
 - Clang with C++17 support
 - The dynamic linking plugin stuff is Linux-only for now
-- The extend the HTML GUI stuff you need to know d3.js
+- To extend the HTML GUI stuff you need to know d3.js
